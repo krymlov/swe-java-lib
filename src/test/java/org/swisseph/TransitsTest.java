@@ -5,9 +5,8 @@
  */
 package org.swisseph;
 
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 import org.swisseph.utils.IModuloUtils;
 import swisseph.SwissEph;
 import swisseph.Transits;
@@ -20,16 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @author Yura Krymlov
  * @version 1.0, 2021-02
  */
-@Execution(ExecutionMode.CONCURRENT)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@TestMethodOrder(MethodOrderer.MethodName.class)
-public class TransitsTest {
-    static ISwissEph sweph;
-
-    @BeforeAll
-    void beforeAll() {
-        sweph = new SwephNative("ephe");
-    }
+public class TransitsTest extends ASwissephTest {
 
     @RepeatedTest(360)
     void testShaniSadeSati(RepetitionInfo info) {
@@ -37,12 +27,12 @@ public class TransitsTest {
         int lat = IModuloUtils.modulo(90, elev);
         int lng = IModuloUtils.modulo(180, elev);
 
-        if ( (elev / 90) % 2 != 0 ) lat = -lat;
-        if (elev > 180 ) lng = -lng;
+        if ((elev / 90) % 2 != 0) lat = -lat;
+        if (elev > 180) lng = -lng;
 
         final StringBuilder builder = new StringBuilder(255);
 
-        if ( elev % 2 == 0) {
+        if (elev % 2 == 0) {
             builder.append("-p6 -lon0/60/120/180/240/300/360");
         } else builder.append("-p6 -lon30/90/150/210/270/330/0");
 
@@ -55,8 +45,8 @@ public class TransitsTest {
 
         //System.out.println(builder);
 
-        Transits gochara1 = new Transits(sweph);
-        Transits gochara2 = new Transits(new SwissEph(sweph.swe_get_ephe_path()));
+        Transits gochara1 = new Transits(getSwephExp());
+        Transits gochara2 = new Transits(getSwissEph());
 
         String[] argv = builder.toString().split(" ");
         gochara1.startCalculations(argv, true);
@@ -77,7 +67,7 @@ public class TransitsTest {
             String[] vals2 = value2.split(" ");
 
             assertEquals(Double.parseDouble(vals1[0]),
-                Double.parseDouble(vals2[0]), 0.025);
+                    Double.parseDouble(vals2[0]), 0.025);
         }
     }
 }

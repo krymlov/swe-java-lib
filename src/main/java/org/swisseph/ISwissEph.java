@@ -421,9 +421,7 @@ public interface ISwissEph extends Serializable {
      ****************************/
 
     default int swe_houses(double tjd_ut, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
-        return SwephExp.swe_houses(
-                tjd_ut, geolat, geolon, hsys,
-                cusps, ascmc);
+        return SwephExp.swe_houses(tjd_ut, geolat, geolon, hsys, cusps, ascmc);
     }
 
     default int swe_houses_ex(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
@@ -486,8 +484,7 @@ public interface ISwissEph extends Serializable {
 
     default int swe_lun_occult_when_loc(double tjd_start, int ipl, StringBuilder starname, int ifl, double[] geopos,
                                         double[] tret, double[] attr, int backward, StringBuilder serr) {
-        return SwephExp.swe_lun_occult_when_loc(tjd_start, ipl, starname, ifl, geopos,
-                tret, attr, backward, serr);
+        return SwephExp.swe_lun_occult_when_loc(tjd_start, ipl, starname, ifl, geopos, tret, attr, backward, serr);
     }
 
     /* finds time of next eclipse globally */
