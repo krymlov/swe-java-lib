@@ -86,15 +86,11 @@ package swisseph;
 * http://www.astro.ch/swisseph/sweph_g.htm</A>. By far most of the information 
 * there is directly valid for this port to Java as well.</B></I>
 */
-class Swecl
-		implements java.io.Serializable
-		{
-
-  SwissEph  sw=null;
-  SwissLib  sl=null;
-  Swemmoon  sm=null;
-  SwissData swed=null;
-
+class Swecl implements java.io.Serializable {
+  final SwissEph  sw;
+  final SwissLib  sl;
+  final Swemmoon  sm;
+  final SwissData swed;
 
   private double const_lapse_rate = SwephData.SE_LAPSE_RATE;  /* for refraction */
 
@@ -109,14 +105,6 @@ class Swecl
   private static final double lnlog=SMath.log(10);
   private double log10(double x) { return SMath.log(x)/lnlog; }
 
-
-  /**
-  * Creates a new instance of this object.
-  */
-  Swecl() {
-    this(null, null, null, null);
-  }
-
   /**
   * Creates a new instance of this object and uses all the given
   * objects, as far as they are not null.
@@ -130,19 +118,16 @@ class Swecl
   * of creation of this object.
   */
   Swecl(SwissEph sw, SwissLib sl, Swemmoon sm, SwissData swed) {
-    this.sw=sw;
-    this.sl=sl;
-    this.sm=sm;
-    this.swed=swed;
-    if (sw==null) { this.sw=new SwissEph(); }
-    if (sl==null) { this.sl=new SwissLib(); }
-    if (sm==null) { this.sm=new Swemmoon(); }
-    if (swed==null) { this.swed=new SwissData(); }
+    this.sw = sw;
+    this.sl = sl;
+    this.sm = sm;
+    this.swed = swed;
   }
 
   static final double SAROS_CYCLE = 6585.3213;
+
   //static final double NSAROS_SOLAR = 181;
-  static final SarosData saros_data_solar[] = new SarosData[] {
+  static final SarosData[] saros_data_solar = new SarosData[] {
     new SarosData(0, 641886.5), /* 23 May -2955 */
     new SarosData(1, 672214.5), /* 04 Jun -2872 */
     new SarosData(2, 676200.5), /* 04 May -2861 */
@@ -325,10 +310,11 @@ class Swecl
     new SarosData(179, 2718653.5), /* 28 Apr 2731 */
     new SarosData(180, 2729226.5), /* 08 Apr 2760 */
   };
+
   static final int NSAROS_SOLAR = saros_data_solar.length;
 
   //static final int NSAROS_LUNAR = 180;
-  static final SarosData saros_data_lunar[] = new SarosData[] {
+  static final SarosData[] saros_data_lunar = new SarosData[] {
     new SarosData(1, 782437.5), /* 14 Mar -2570 */
     new SarosData(2, 799593.5), /* 03 Mar -2523 */
     new SarosData(3, 783824.5), /* 30 Dec -2567 */
@@ -510,8 +496,8 @@ class Swecl
     new SarosData(179, 2749852.5), /* 27 Sep 2816 */
     new SarosData(180, 2753839.5), /* 28 Aug 2827 */
   };
-  static final int NSAROS_LUNAR = saros_data_lunar.length;
 
+  static final int NSAROS_LUNAR = saros_data_lunar.length;
 
   /* Computes geographic location and type of solar eclipse
    * for a given tjd
@@ -5846,7 +5832,8 @@ class Swecl
    * dgsect is return area (pointer to a double)
    * serr is pointer to error string, may be NULL
    */
-  int swe_gauquelin_sector(double t_ut, int ipl, StringBuilder starname, int iflag, int imeth, double[] geopos, double atpress, double attemp, DblObj dgsect, StringBuilder serr) {
+  int swe_gauquelin_sector(double t_ut, int ipl, StringBuilder starname, int iflag, int imeth, double[] geopos,
+                           double atpress, double attemp, DblObj dgsect, StringBuilder serr) {
     DblObj dtmp=new DblObj();
     boolean rise_found = true;
     boolean set_found = true;
@@ -5880,7 +5867,7 @@ class Swecl
       sl.swi_nutation(t_et, iflag, nutlo);
       nutlo[0] *= SwissData.RADTODEG;
       nutlo[1] *= SwissData.RADTODEG;
-      armc = sl.swe_degnorm(sl.swe_sidtime0(t_ut, eps + nutlo[1], nutlo[0]) * 15 + geopos[0]);
+      armc = SwissLib.swe_degnorm(sl.swe_sidtime0(t_ut, eps + nutlo[1], nutlo[0]) * 15 + geopos[0]);
       if (do_fixstar) {
         if (sw.swe_fixstar(starname, t_et, iflag, x0, serr) == SweConst.ERR)
   	return SweConst.ERR;

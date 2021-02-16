@@ -86,12 +86,11 @@ import java.util.Locale;
 
 
 public class SweHel implements java.io.Serializable {
+  private static final long serialVersionUID = 8155129561259248048L;
 
-  private SwissEph sw;
-  private Swemmoon sm;
-  private SwissLib sl;
-  private Swecl sc;
-  private SwissData swed;
+  private final SwissEph sw;
+  private final SwissLib sl;
+  private final Swecl sc;
 
   private static final int PLSV = 0; /*if Planet, Lunar and Stellar Visibility formula is needed PLSV=1*/
   private static final double criticalangle = 0.0; /*[deg]*/
@@ -172,21 +171,10 @@ public class SweHel implements java.io.Serializable {
   private static final double GBinocular = 1; /*1-binocular 0=monocular*/	// Unused
   private static final double GOpticDia = 50; /*telescope diameter [mm]*/	// Unused
 
-
-  public SweHel() {
-    this(null, null, null, null);
-  }
   public SweHel(SwissEph sw, SwissLib sl, Swemmoon sm, SwissData swed) {
+    this.sc = sw.getSwecl();
     this.sw=sw;
     this.sl=sl;
-    this.sm=sm;
-    this.swed=swed;
-    if (sw==null) { this.sw=new SwissEph(); }
-    if (sl==null) { this.sl=new SwissLib(); }
-    if (sm==null) { this.sm=new Swemmoon(); }
-    if (swed==null) { this.swed=new SwissData(); }
-
-    this.sc = new Swecl(this.sw, this.sl, this.sm, this.swed);
   }
 
   /*###################################################################*/
@@ -1898,7 +1886,7 @@ private int Magnitude(double JDNDaysUT, double[] dgeo, StringBuilder ObjectName,
   * in calculation of delta T. See SweDate.setGlobalTidalAcc(double).</b>
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_heliacal_pheno_ut(double JDNDaysUT, double[] dgeo, double[] datm, double[] dobs, StringBuilder ObjectNameIn, int TypeEvent, int helflag, double[] darr, StringBuilder serr) {
+  public int swe_heliacal_pheno_ut(double JDNDaysUT, double[] dgeo, double[] datm, double[] dobs, String ObjectNameIn, int TypeEvent, int helflag, double[] darr, StringBuilder serr) {
     double[] AziS = new double[1], AltS = new double[1], AltS2 = new double[1], AziO = new double[1], AltO = new double[1], AltO2 = new double[1], GeoAltO = new double[1], MagnO = new double[1];
     double AppAltO, DAZact, TAVact, ParO;
     double ARCVact, ARCLact, kact, WMoon, LMoon = 0, qYal, qCrit;
@@ -1927,7 +1915,7 @@ private int Magnitude(double JDNDaysUT, double[] dgeo, StringBuilder ObjectName,
     sunra = SunRA(JDNDaysUT, helflag, serr);
     /* note, the fixed stars functions rewrite the star name. The input string 
        may be too short, so we have to make sure we have enough space */
-    strcpy_VBsafe(ObjectName, ObjectNameIn.toString());
+    strcpy_VBsafe(ObjectName, ObjectNameIn);
     default_heliacal_parameters(datm, dgeo, dobs, helflag);
     sw.swe_set_topo(dgeo[0], dgeo[1], dgeo[2]);
     retval = ObjectLoc(JDNDaysUT, dgeo, datm, "sun", 1, helflag, AziS, serr);

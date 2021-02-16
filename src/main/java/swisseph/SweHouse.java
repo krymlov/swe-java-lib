@@ -83,24 +83,12 @@ package swisseph;
 * there is directly valid for this port to Java as well.</B></I>
 * @version 1.0.0a
 */
-class SweHouse
-		implements java.io.Serializable
-		{
-
+class SweHouse implements java.io.Serializable {
   static final double MILLIARCSEC=1.0 / 3600000.0;
 
-  SwissLib sl=null;
-  SwissEph sw=null;
-  SwissData swed=null;
-
-  /**
-  * Constructs a new SweHouse object.
-  */
-  SweHouse() {
-    sl   = new SwissLib();
-    sw   = new SwissEph();
-    swed = new SwissData();
-  }
+  final SwissLib sl;
+  final SwissEph sw;
+  final SwissData swed;
 
   /**
   * Constructs a new SweHouse object by using the given objects. If some or
@@ -113,9 +101,6 @@ class SweHouse
     this.sl   = sl;
     this.sw   = sw;
     this.swed = swed;
-    if (this.sl   ==null) { this.sl   =new SwissLib(); }
-    if (this.sw   ==null) { this.sw   =new SwissEph(); }
-    if (this.swed ==null) { this.swed =new SwissData(); }
   }
 
 
@@ -263,7 +248,7 @@ class SweHouse
     for (i = 0; i < 2; i++)
       nutlo[i] *= SwissData.RADTODEG;
       /*houses_to_sidereal(tjde, geolat, hsys, eps, cusp, ascmc, iflag);*/
-    armc = sl.swe_degnorm(sl.swe_sidtime0(tjd_ut, eps_mean + nutlo[1], nutlo[0]) * 15 + geolon);
+    armc = SwissLib.swe_degnorm(sl.swe_sidtime0(tjd_ut, eps_mean + nutlo[1], nutlo[0]) * 15 + geolon);
     if ((iflag & SweConst.SEFLG_SIDEREAL)!=0) {
       if ((sip.sid_mode & SweConst.SE_SIDBIT_ECL_T0)!=0) {
         retc = sidereal_houses_ecl_t0(tjde, armc, eps_mean + nutlo[1], nutlo, geolat, hsys, cusp, ascmc, aOffs);
@@ -338,24 +323,24 @@ class SweHouse
     x[0] = x[4] = 1;
     x[1] = x[2] = x[3] = x[5] = 0;
     /* to equator */
-    sl.swi_coortrf(x, x, -epst0);
-    sl.swi_coortrf(x, 3, x, 3, -epst0);
+    SwissLib.swi_coortrf(x, x, -epst0);
+    SwissLib.swi_coortrf(x, 3, x, 3, -epst0);
     /* to tjd_et */
     sl.swi_precess(x, sip.t0, 0, SwephData.J_TO_J2000);
     sl.swi_precess(x, tjde, 0, SwephData.J2000_TO_J);
     sl.swi_precess(x, 3, sip.t0, 0, SwephData.J_TO_J2000);
     sl.swi_precess(x, 3, tjde, 0, SwephData.J2000_TO_J);
     /* to true equator of tjd_et */
-    sl.swi_coortrf(x, x, (eps - nutlo[1]) * SwissData.DEGTORAD);
-    sl.swi_coortrf(x, 3, x, 3, (eps - nutlo[1]) * SwissData.DEGTORAD);
-    sl.swi_cartpol_sp(x, 0, x, 0);
+    SwissLib.swi_coortrf(x, x, (eps - nutlo[1]) * SwissData.DEGTORAD);
+    SwissLib.swi_coortrf(x, 3, x, 3, (eps - nutlo[1]) * SwissData.DEGTORAD);
+    SwissLib.swi_cartpol_sp(x, 0, x, 0);
     x[0] += nutlo[0] * SwissData.DEGTORAD;
-    sl.swi_polcart_sp(x, x);
-    sl.swi_coortrf(x, x, -eps * SwissData.DEGTORAD);
-    sl.swi_coortrf(x, 3, x, 3, -eps * SwissData.DEGTORAD);
+    SwissLib.swi_polcart_sp(x, x);
+    SwissLib.swi_coortrf(x, x, -eps * SwissData.DEGTORAD);
+    SwissLib.swi_coortrf(x, 3, x, 3, -eps * SwissData.DEGTORAD);
     /* now, we have the moving point precessed to tjd_et.
      * next, we compute the auxiliary epsilon: */
-    sl.swi_cross_prod(x, 0, x, 3, xnorm, 0);
+    SwissLib.swi_cross_prod(x, 0, x, 3, xnorm, 0);
     rxy =  xnorm[0] * xnorm[0] + xnorm[1] * xnorm[1];
     c2 = (rxy + xnorm[2] * xnorm[2]);
     rxyz = SMath.sqrt(c2);
@@ -371,22 +356,22 @@ class SweHouse
       xvpx[j] = (x[j] - fac * x[j+3]) * sgn;      /* 1b */
     /* distance of the auxiliary vernal point from
      * the zero point at tjd_et (a section on the equator): */
-    sl.swi_cartpol(xvpx, x2);
+    SwissLib.swi_cartpol(xvpx, x2);
     dvpx = x2[0] * SwissData.RADTODEG;                      /* 2 */
     /* auxiliary armc */
-    armcx = sl.swe_degnorm(armc - dvpx);        /* 3 */
+    armcx = SwissLib.swe_degnorm(armc - dvpx);        /* 3 */
     /* compute axes and houses: */
     retc = swe_houses_armc(armcx, lat, epsx, hsys, cusp, ascmc, aOffs);  /* 4 */
     /* distance between auxiliary vernal point and
      * vernal point of t0 (a section on the sidereal plane) */
-    dvpxe = SMath.acos(sl.swi_dot_prod_unit(x, xvpx)) * SwissData.RADTODEG;  /* 5 */
+    dvpxe = SMath.acos(SwissLib.swi_dot_prod_unit(x, xvpx)) * SwissData.RADTODEG;  /* 5 */
     if (tjde < sip.t0) {
       dvpxe = -dvpxe;
     }
     for (i = 1; i <= ito; i++)                     /* 6, 7 */
-      cusp[i] = sl.swe_degnorm(cusp[i] - dvpxe - sip.ayan_t0);
+      cusp[i] = SwissLib.swe_degnorm(cusp[i] - dvpxe - sip.ayan_t0);
     for (i = 0; i <= SweConst.SE_NASCMC; i++)
-      ascmc[aOffs+i] = sl.swe_degnorm(ascmc[aOffs+i] - dvpxe - sip.ayan_t0);
+      ascmc[aOffs+i] = SwissLib.swe_degnorm(ascmc[aOffs+i] - dvpxe - sip.ayan_t0);
     return retc;
   }
 
@@ -437,28 +422,28 @@ class SweHouse
     x[0] = x[4] = 1;
     x[1] = x[2] = x[3] = x[5] = 0;
     /* to ecliptic 2000 */
-    sl.swi_coortrf(x, x, -SwephData.SSY_PLANE_INCL);
-    sl.swi_coortrf(x, 3, x, 3, -SwephData.SSY_PLANE_INCL);
-    sl.swi_cartpol_sp(x, 0, x, 0);
+    SwissLib.swi_coortrf(x, x, -SwephData.SSY_PLANE_INCL);
+    SwissLib.swi_coortrf(x, 3, x, 3, -SwephData.SSY_PLANE_INCL);
+    SwissLib.swi_cartpol_sp(x, 0, x, 0);
     x[0] += SwephData.SSY_PLANE_NODE_E2000;
-    sl.swi_polcart_sp(x, x);
+    SwissLib.swi_polcart_sp(x, x);
     /* to equator 2000 */
-    sl.swi_coortrf(x, x, -eps2000);
-    sl.swi_coortrf(x, 3, x, 3, -eps2000);
+    SwissLib.swi_coortrf(x, x, -eps2000);
+    SwissLib.swi_coortrf(x, 3, x, 3, -eps2000);
     /* to mean equator of t */
     sl.swi_precess(x, tjde, 0, SwephData.J2000_TO_J);
     sl.swi_precess(x, 3, tjde, 0, SwephData.J2000_TO_J);
     /* to true equator of t */
-    sl.swi_coortrf(x, x, (eps - nutlo[1]) * SwissData.DEGTORAD);
-    sl.swi_coortrf(x, 3, x, 3, (eps - nutlo[1]) * SwissData.DEGTORAD);
-    sl.swi_cartpol_sp(x, 0, x, 0);
+    SwissLib.swi_coortrf(x, x, (eps - nutlo[1]) * SwissData.DEGTORAD);
+    SwissLib.swi_coortrf(x, 3, x, 3, (eps - nutlo[1]) * SwissData.DEGTORAD);
+    SwissLib.swi_cartpol_sp(x, 0, x, 0);
     x[0] += nutlo[0] * SwissData.DEGTORAD;
-    sl.swi_polcart_sp(x, x);
-    sl.swi_coortrf(x, x, -eps * SwissData.DEGTORAD);
-    sl.swi_coortrf(x, 3, x, 3, -eps * SwissData.DEGTORAD);
+    SwissLib.swi_polcart_sp(x, x);
+    SwissLib.swi_coortrf(x, x, -eps * SwissData.DEGTORAD);
+    SwissLib.swi_coortrf(x, 3, x, 3, -eps * SwissData.DEGTORAD);
     /* now, we have the moving point precessed to tjd_et.
      * next, we compute the auxiliary epsilon: */
-    sl.swi_cross_prod(x, 0, x, 3, xnorm, 0);
+    SwissLib.swi_cross_prod(x, 0, x, 3, xnorm, 0);
     rxy =  xnorm[0] * xnorm[0] + xnorm[1] * xnorm[1];
     c2 = (rxy + xnorm[2] * xnorm[2]);
     rxyz = SMath.sqrt(c2);
@@ -474,17 +459,17 @@ class SweHouse
       xvpx[j] = (x[j] - fac * x[j+3]) * sgn;      /* 1b */
     /* distance of the auxiliary vernal point from
      * mean vernal point at tjd_et (a section on the equator): */
-    sl.swi_cartpol(xvpx, x2);
+    SwissLib.swi_cartpol(xvpx, x2);
     dvpx = x2[0] * SwissData.RADTODEG;                      /* 2 */
     /* auxiliary armc */
-    armcx = sl.swe_degnorm(armc - dvpx);        /* 3 */
+    armcx = SwissLib.swe_degnorm(armc - dvpx);        /* 3 */
     /* compute axes and houses: */
     retc = swe_houses_armc(armcx, lat, epsx, hsys, cusp, ascmc, aOffs);  /* 4 */
     /* distance between the auxiliary vernal point at t and
      * the sidereal zero point of 2000 at t
      * (a section on the sidereal plane).
      */
-    dvpxe = SMath.acos(sl.swi_dot_prod_unit(x, xvpx)) * SwissData.RADTODEG;  /* 5 */
+    dvpxe = SMath.acos(SwissLib.swi_dot_prod_unit(x, xvpx)) * SwissData.RADTODEG;  /* 5 */
                   /* (always positive for dates after 5400 bc) */
     dvpxe -= SwephData.SSY_PLANE_NODE * SwissData.RADTODEG;
     /* ayanamsa between t0 and J2000, measured on solar system plane: */
@@ -496,19 +481,19 @@ class SweHouse
       sl.swi_precess(x0, sip.t0, 0, SwephData.J_TO_J2000);
     }
     /* zero point to ecliptic 2000 */
-    sl.swi_coortrf(x0, x0, eps2000);
+    SwissLib.swi_coortrf(x0, x0, eps2000);
     /* to solar system plane */
-    sl.swi_cartpol(x0, x0);
+    SwissLib.swi_cartpol(x0, x0);
     x0[0] -= SwephData.SSY_PLANE_NODE_E2000;
-    sl.swi_polcart(x0, x0);
-    sl.swi_coortrf(x0, x0, SwephData.SSY_PLANE_INCL);
-    sl.swi_cartpol(x0, x0);
+    SwissLib.swi_polcart(x0, x0);
+    SwissLib.swi_coortrf(x0, x0, SwephData.SSY_PLANE_INCL);
+    SwissLib.swi_cartpol(x0, x0);
     x0[0] += SwephData.SSY_PLANE_NODE;
     x00 = x0[0] * SwissData.RADTODEG;                       /* 7 */
     for (i = 1; i <= ito; i++)                     /* 6, 8, 9 */
-      cusp[i] = sl.swe_degnorm(cusp[i] - dvpxe - sip.ayan_t0 - x00);
+      cusp[i] = SwissLib.swe_degnorm(cusp[i] - dvpxe - sip.ayan_t0 - x00);
     for (i = 0; i <= SweConst.SE_NASCMC; i++)
-      ascmc[aOffs+i] = sl.swe_degnorm(ascmc[aOffs+i] - dvpxe - sip.ayan_t0 - x00);
+      ascmc[aOffs+i] = SwissLib.swe_degnorm(ascmc[aOffs+i] - dvpxe - sip.ayan_t0 - x00);
     return retc;
   }
 
@@ -537,14 +522,14 @@ class SweHouse
       ihs2 = 'E';
     retc = swe_houses_armc(armc, lat, eps, ihs2, cusp, ascmc, aOffs);
     for (i = 1; i <= ito; i++)
-      cusp[i] = sl.swe_degnorm(cusp[i] - ay - nutl);
+      cusp[i] = SwissLib.swe_degnorm(cusp[i] - ay - nutl);
       if (ihs == 'W') /* whole sign houses */
         cusp[i] -= (cusp[i] % 30);
     for (i = 0; i < SweConst.SE_NASCMC; i++) {
       if (i == 2) /* armc */ {
         continue;
       }
-      ascmc[aOffs+i] = sl.swe_degnorm(ascmc[aOffs+i] - ay - nutl);
+      ascmc[aOffs+i] = SwissLib.swe_degnorm(ascmc[aOffs+i] - ay - nutl);
     }
     return retc;
   }
@@ -597,7 +582,7 @@ class SweHouse
     } else {
       ito = 12;
     }
-    armc = sl.swe_degnorm(armc);
+    armc = SwissLib.swe_degnorm(armc);
     retc = CalcH(armc,
                  geolat,
                  eps,
@@ -651,10 +636,10 @@ class SweHouse
     } else {
       a = kv + az + SMath.PI/2 + k * (SMath.PI/2 + kv) / 3;
     }
-    a = sl.swe_radnorm(a);
+    a = SwissLib.swe_radnorm(a);
     dret = SMath.atan2(SMath.tan(dasc) * SMath.tan(ph) * SMath.sin(az) + SMath.sin(a),
       SMath.cos(e) * (SMath.tan(dasc) * SMath.tan(ph) * SMath.cos(az) + SMath.cos(a)) + SMath.sin(e) * SMath.tan(ph) * SMath.sin(az - a));
-    dret = sl.swe_degnorm(dret * SwissData.RADTODEG);
+    dret = SwissLib.swe_degnorm(dret * SwissData.RADTODEG);
     return dret;
   }
 
@@ -680,8 +665,7 @@ class SweHouse
     }
   }
 
-  private int CalcH(double th, double fi, double ekl, char hsy,
-                    int iteration_count, Houses hsp )
+  private int CalcH(double th, double fi, double ekl, char hsy, int iteration_count, Houses hsp )
   /* *********************************************************
    *  Arguments: th = sidereal time (angle 0..360 degrees
    *             hsy = letter code for house system;
@@ -739,7 +723,7 @@ class SweHouse
       tant = tand(th);
       hsp.mc = atand(tant / cose);
       if (th > 90 && th <= 270) {
-        hsp.mc = sl.swe_degnorm(hsp.mc + 180);
+        hsp.mc = SwissLib.swe_degnorm(hsp.mc + 180);
       }
     } else {
       if (SMath.abs(th - 90) <= VERY_SMALL) {
@@ -748,7 +732,7 @@ class SweHouse
         hsp.mc = 270;
       }
     } /*  if */
-    hsp.mc = sl.swe_degnorm(hsp.mc);
+    hsp.mc = SwissLib.swe_degnorm(hsp.mc);
     /* ascendant */
     hsp.ac = Asc1 (th + 90, fi, sine, cose);
     hsp.cusp[1] = hsp.ac;
@@ -760,13 +744,13 @@ class SweHouse
         /*
          * within polar circle we swap AC/DC if AC is on wrong side
          */
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
           hsp.cusp[1] = hsp.ac;
         }
         for (i = 2; i <=12; i++)
-          hsp.cusp [i] = sl.swe_degnorm(hsp.cusp [1] + (i-1) * 30);
+          hsp.cusp [i] = SwissLib.swe_degnorm(hsp.cusp [1] + (i-1) * 30);
         break;
       case 'C': /* Campanus houses and Horizon or Azimut system */
       case 'H':
@@ -784,7 +768,7 @@ class SweHouse
               fi = 90 - VERY_SMALL;
             }
           }
-          th = sl.swe_degnorm(th + 180);
+          th = SwissLib.swe_degnorm(th + 180);
         }
         fh1 = asind(sind (fi) / 2);
         fh2 = asind(SMath.sqrt (3.0) / 2 * sind(fi));
@@ -811,29 +795,29 @@ class SweHouse
          * must be added 180 degrees.
          * houses will be in clockwise direction */
         if (SMath.abs(fi) >= 90 - ekl) {  /* within polar circle */
-          acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+          acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
           if (acmc < 0) {
-            hsp.ac = sl.swe_degnorm(hsp.ac + 180);
-            hsp.mc = sl.swe_degnorm(hsp.mc + 180);
+            hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
+            hsp.mc = SwissLib.swe_degnorm(hsp.mc + 180);
             for (i = 1; i <= 12; i++)
-              hsp.cusp[i] = sl.swe_degnorm(hsp.cusp[i] + 180);
+              hsp.cusp[i] = SwissLib.swe_degnorm(hsp.cusp[i] + 180);
           }
         }
         if (hsy == 'H') {
           for (i = 1; i <= 3; i++)
-            hsp.cusp[i] = sl.swe_degnorm(hsp.cusp[i] + 180);
+            hsp.cusp[i] = SwissLib.swe_degnorm(hsp.cusp[i] + 180);
           for (i = 11; i <= 12; i++)
-            hsp.cusp[i] = sl.swe_degnorm(hsp.cusp[i] + 180);
+            hsp.cusp[i] = SwissLib.swe_degnorm(hsp.cusp[i] + 180);
           /* restore fi and th */
           if (fi > 0) {
             fi = 90 - fi;
           } else {
             fi = -90 - fi;
           }
-          th = sl.swe_degnorm(th + 180);
-          acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+          th = SwissLib.swe_degnorm(th + 180);
+          acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
           if (acmc < 0) {
-            hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+            hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
           }
         }
         break;
@@ -871,12 +855,12 @@ class SweHouse
          * must be added 180 degrees.
          * houses will be in clockwise direction */
         if (SMath.abs(fi) >= 90 - ekl) {  /* within polar circle */
-          acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+          acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
           if (acmc < 0) {
-            hsp.ac = sl.swe_degnorm(hsp.ac + 180);
-            hsp.mc = sl.swe_degnorm(hsp.mc + 180);
+            hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
+            hsp.mc = SwissLib.swe_degnorm(hsp.mc + 180);
             for (i = 1; i <= 12; i++)
-              hsp.cusp[i] = sl.swe_degnorm(hsp.cusp[i] + 180);
+              hsp.cusp[i] = SwissLib.swe_degnorm(hsp.cusp[i] + 180);
           }
         }
         break;
@@ -892,12 +876,12 @@ class SweHouse
          * must be added 180 degrees.
          * houses will be in clockwise direction */
         if (SMath.abs(fi) >= 90 - ekl) {  /* within polar circle */
-          acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+          acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
           if (acmc < 0) {
-            hsp.ac = sl.swe_degnorm(hsp.ac + 180);
-            hsp.mc = sl.swe_degnorm(hsp.mc + 180);
+            hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
+            hsp.mc = SwissLib.swe_degnorm(hsp.mc + 180);
             for (i = 1; i <= 12; i++)
-              hsp.cusp[i] = sl.swe_degnorm(hsp.cusp[i] + 180);
+              hsp.cusp[i] = SwissLib.swe_degnorm(hsp.cusp[i] + 180);
           }
         }
         break;
@@ -905,27 +889,27 @@ class SweHouse
         /*
          * within polar circle we swap AC/DC if AC is on wrong side
          */
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
           hsp.cusp[1] = hsp.ac;
         }
-        hsp.cusp [1] = sl.swe_degnorm(hsp.ac - 15);
+        hsp.cusp [1] = SwissLib.swe_degnorm(hsp.ac - 15);
         for (i = 2; i <=12; i++)
-          hsp.cusp [i] = sl.swe_degnorm(hsp.cusp [1] + (i-1) * 30);
+          hsp.cusp [i] = SwissLib.swe_degnorm(hsp.cusp [1] + (i-1) * 30);
         break;
       case 'W':     /* equal, whole-sign houses */
         /*
         * within polar circle we swap AC/DC if AC is on wrong side
         */
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
           hsp.cusp[1] = hsp.ac;
         }
         hsp.cusp [1] = hsp.ac - (hsp.ac % 30);
         for (i = 2; i <=12; i++)
-          hsp.cusp [i] = sl.swe_degnorm(hsp.cusp [1] + (i-1) * 30);
+          hsp.cusp [i] = SwissLib.swe_degnorm(hsp.cusp [1] + (i-1) * 30);
         break;
       case 'X': {
         /*
@@ -940,13 +924,13 @@ class SweHouse
           if (j > 12) {
             j -= 12;
           }
-          a2 = sl.swe_degnorm(a2 + 30);
+          a2 = SwissLib.swe_degnorm(a2 + 30);
           if (SMath.abs(a2 - 90) > VERY_SMALL
             && SMath.abs(a2 - 270) > VERY_SMALL) {
             tant = tand(a2);
             hsp.cusp[j] = atand(tant / cose);
             if (a2 > 90 && a2 <= 270) {
-              hsp.cusp[j] = sl.swe_degnorm(hsp.cusp[j] + 180);
+              hsp.cusp[j] = SwissLib.swe_degnorm(hsp.cusp[j] + 180);
             }
           } else {
             if (SMath.abs(a2 - 90) <= VERY_SMALL) {
@@ -955,11 +939,11 @@ class SweHouse
               hsp.cusp[j] = 270;
             }
           } /*  if */
-          hsp.cusp[j] = sl.swe_degnorm(hsp.cusp[j]);
+          hsp.cusp[j] = SwissLib.swe_degnorm(hsp.cusp[j]);
         }
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
         }
         break;
         }
@@ -975,15 +959,15 @@ class SweHouse
         for (i = 1; i <= 12; i++) {
           j = i + 10;
           if (j > 12) j -= 12;
-          am = sl.swe_degnorm(am + 30);
+          am = SwissLib.swe_degnorm(am + 30);
           xm[0] = am;
           xm[1] = 0;
-          sl.swe_cotrans(xm, 0, xm, 0, ekl);
+          SwissLib.swe_cotrans(xm, 0, xm, 0, ekl);
           hsp.cusp[j] = xm[0];
         }
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
         }
         break;
         }
@@ -996,11 +980,11 @@ class SweHouse
            is wrong, because he remains in RA and forgets the transform to
            the ecliptic. */
         double dek, r, sna, sda, sn3, sd3;
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
           hsp.cusp[1] = hsp.ac;
-          acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+          acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         }
         dek = asind(sind(hsp.ac) * sine);        /* declination of Ascendant */
         /* must treat the case fi == 90 or -90 */
@@ -1013,15 +997,15 @@ class SweHouse
         sna = 180 - sda;          /* complement, seminocturnal arc */
         sd3 = sda / 3;
         sn3 = sna / 3;
-        rectasc = sl.swe_degnorm(th + sd3);            /* cusp 11 */
+        rectasc = SwissLib.swe_degnorm(th + sd3);            /* cusp 11 */
         /* project rectasc onto eclipitic with pole height 0, i.e. along the
         declination circle */
         hsp.cusp [11] = Asc1 (rectasc, 0, sine, cose);
-        rectasc = sl.swe_degnorm(th + 2 * sd3);        /* cusp 12 */
+        rectasc = SwissLib.swe_degnorm(th + 2 * sd3);        /* cusp 12 */
         hsp.cusp [12] = Asc1 (rectasc, 0, sine, cose);
-        rectasc = sl.swe_degnorm(th + 180 - 2 * sn3);  /* cusp 2 */
+        rectasc = SwissLib.swe_degnorm(th + 180 - 2 * sn3);  /* cusp 2 */
         hsp.cusp [2] = Asc1 (rectasc, 0, sine, cose);
-        rectasc = sl.swe_degnorm(th + 180 -  sn3);     /* cusp 3 */
+        rectasc = SwissLib.swe_degnorm(th + 180 -  sn3);     /* cusp 3 */
         hsp.cusp [3] = Asc1 (rectasc, 0, sine, cose);
         }
         break;
@@ -1040,7 +1024,7 @@ class SweHouse
         for (ih = 2; ih <= 9; ih++) {
           ih2 = 10 - ih;
           fh1 = atand(sind(a * ih2 / 9) / tane);
-          rectasc = sl.swe_degnorm((90 / 9) * ih2 + th);
+          rectasc = SwissLib.swe_degnorm((90 / 9) * ih2 + th);
           tant = tand(asind(sine * sind(Asc1 (rectasc, fh1, sine, cose))));
           if (SMath.abs(tant) < VERY_SMALL) {
             hsp.cusp[ih] = rectasc;
@@ -1059,13 +1043,13 @@ class SweHouse
             hsp.cusp[ih] = Asc1 (rectasc, f, sine, cose);
             }
           }
-          hsp.cusp[ih+18] = sl.swe_degnorm(hsp.cusp[ih] + 180);
+          hsp.cusp[ih+18] = SwissLib.swe_degnorm(hsp.cusp[ih] + 180);
         }
         /*************** first/third quarter ***************/
         for (ih = 29; ih <= 36; ih++) {
           ih2 = ih - 28;
           fh1 = atand(sind(a * ih2 / 9) / tane);
-          rectasc = sl.swe_degnorm(180 - ih2 * 90 / 9 + th);
+          rectasc = SwissLib.swe_degnorm(180 - ih2 * 90 / 9 + th);
           tant = tand(asind(sine * sind(Asc1 (rectasc, fh1, sine, cose))));
           if (SMath.abs(tant) < VERY_SMALL) {
             hsp.cusp[ih] = rectasc;
@@ -1084,12 +1068,12 @@ class SweHouse
             hsp.cusp[ih] = Asc1 (rectasc, f, sine, cose);
             }
           }
-          hsp.cusp[ih-18] = sl.swe_degnorm(hsp.cusp[ih] + 180);
+          hsp.cusp[ih-18] = SwissLib.swe_degnorm(hsp.cusp[ih] + 180);
         }
         hsp.cusp[1] = hsp.ac;
         hsp.cusp[10] = hsp.mc;
-        hsp.cusp[19] = sl.swe_degnorm(hsp.ac + 180);
-        hsp.cusp[28] = sl.swe_degnorm(hsp.mc + 180);
+        hsp.cusp[19] = SwissLib.swe_degnorm(hsp.ac + 180);
+        hsp.cusp[28] = SwissLib.swe_degnorm(hsp.mc + 180);
         break;
         }
       case 'U': /* Krusinski-Pisa */
@@ -1133,20 +1117,20 @@ class SweHouse
         /*
          * within polar circle we swap AC/DC if AC is on wrong side
          */
-        acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+        acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
         if (acmc < 0) {
-          hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+          hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
         }
         /* A0. Start point - ecliptic coords of ascendant */
         x[0] = hsp.ac; /* Asc longitude   */
         x[1] = 0.0;     /* Asc declination */
         x[2] = 1.0;     /* Radius to test validity of subsequent transformations. */
-        sl.swe_cotrans(x, x, -ekl);      /* A1. Transform into equatorial coords */
+        SwissLib.swe_cotrans(x, x, -ekl);      /* A1. Transform into equatorial coords */
         x[0] = x[0] - (th-90);        /* A2. Rotate                           */
-        sl.swe_cotrans(x, x, -(90-fi));  /* A3. Transform into horizontal coords */
+        SwissLib.swe_cotrans(x, x, -(90-fi));  /* A3. Transform into horizontal coords */
         krHorizonLon = x[0];          /* ...save asc lon on horizon to get back later with house cusp */
         x[0] = x[0] - x[0];           /* A4. Rotate                           */
-        sl.swe_cotrans(x, x, -90);       /* A5. Transform into this house system great circle (asc-zenith) */
+        SwissLib.swe_cotrans(x, x, -90);       /* A5. Transform into this house system great circle (asc-zenith) */
         /* As it is house circle now, simple add 30 deg increments... */
         for(i = 0; i < 6; i++) {
           /* B0. Set 'n-th' house cusp. 
@@ -1154,17 +1138,17 @@ class SweHouse
            *     if really this is the asc-zenith great circle. */
           x[0] = 30.0*i;
           x[1] = 0.0;
-          sl.swe_cotrans(x, x, 90);                 /* B1. Transform back into horizontal coords */
+          SwissLib.swe_cotrans(x, x, 90);                 /* B1. Transform back into horizontal coords */
           x[0] = x[0] + krHorizonLon;            /* B2. Rotate back.                          */
-          sl.swe_cotrans(x, x, 90-fi);              /* B3. Transform back into equatorial coords */
-          x[0] = sl.swe_degnorm(x[0] + (th-90));    /* B4. Rotate back -> RA of house cusp as result. */
+          SwissLib.swe_cotrans(x, x, 90-fi);              /* B3. Transform back into equatorial coords */
+          x[0] = SwissLib.swe_degnorm(x[0] + (th-90));    /* B4. Rotate back -> RA of house cusp as result. */
           /* B5. Where's this house cusp on ecliptic? */
           /* ... so last but not least - get ecliptic longitude of house cusp: */
           hsp.cusp[i+1] = atand(tand(x[0])/cosd(ekl));
           if (x[0] > 90 && x[0] <= 270)
-            hsp.cusp[i+1] = sl.swe_degnorm(hsp.cusp[i+1] + 180);
-          hsp.cusp[i+1] = sl.swe_degnorm(hsp.cusp[i+1]);
-          hsp.cusp[i+7] = sl.swe_degnorm(hsp.cusp[i+1]+180);
+            hsp.cusp[i+1] = SwissLib.swe_degnorm(hsp.cusp[i+1] + 180);
+          hsp.cusp[i+1] = SwissLib.swe_degnorm(hsp.cusp[i+1]);
+          hsp.cusp[i+7] = SwissLib.swe_degnorm(hsp.cusp[i+1]+180);
         }
         break;
       case 'Y':     /* APC houses */
@@ -1178,12 +1162,12 @@ class SweHouse
          * must be added 180 degrees. 
          * houses will be in clockwise direction */
         if (SMath.abs(fi) >= 90 - ekl) {  /* within polar circle */
-          acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+          acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
           if (acmc < 0) {
-            hsp.ac = sl.swe_degnorm(hsp.ac + 180);
-            hsp.mc = sl.swe_degnorm(hsp.mc + 180);
+            hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
+            hsp.mc = SwissLib.swe_degnorm(hsp.mc + 180);
 	    for (i = 1; i <= 12; i++)
-	      hsp.cusp[i] = sl.swe_degnorm(hsp.cusp[i] + 180);
+	      hsp.cusp[i] = SwissLib.swe_degnorm(hsp.cusp[i] + 180);
           }
         }
         break;
@@ -1201,7 +1185,7 @@ class SweHouse
         fh1 = atand(sind(a / 3) / tane);
         fh2 = atand(sind(a * 2 / 3) / tane);
         /* ************  house 11 ******************** */
-        rectasc = sl.swe_degnorm(30 + th);
+        rectasc = SwissLib.swe_degnorm(30 + th);
         tant = tand(asind(sine * sind(Asc1 (rectasc, fh1, sine, cose))));
         if (SMath.abs(tant) < VERY_SMALL) {
           hsp.cusp [11] = rectasc;
@@ -1221,7 +1205,7 @@ class SweHouse
           }
         }
         /* ************  house 12 ******************** */
-        rectasc = sl.swe_degnorm(60 + th);
+        rectasc = SwissLib.swe_degnorm(60 + th);
         tant = tand(asind(sine*sind(Asc1 (rectasc,  fh2, sine, cose))));
         if (SMath.abs(tant) < VERY_SMALL) {
           hsp.cusp [12] = rectasc;
@@ -1241,7 +1225,7 @@ class SweHouse
           }
         }
         /* ************  house  2 ******************** */
-        rectasc = sl.swe_degnorm(120 + th);
+        rectasc = SwissLib.swe_degnorm(120 + th);
         tant = tand(asind(sine * sind(Asc1 (rectasc, fh2, sine, cose))));
         if (SMath.abs(tant) < VERY_SMALL) {
           hsp.cusp [2] = rectasc;
@@ -1261,7 +1245,7 @@ class SweHouse
           }
         }
         /* ************  house  3 ******************** */
-        rectasc = sl.swe_degnorm(150 + th);
+        rectasc = SwissLib.swe_degnorm(150 + th);
         tant = tand(asind(sine * sind(Asc1 (rectasc, fh1, sine, cose))));
         if (SMath.abs(tant) < VERY_SMALL) {
           hsp.cusp [3] = rectasc;
@@ -1283,12 +1267,12 @@ class SweHouse
         break;
     } /* end switch */
     if (hsy != 'G' && hsy != 'Y') {
-      hsp.cusp [4] = sl.swe_degnorm(hsp.cusp [10] + 180);
-      hsp.cusp [5] = sl.swe_degnorm(hsp.cusp [11] + 180);
-      hsp.cusp [6] = sl.swe_degnorm(hsp.cusp [12] + 180);
-      hsp.cusp [7] = sl.swe_degnorm(hsp.cusp [1] + 180);
-      hsp.cusp [8] = sl.swe_degnorm(hsp.cusp [2] + 180);
-      hsp.cusp [9] = sl.swe_degnorm(hsp.cusp [3] + 180);
+      hsp.cusp [4] = SwissLib.swe_degnorm(hsp.cusp [10] + 180);
+      hsp.cusp [5] = SwissLib.swe_degnorm(hsp.cusp [11] + 180);
+      hsp.cusp [6] = SwissLib.swe_degnorm(hsp.cusp [12] + 180);
+      hsp.cusp [7] = SwissLib.swe_degnorm(hsp.cusp [1] + 180);
+      hsp.cusp [8] = SwissLib.swe_degnorm(hsp.cusp [2] + 180);
+      hsp.cusp [9] = SwissLib.swe_degnorm(hsp.cusp [3] + 180);
     }
     /* vertex */
     if (fi >= 0) {
@@ -1301,22 +1285,22 @@ class SweHouse
      * in a similar way as the ascendant within the polar
      * circle. we keep it always on the western hemisphere.*/
     if (SMath.abs(fi) <= ekl) {
-      vemc = sl.swe_difdeg2n(hsp.vertex, hsp.mc);
+      vemc = SwissLib.swe_difdeg2n(hsp.vertex, hsp.mc);
       if (vemc > 0) {
-        hsp.vertex = sl.swe_degnorm(hsp.vertex + 180);
+        hsp.vertex = SwissLib.swe_degnorm(hsp.vertex + 180);
       }
     }
     /*
      * some strange points:
      */
     /* equasc (equatorial ascendant) */
-    th2 = sl.swe_degnorm(th + 90);
+    th2 = SwissLib.swe_degnorm(th + 90);
     if (SMath.abs(th2 - 90) > VERY_SMALL
       && SMath.abs(th2 - 270) > VERY_SMALL) {
       tant = tand(th2);
       hsp.equasc = atand(tant / cose);
       if (th2 > 90 && th2 <= 270) {
-        hsp.equasc = sl.swe_degnorm(hsp.equasc + 180);
+        hsp.equasc = SwissLib.swe_degnorm(hsp.equasc + 180);
       }
     } else {
       if (SMath.abs(th2 - 90) <= VERY_SMALL) {
@@ -1325,9 +1309,9 @@ class SweHouse
         hsp.equasc = 270;
       }
     } /*  if */
-    hsp.equasc = sl.swe_degnorm(hsp.equasc);
+    hsp.equasc = SwissLib.swe_degnorm(hsp.equasc);
     /* "co-ascendant" W. Koch */
-    hsp.coasc1 = sl.swe_degnorm(Asc1 (th - 90, fi, sine, cose) + 180);
+    hsp.coasc1 = SwissLib.swe_degnorm(Asc1 (th - 90, fi, sine, cose) + 180);
     /* "co-ascendant" M. Munkasey */
     if (fi >= 0) {
       hsp.coasc2 = Asc1 (th + 90, 90 - fi, sine, cose);
@@ -1347,23 +1331,23 @@ class SweHouse
     /*
      * within polar circle we swap AC/DC if AC is on wrong side
      */
-    double acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+    double acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
     if (acmc < 0) {
-      hsp.ac = sl.swe_degnorm(hsp.ac + 180);
+      hsp.ac = SwissLib.swe_degnorm(hsp.ac + 180);
       hsp.cusp[1] = hsp.ac;
-      acmc = sl.swe_difdeg2n(hsp.ac, hsp.mc);
+      acmc = SwissLib.swe_difdeg2n(hsp.ac, hsp.mc);
     }
-    hsp.cusp [2] = sl.swe_degnorm(hsp.ac + (180 - acmc) / 3);
-    hsp.cusp [3] = sl.swe_degnorm(hsp.ac + (180 - acmc) / 3 * 2);
-    hsp.cusp [11] = sl.swe_degnorm(hsp.mc + acmc / 3);
-    hsp.cusp [12] = sl.swe_degnorm(hsp.mc + acmc / 3 * 2);
+    hsp.cusp [2] = SwissLib.swe_degnorm(hsp.ac + (180 - acmc) / 3);
+    hsp.cusp [3] = SwissLib.swe_degnorm(hsp.ac + (180 - acmc) / 3 * 2);
+    hsp.cusp [11] = SwissLib.swe_degnorm(hsp.mc + acmc / 3);
+    hsp.cusp [12] = SwissLib.swe_degnorm(hsp.mc + acmc / 3 * 2);
   }
 
   /******************************/
   private double Asc1 (double x1, double f, double sine, double cose) {
     int n;
     double ass;
-    x1 = sl.swe_degnorm(x1);
+    x1 = SwissLib.swe_degnorm(x1);
     n  = (int) ((x1 / 90) + 1);
     if (n == 1) {
       ass = ( Asc2 (x1, f, sine, cose));
@@ -1374,7 +1358,7 @@ class SweHouse
     } else {
       ass = (360 - Asc2 (360- x1,  f, sine, cose));
     }
-    ass = sl.swe_degnorm(ass);
+    ass = SwissLib.swe_degnorm(ass);
     if (SMath.abs(ass - 90) < VERY_SMALL)        /* rounding, e.g.: if */ {
       ass = 90;                           /* fi = 0 & st = 0, ac = 89.999... */
     }
@@ -1485,11 +1469,11 @@ class SweHouse
     xeq[0] = xpin[0];
     xeq[1] = xpin[1];
     xeq[2] = 1;
-    sl.swe_cotrans(xpin, 0, xeq, 0, -eps);
+    SwissLib.swe_cotrans(xpin, 0, xeq, 0, -eps);
     ra = xeq[0];
     de = xeq[1];
-    mdd = sl.swe_degnorm(ra - armc);
-    mdn = sl.swe_degnorm(mdd + 180);
+    mdd = SwissLib.swe_degnorm(ra - armc);
+    mdn = SwissLib.swe_degnorm(mdd + 180);
     if (mdd >= 180) {
       mdd -= 360;
     }
@@ -1502,37 +1486,37 @@ class SweHouse
       case 'E':
       case 'V':
       case 'W':
-        asc = Asc1 (sl.swe_degnorm(armc + 90), geolat, sine, cose);
+        asc = Asc1 (SwissLib.swe_degnorm(armc + 90), geolat, sine, cose);
         demc = atand(sind(armc) * tand(eps));
         if (geolat >= 0 && 90 - geolat + demc < 0) {
-          asc = sl.swe_degnorm(asc + 180);
+          asc = SwissLib.swe_degnorm(asc + 180);
         }
         if (geolat < 0 && -90 - geolat + demc > 0) {
-          asc = sl.swe_degnorm(asc + 180);
+          asc = SwissLib.swe_degnorm(asc + 180);
         }
-        xp[0] = sl.swe_degnorm(xpin[0] - asc);
+        xp[0] = SwissLib.swe_degnorm(xpin[0] - asc);
         if (hsys == 'V') {
-          xp[0] = sl.swe_degnorm(xp[0] + 15);
+          xp[0] = SwissLib.swe_degnorm(xp[0] + 15);
         }
         if (hsys == 'W') {
-          xp[0] = sl.swe_degnorm(xp[0] + (asc % 30));
+          xp[0] = SwissLib.swe_degnorm(xp[0] + (asc % 30));
         }
         /* to make sure that a call with a house cusp position returns
          * a value within the house, 0.001" is added */
-        xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+        xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
         hpos = xp[0] / 30.0 + 1;
       break;
       case 'O':  /* Porphyry */
       case 'B':  /* Alcabitius */
-        asc = Asc1 (sl.swe_degnorm(armc + 90), geolat, sine, cose);
+        asc = Asc1 (SwissLib.swe_degnorm(armc + 90), geolat, sine, cose);
         demc = atand(sind(armc) * tand(eps));
         /* mc */
         if (SMath.abs(armc - 90) > VERY_SMALL
                 && SMath.abs(armc - 270) > VERY_SMALL) {
           tant = tand(armc);
-          mc = sl.swe_degnorm(atand(tant / cose));
+          mc = SwissLib.swe_degnorm(atand(tant / cose));
           if (armc > 90 && armc <= 270) {
-            mc = sl.swe_degnorm(mc + 180);
+            mc = SwissLib.swe_degnorm(mc + 180);
           }
         } else {
           if (SMath.abs(armc - 90) <= VERY_SMALL) {
@@ -1544,23 +1528,23 @@ class SweHouse
         /* while MC is always south,
          * Asc must always be in eastern hemisphere */
         if (geolat >= 0 && 90 - geolat + demc < 0) {
-          asc = sl.swe_degnorm(asc + 180);
+          asc = SwissLib.swe_degnorm(asc + 180);
         }
         if (geolat < 0 && -90 - geolat + demc > 0) {
-          asc = sl.swe_degnorm(asc + 180);
+          asc = SwissLib.swe_degnorm(asc + 180);
         }
         if (hsys ==  'O') {
-          xp[0] = sl.swe_degnorm(xpin[0] - asc);
+          xp[0] = SwissLib.swe_degnorm(xpin[0] - asc);
           /* to make sure that a call with a house cusp position returns
            * a value within the house, 0.001" is added */
-          xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+          xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
           if (xp[0] < 180) {
             hpos = 1;
           } else {
             hpos = 7;
             xp[0] -= 180;
           }
-          acmc = sl.swe_difdeg2n(asc, mc);
+          acmc = SwissLib.swe_difdeg2n(asc, mc);
           if (xp[0] < 180 - acmc) {
             hpos += xp[0] * 3 / (180 - acmc);
           } else {
@@ -1589,12 +1573,12 @@ class SweHouse
             else
               hpos = 270 + (mdd + sna) * 90 / sda;
           }
-          hpos = sl.swe_degnorm(hpos - 90) / 30.0 + 1.0;
+          hpos = SwissLib.swe_degnorm(hpos - 90) / 30.0 + 1.0;
           if (hpos >= 13.0) hpos -= 12;
         }
       break;
       case 'X': /* Merdidian or axial rotation system */
-        hpos = sl.swe_degnorm(mdd - 90) / 30.0 + 1.0;
+        hpos = SwissLib.swe_degnorm(mdd - 90) / 30.0 + 1.0;
       break;
       case 'M': { /* Morinus */
         double am = xpin[0];
@@ -1603,7 +1587,7 @@ class SweHouse
           tant = tand(am);
           hpos = atand(tant / cose);
           if (am > 90 && am <= 270) {
-            hpos = sl.swe_degnorm(hpos + 180);
+            hpos = SwissLib.swe_degnorm(hpos + 180);
           }
         } else {
           if (SMath.abs(am - 90) <= VERY_SMALL) {
@@ -1612,7 +1596,7 @@ class SweHouse
             hpos = 270;
           }
         } /*  if */
-        hpos = sl.swe_degnorm(hpos - armc - 90);
+        hpos = SwissLib.swe_degnorm(hpos - armc - 90);
         hpos = hpos / 30.0 + 1;
       }
       break;
@@ -1653,15 +1637,15 @@ class SweHouse
         if (SMath.abs(samc) > 0) {
           if (mdd >= 0) { /* east */
             dfac = (mdd - adp + admc) / samc;
-            xp[0] = sl.swe_degnorm((dfac - 1) * 90);
-            xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+            xp[0] = SwissLib.swe_degnorm((dfac - 1) * 90);
+            xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
             /* eastern object has longer SA than midheaven */
             if (dfac > 2 || dfac < 0)
               is_invalid = true; /* if this is omitted, funny things happen */
           } else {
             dfac = (mdd + 180 + adp + admc) / samc;
-            xp[0] = sl.swe_degnorm((dfac + 1) * 90);
-            xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+            xp[0] = SwissLib.swe_degnorm((dfac + 1) * 90);
+            xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
             /* western object has longer SA than midheaven */
             if (dfac > 2 || dfac < 0)
               is_invalid = true; /* if this is omitted, funny things happen */
@@ -1687,11 +1671,11 @@ class SweHouse
         hpos = xp[0] / 30.0 + 1;
         break;
       case 'C':
-        xeq[0] = sl.swe_degnorm(mdd - 90);
-        sl.swe_cotrans(xeq, 0, xp, 0, -geolat);
+        xeq[0] = SwissLib.swe_degnorm(mdd - 90);
+        SwissLib.swe_cotrans(xeq, 0, xp, 0, -geolat);
         /* to make sure that a call with a house cusp position returns
          * a value within the house, 0.001" is added */
-        xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+        xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
         hpos = xp[0] / 30.0 + 1;
         break;
       case 'U': /* Krusinski-Pisa-Goelzer */
@@ -1699,15 +1683,15 @@ class SweHouse
          * cuts house plane, giving exact planet's house position.
          * Input data: ramc, geolat, asc.
          */
-        asc = Asc1 (sl.swe_degnorm(armc + 90), geolat, sine, cose);
+        asc = Asc1 (SwissLib.swe_degnorm(armc + 90), geolat, sine, cose);
         demc = atand(sind(armc) * tand(eps));
         /* while MC is always south, 
          * Asc must always be in eastern hemisphere */
         if (geolat >= 0 && 90 - geolat + demc < 0) {
-          asc = sl.swe_degnorm(asc + 180);
+          asc = SwissLib.swe_degnorm(asc + 180);
         }
         if (geolat < 0 && -90 - geolat + demc > 0) {
-          asc = sl.swe_degnorm(asc + 180);
+          asc = SwissLib.swe_degnorm(asc + 180);
         }
         /*
          * Descr: find the house plane 'asc-zenith' - where it intersects 
@@ -1719,21 +1703,21 @@ class SweHouse
          *   solve spherical triangle 'EP-asc-intersection of house circle with equator' */
         /* Ia. Find intersection of house plane with equator: */
         x[0] = asc; x[1] = 0.0; x[2] = 1.0;          /* 1. Start with ascendant on ecliptic     */
-        sl.swe_cotrans(x, x, -eps);                     /* 2. Transform asc into equatorial coords */
-        raep = sl.swe_degnorm(armc + 90);               /* 3. RA of east point                     */
-        x[0] = sl.swe_degnorm(raep - x[0]);             /* 4. Rotation - found arc raas-raep      */
-        sl.swe_cotrans(x, x, -(90-geolat));             /* 5. Transform into horizontal coords - arc EP-asc on horizon */
+        SwissLib.swe_cotrans(x, x, -eps);                     /* 2. Transform asc into equatorial coords */
+        raep = SwissLib.swe_degnorm(armc + 90);               /* 3. RA of east point                     */
+        x[0] = SwissLib.swe_degnorm(raep - x[0]);             /* 4. Rotation - found arc raas-raep      */
+        SwissLib.swe_cotrans(x, x, -(90-geolat));             /* 5. Transform into horizontal coords - arc EP-asc on horizon */
         xtemp = atand(tand(x[0])/cosd((90-geolat))); /* 6. Rotation from horizon on circle perpendicular to equator */
         if (x[0] > 90 && x[0] <= 270)
-        xtemp = sl.swe_degnorm(xtemp + 180);
-        x[0] = sl.swe_degnorm(xtemp);        
-        raaz = sl.swe_degnorm(raep - x[0]); /* result: RA of intersection 'asc-zenith' great circle with equator */
+        xtemp = SwissLib.swe_degnorm(xtemp + 180);
+        x[0] = SwissLib.swe_degnorm(xtemp);
+        raaz = SwissLib.swe_degnorm(raep - x[0]); /* result: RA of intersection 'asc-zenith' great circle with equator */
         /* Ib. Find obliquity to equator of 'asc-zenith' house plane: */
         x[0] = raaz; x[1] = 0.0; 
-        x[0] = sl.swe_degnorm(raep - x[0]);  /* 1. Rotate start point relative to EP   */
-        sl.swe_cotrans(x, x, -(90-geolat));  /* 2. Transform into horizontal coords    */
+        x[0] = SwissLib.swe_degnorm(raep - x[0]);  /* 1. Rotate start point relative to EP   */
+        SwissLib.swe_cotrans(x, x, -(90-geolat));  /* 2. Transform into horizontal coords    */
         x[1] = x[1] + 90;                 /* 3. Add 90 deg do decl - so get the point on house plane most distant from equ. */
-        sl.swe_cotrans(x, x, 90-geolat);     /* 4. Rotate back to equator              */
+        SwissLib.swe_cotrans(x, x, 90-geolat);     /* 4. Rotate back to equator              */
         oblaz = x[1];                     /* 5. Obliquity of house plane to equator */
         /* II. Next find asc and planet position on house plane, 
          *     so to find relative distance of planet from 
@@ -1741,36 +1725,36 @@ class SweHouse
         /* IIa. Asc on house plane relative to intersection 
          *      of equator with 'asc-zenith' plane. */
         xasc[0] = asc; xasc[1] = 0.0; xasc[2] = 1.0;
-        sl.swe_cotrans(xasc, xasc, -eps);
-        xasc[0] = sl.swe_degnorm(xasc[0] - raaz);
+        SwissLib.swe_cotrans(xasc, xasc, -eps);
+        xasc[0] = SwissLib.swe_degnorm(xasc[0] - raaz);
         xtemp = atand(tand(xasc[0])/cosd(oblaz));
         if (xasc[0] > 90 && xasc[0] <= 270)
-        xtemp = sl.swe_degnorm(xtemp + 180);
-        xasc[0] = sl.swe_degnorm(xtemp);
+        xtemp = SwissLib.swe_degnorm(xtemp + 180);
+        xasc[0] = SwissLib.swe_degnorm(xtemp);
         /* IIb. Planet on house plane relative to intersection 
          *      of equator with 'asc-zenith' plane */
-        xp[0] = sl.swe_degnorm(xeq[0] - raaz);        /* Rotate on equator  */
+        xp[0] = SwissLib.swe_degnorm(xeq[0] - raaz);        /* Rotate on equator  */
         xtemp = atand(tand(xp[0])/cosd(oblaz));    /* Find arc on house plane from equator */
         if (xp[0] > 90 && xp[0] <= 270)
-          xtemp = sl.swe_degnorm(xtemp + 180);
-        xp[0] = sl.swe_degnorm(xtemp);
-        xp[0] = sl.swe_degnorm(xp[0]-xasc[0]); /* find arc between asc and planet, and get planet house position  */
+          xtemp = SwissLib.swe_degnorm(xtemp + 180);
+        xp[0] = SwissLib.swe_degnorm(xtemp);
+        xp[0] = SwissLib.swe_degnorm(xp[0]-xasc[0]); /* find arc between asc and planet, and get planet house position  */
         /* IIc. Distance from planet to house plane on declination circle: */
         x[0] = xeq[0];
         x[1] = xeq[1];
-        sl.swe_cotrans(x, x, oblaz);
+        SwissLib.swe_cotrans(x, x, oblaz);
         xp[1] = xeq[1] - x[1]; /* How many degrees is the point on declination circle from house circle */
         /* to make sure that a call with a house cusp position returns
          * a value within the house, 0.001" is added */
-        xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+        xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
         hpos = xp[0] / 30.0 + 1;
         break;
       case 'H':
-        xeq[0] = sl.swe_degnorm(mdd - 90);
-        sl.swe_cotrans(xeq, 0, xp, 0, 90 - geolat);
+        xeq[0] = SwissLib.swe_degnorm(mdd - 90);
+        SwissLib.swe_cotrans(xeq, 0, xp, 0, 90 - geolat);
         /* to make sure that a call with a house cusp position returns
          * a value within the house, 0.001" is added */
-        xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+        xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
         hpos = xp[0] / 30.0 + 1;
         break;
       case 'R':
@@ -1794,19 +1778,19 @@ class SweHouse
             }
           }
           a = tand(geolat) * tand(de) + cosd(mdd);
-          xp[0] = sl.swe_degnorm(atand(-a / sind(mdd)));
+          xp[0] = SwissLib.swe_degnorm(atand(-a / sind(mdd)));
           if (mdd < 0) {
             xp[0] += 180;
           }
-          xp[0] = sl.swe_degnorm(xp[0]);
+          xp[0] = SwissLib.swe_degnorm(xp[0]);
           /* to make sure that a call with a house cusp position returns
            * a value within the house, 0.001" is added */
-          xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+          xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
         }
         hpos = xp[0] / 30.0 + 1;
         break;
       case 'T':
-        mdd = sl.swe_degnorm(mdd);
+        mdd = SwissLib.swe_degnorm(mdd);
         if (de > 90 - VERY_SMALL) {
           de = 90 - VERY_SMALL;
         }
@@ -1822,18 +1806,18 @@ class SweHouse
         /* mirror everything below the horizon to the opposite point
          * above the horizon */
         if (!is_above_hor) {
-          ra = sl.swe_degnorm(ra + 180);
+          ra = SwissLib.swe_degnorm(ra + 180);
           de = -de;
-          mdd = sl.swe_degnorm(mdd + 180);
+          mdd = SwissLib.swe_degnorm(mdd + 180);
         }
         /* mirror everything on western hemisphere to eastern hemisphere */
         if (mdd > 180) {
-          ra = sl.swe_degnorm(armc - mdd);
+          ra = SwissLib.swe_degnorm(armc - mdd);
         }
         /* binary search for "topocentric" position line of body */
         tanfi = tand(geolat);
         fh = geolat;
-        ra0 = sl.swe_degnorm(armc + 90);
+        ra0 = SwissLib.swe_degnorm(armc + 90);
         xp[1] = 1;
         xeq[1] = de;
         fac = 2;
@@ -1845,20 +1829,20 @@ class SweHouse
             fh = atand(tand(fh) + tanfi / fac);
             ra0 += 90 / fac;
           }
-          xeq[0] = sl.swe_degnorm(ra - ra0);
-          sl.swe_cotrans(xeq, 0, xp, 0, 90 - fh);
+          xeq[0] = SwissLib.swe_degnorm(ra - ra0);
+          SwissLib.swe_cotrans(xeq, 0, xp, 0, 90 - fh);
           fac *= 2;
         }
-        hpos = sl.swe_degnorm(ra0 - armc);
+        hpos = SwissLib.swe_degnorm(ra0 - armc);
         /* mirror back to west */
         if (mdd > 180) {
-          hpos = sl.swe_degnorm(-hpos);
+          hpos = SwissLib.swe_degnorm(-hpos);
         }
         /* mirror back to below horizon */
         if (!is_above_hor) {
-          hpos = sl.swe_degnorm(hpos + 180);
+          hpos = SwissLib.swe_degnorm(hpos + 180);
         }
-        hpos = sl.swe_degnorm(hpos - 90) / 30 + 1;
+        hpos = SwissLib.swe_degnorm(hpos - 90) / 30 + 1;
         break;
       case 'P':
       case 'G':
@@ -1866,9 +1850,9 @@ class SweHouse
          /* circumpolar region */
         if (90 - SMath.abs(de) <= SMath.abs(geolat)) {
           if (de * geolat < 0) {
-            xp[0] = sl.swe_degnorm(90 + mdn / 2);
+            xp[0] = SwissLib.swe_degnorm(90 + mdn / 2);
           } else {
-            xp[0] = sl.swe_degnorm(270 + mdd / 2);
+            xp[0] = SwissLib.swe_degnorm(270 + mdd / 2);
           }
           if (serr != null) {
             serr.append("Otto Ludwig procedure within circumpolar regions.");
@@ -1889,7 +1873,7 @@ class SweHouse
           }
           /* to make sure that a call with a house cusp position returns
            * a value within the house, 0.001" is added */
-          xp[0] = sl.swe_degnorm(xp[0] + MILLIARCSEC);
+          xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
         }
         if ((char)hsys == 'G') {
           xp[0] = 360 - xp[0]; /* Gauquelin sectors are in clockwise direction */

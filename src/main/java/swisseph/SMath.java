@@ -21,7 +21,7 @@ package swisseph;
  * Helper class mapping all mathematical functions and constants to
  * the java.lang.StrictMath class.
  */
-public class SMath
+public final class SMath
 		implements java.io.Serializable
 		{
   public static final double E = StrictMath.E;

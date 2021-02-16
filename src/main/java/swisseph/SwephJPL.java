@@ -80,9 +80,9 @@
 package swisseph;
 
 
-class SwephJPL
-		implements java.io.Serializable
-		{
+class SwephJPL implements java.io.Serializable {
+  private static final long serialVersionUID = -6293880053650971210L;
+
   static final int J_MERCURY =  0;
   static final int J_VENUS   =  1;
   static final int J_EARTH   =  2;
@@ -99,24 +99,16 @@ class SwephJPL
   static final int J_NUT     = 13;
   static final int J_LIB     = 14;
 
-  JplSave js=new JplSave();
-
-
-  SwissEph  sw=null;
-  SwissData swed=null;
-  SwissLib  sl=null;
-
-
+  JplSave js = new JplSave();
+  final SwissData swed;
+  final SwissEph  sw;
+  final SwissLib  sl;
 
   SwephJPL(SwissEph sw, SwissData swed, SwissLib sl) {
-    this.sw=sw;
-    this.swed=swed;
-    this.sl=sl;
-    if (this.sw==null) { this.sw=new SwissEph(); }
-    if (this.swed==null) { this.swed=new SwissData(); }
-    if (this.sl==null) { this.sl=new SwissLib(); }
+    this.swed = swed;
+    this.sw = sw;
+    this.sl = sl;
   }
-
 
   /*
    * This subroutine opens the file jplfname, with a phony record length,
@@ -890,7 +882,7 @@ class SwephJPL
         if (js.jplfptr != null) {
           js.jplfptr.close();
         }
-      } catch (java.io.IOException e) {
+      } catch (java.io.IOException ignored) {
       }
       if (js.jplfname != null) {
         js.jplfname = null;
@@ -977,27 +969,30 @@ class SwephJPL
       }
     } catch (SwissephException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (Exception ignored) {
     }
-    try { fp.close(); } catch (Exception e) { }
+    try { fp.close(); } catch (Exception ignored) { }
     return new double[]{start, end};
   }
-  
+
   static final class JplSave implements java.io.Serializable {
-        String jplfname=null;
-        String jplfpath=null;
-        FilePtr jplfptr=null;
-        //boolean do_reorder;
-        double eh_cval[]=new double[400];
-        double eh_ss[]=new double[3], eh_au, eh_emrat;
-        int eh_denum, eh_ncon, eh_ipt[]=new int[39];
-        String ch_cnam="";
-        double pv[]=new double[78];
-        double pvsun[]=new double[6];
-        double buf[]=new double[1500];
-        double pc[]=new double[18], vc[]=new double[18],
-           ac[]=new double[18], jc[]=new double[18];
-        boolean do_km;
-    }
+    private static final long serialVersionUID = -4651372800336643854L;
+
+    String jplfname = null;
+    String jplfpath = null;
+    FilePtr jplfptr = null;
+    //boolean do_reorder;
+    final double eh_cval[] = new double[400];
+    final double eh_ss[] = new double[3];
+    double eh_au, eh_emrat;
+    int eh_denum, eh_ncon, eh_ipt[] = new int[39];
+    String ch_cnam = "";
+    final double pv[] = new double[78];
+    final double pvsun[] = new double[6];
+    final double buf[] = new double[1500];
+    final double pc[] = new double[18], vc[] = new double[18],
+            ac[] = new double[18], jc[] = new double[18];
+    boolean do_km;
+  }
 }
 

@@ -68,6 +68,7 @@
 */
 package swisseph;
 
+import org.swisseph.ISwissEph;
 import org.swisseph.api.ISweJulianDate;
 
 import java.io.Serializable;

@@ -21,17 +21,7 @@ import java.util.TimeZone;
 * These methods are not available in the original Swiss
 * Ephemeris package.
 */
-public class Extlib
-		implements java.io.Serializable
-		{
-
-  double transitVal = 0.;
-  SimpleDateFormat df = null;
-  String decTimeSeparator = ".";
-  String decNumSeparator = ".";
-  int secondsIdx = 0;
-
-
+public class Extlib implements java.io.Serializable {
 
   /**
   * This class contains some additional method not contained
@@ -39,7 +29,7 @@ public class Extlib
   * Currently, these methods deal with internationalization
   * primarily.
   */
-  public Extlib() { }
+  private Extlib() { }
 
   /**
   * This method is for debugging purposes only.
@@ -55,7 +45,7 @@ public class Extlib
   * This method returns all available locale strings
   * @return array of locale names like en_US etc.
   */
-  public String[] getLocales() {
+  public static String[] getLocales() {
     Locale[] locs = DateFormat.getAvailableLocales();
     String[] locStrings = new String[locs.length + 1]; // All locales plus "iso" locale (YYYY-MM-DD)
 
@@ -81,7 +71,7 @@ public class Extlib
   * return the requested locale.
   * @return The locale
   */
-  public Locale getLocale(String locString) {
+  public static Locale getLocale(String locString) {
     String lang = locString;
     String cntry = "";
     String variant = "";
@@ -155,7 +145,7 @@ public class Extlib
   * @param force24h Force the use of the 24 hour date format even on 12h date formats
   * @return The normalized form of the DateFormat.
   */
-  public SimpleDateFormat createLocDateTimeFormatter(String locString, boolean force24h) {
+  public static SimpleDateFormat createLocDateTimeFormatter(String locString, boolean force24h) {
 
     // Get date format:
     Locale loc;
@@ -185,7 +175,7 @@ public class Extlib
   * @param force24h Force the use of the 24 hour date format even on 12h date formats
   * @return The normalized form of the DateFormat.
   */
-  public String getNormalizedDatePattern(String pattern, boolean force24h) {
+  public static String getNormalizedDatePattern(String pattern, boolean force24h) {
     int idx = 0;
 //System.out.println(pattern);
 
@@ -245,7 +235,7 @@ public class Extlib
   * @param nf NumberFormat for which the decimal separator should be retrieved
   * @return Decimal separator for this NumberFormat
   */
-  public String getDecimalSeparator(NumberFormat nf) {
+  public static String getDecimalSeparator(NumberFormat nf) {
     if (nf instanceof DecimalFormat) {
       return String.valueOf(((DecimalFormat)nf).getDecimalFormatSymbols().getDecimalSeparator());
     }
@@ -264,7 +254,7 @@ public class Extlib
   * @param dof The DateFormat to be used
   * @return Index after 'what' string in pattern
   */
-  public int getPatternLastIdx(String pattern, String what, SimpleDateFormat dof) {
+  public static int getPatternLastIdx(String pattern, String what, SimpleDateFormat dof) {
     // If we want to append fractions of a second, we have to know
     // at which position in the string this is to happen. We can
     // look for the "ss" part in the pattern string, but the pattern

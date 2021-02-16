@@ -101,9 +101,8 @@ import java.util.StringTokenizer;
 * sidereal time) and swe_degnorm() (normalize a position to the range of
 * 0.0&nbsp;&lt;=&nbsp;x&nbsp;&lt;&nbsp;360.0) and others.
 */
-public class SwissLib
-		implements java.io.Serializable
-		{
+public class SwissLib implements java.io.Serializable {
+  private static final long serialVersionUID = 7877862627506029987L;
 
   static final double PREC_IAU_1976_CTIES	= 2.0;        /* J2000 +/- two centuries */
   static final double PREC_IAU_2000_CTIES	= 2.0;        /* J2000 +/- two centuries */
@@ -123,6 +122,7 @@ public class SwissLib
   public static final String DPSI_DEPS_IAU1980_FILE_FINALS  = "eop_finals.txt";
   public static final double DPSI_DEPS_IAU1980_TJD0_HORIZONS = 2437684.5;
   public static final double HORIZONS_TJD0_DPSI_DEPS_IAU1980 = 2437684.5;
+
   /* public static final boolean INCLUDE_CODE_FOR_DPSI_DEPS_IAU1980  = true; */
 
   /* public static final boolean INCLUDE_CODE_FOR_DPSI_DEPS_IAU1980  = true; */
@@ -171,23 +171,17 @@ public class SwissLib
    * 20-jan-1962 and current years.
    */
 
-  SwissData swed;
-
-  // Konstruktor(en):
-  public SwissLib() {
-    this(null);
-  }
+  final SwissData swed;
 
   public SwissLib(SwissData swed) {
-    this.swed=swed;
-    if (this.swed ==null) { this.swed=new SwissData(); }
+    this.swed = swed;
   }
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Public methods: ///////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-  public double square_sum(double x[]) {
+  public static double square_sum(double x[]) {
 ////#ifdef TRACE0
 //    Trace.level++;
 //    Trace.log("SwissLib.square_sum(double[])");
@@ -199,7 +193,7 @@ public class SwissLib
     return x[0]*x[0]+x[1]*x[1]+x[2]*x[2];
   }
 
-  public double square_sum(double x[], int offset) {
+  public static double square_sum(double x[], int offset) {
 ////#ifdef TRACE0
 //    Trace.level++;
 //    Trace.log("SwissLib.square_sum(double[], int)");
@@ -221,7 +215,7 @@ public class SwissLib
   * @param x input double
   * @return normalized value to a range of 0 .. &lt; 360
   */
-  public double swe_degnorm(double x) {
+  public static double swe_degnorm(double x) {
     double y;
     y = x%360.0;
     if (SMath.abs(y) < 1e-13) {
@@ -241,7 +235,7 @@ public class SwissLib
   * @param x input double
   * @return normalized value to a range of 0 .. &lt; 2*PI
   */
-  public double swe_radnorm(double x) {
+  public static double swe_radnorm(double x) {
     double y;
     y = x % SwephData.TWOPI;
     if (SMath.abs(y) < 1e-13) {
@@ -255,7 +249,7 @@ public class SwissLib
 // Well: used by Swetest.java... //#endif /* ASTROLOGY */
 
 // Well: used by Swetest.java... //#ifndef ASTROLOGY
-  public double swe_deg_midp(double x1, double x0) {
+  public static double swe_deg_midp(double x1, double x0) {
     double d, y;
     d = swe_difdeg2n(x1, x0);	/* arc from x0 to x1 */
     y = swe_degnorm(x0 + d / 2);
@@ -264,14 +258,14 @@ public class SwissLib
 // Well: used by Swetest.java... //#endif /* ASTROLOGY */
 
 // Well: used by Swetest.java... //#ifndef ASTROLOGY
-  public double swe_rad_midp(double x1, double x0) {
+  public static double swe_rad_midp(double x1, double x0) {
     return SwissData.DEGTORAD * swe_deg_midp(x1 * SwissData.RADTODEG, x0 * SwissData.RADTODEG);
   }
 // Well: used by Swetest.java... //#endif /* ASTROLOGY */
 
   /* Reduce x modulo 2*PI
    */
-  public double swi_mod2PI(double x) {
+  public static double swi_mod2PI(double x) {
     double y;
     y = x%SwephData.TWOPI;
     if( y < 0.0 ) {
@@ -281,7 +275,7 @@ public class SwissLib
   }
 
 
-  public double swi_angnorm(double x) {
+  public static double swi_angnorm(double x) {
     if (x < 0.0 ) {
       return x + SwephData.TWOPI;
     } else if (x >= SwephData.TWOPI) {
@@ -291,7 +285,7 @@ public class SwissLib
     }
   }
 
-  public void swi_cross_prod(double a[], int aOffs, double b[], int bOffs,
+  public static void swi_cross_prod(double a[], int aOffs, double b[], int bOffs,
                              double x[], int xOffs) {
     x[0+xOffs] = a[1+aOffs]*b[2+bOffs] - a[2+aOffs]*b[1+bOffs];
     x[1+xOffs] = a[2+aOffs]*b[0+bOffs] - a[0+aOffs]*b[2+bOffs];
@@ -302,7 +296,7 @@ public class SwissLib
    *  with ncf terms at x in [-1,1]. Communications of the ACM, algorithm 446,
    *  April 1973 (vol. 16 no.4) by Dr. Roger Broucke.
    */
-  public double swi_echeb(double x, double coef[], int offs, int ncf) {
+  public static double swi_echeb(double x, double coef[], int offs, int ncf) {
     int j;
     double x2, br, brp2, brpp;
 
@@ -321,7 +315,7 @@ public class SwissLib
   /*
    * evaluates derivative of chebyshev series, see echeb
    */
-  public double swi_edcheb(double x, double coef[], int offs, int ncf) {
+  public static double swi_edcheb(double x, double coef[], int offs, int ncf) {
     double bjpl, xjpl;
     int j;
     double x2, bf, bj, dj, xj, bjp2, xjp2;
@@ -353,11 +347,10 @@ public class SwissLib
    * xpo, xpn are arrays of 3 doubles containing position.
    * attention: input must be in degrees!
    */
-  public void swe_cotrans(double xpo[],double xpn[],double eps) {
+  public static void swe_cotrans(double xpo[],double xpn[],double eps) {
     swe_cotrans(xpo, 0, xpn, 0, eps);
   }
-  public void swe_cotrans(double xpo[],int oOffs, double xpn[],
-                          int nOffs, double eps) {
+  public static void swe_cotrans(double xpo[],int oOffs, double xpn[], int nOffs, double eps) {
     int i;
     double x[]=new double[6], e = eps * SwissData.DEGTORAD;
     for(i = 0; i <= 1; i++)
@@ -384,7 +377,7 @@ public class SwissLib
    * xpo, xpn are arrays of 6 doubles containing position and speed.
    * attention: input must be in degrees!
    */
-  public void swe_cotrans_sp(double xpo[], double xpn[], double eps) {
+  public static void swe_cotrans_sp(double xpo[], double xpn[], double eps) {
     int i;
     double x[]=new double[6], e = eps * SwissData.DEGTORAD;
     for (i = 0; i <= 5; i++)
@@ -411,12 +404,11 @@ public class SwissLib
    * for ecl. to equ.  eps must be negative
    * for equ. to ecl.  eps must be positive
    */
-  public void swi_coortrf(double xpo[], double xpn[], double eps) {
+  public static void swi_coortrf(double xpo[], double xpn[], double eps) {
     swi_coortrf(xpo, 0, xpn, 0, eps);
   }
 
-  public void swi_coortrf(double xpo[], int oOffs, double xpn[],
-                          int nOffs, double eps) {
+  public static void swi_coortrf(double xpo[], int oOffs, double xpn[], int nOffs, double eps) {
     double sineps, coseps;
     double x[]=new double[3];
     sineps = SMath.sin(eps);
@@ -435,12 +427,10 @@ public class SwissLib
    * coseps            cos(eps)
    * for ecl. to equ.  sineps must be -sin(eps)
    */
-  public void swi_coortrf2(double xpo[], double xpn[], double sineps,
-                           double coseps) {
+  public static void swi_coortrf2(double xpo[], double xpn[], double sineps, double coseps) {
     swi_coortrf2(xpo, 0, xpn, 0, sineps, coseps);
   }
-  public void swi_coortrf2(double xpo[], int oOffs, double xpn[], int nOffs,
-                    double sineps, double coseps) {
+  public static void swi_coortrf2(double xpo[], int oOffs, double xpn[], int nOffs, double sineps, double coseps) {
     double x[]=new double[3];
     x[0] = xpo[0+oOffs];
     x[1] = xpo[1+oOffs] * coseps + xpo[2+oOffs] * sineps;
@@ -454,11 +444,11 @@ public class SwissLib
    * x = l is allowed.
    * if |x| = 0, then lon, lat and rad := 0.
    */
-  public void swi_cartpol(double x[], double l[]) {
+  public static void swi_cartpol(double x[], double l[]) {
     swi_cartpol(x, 0, l, 0);
   }
 
-  public void swi_cartpol(double x[], int xOffs, double l[], int lOffs) {
+  public static void swi_cartpol(double x[], int xOffs, double l[], int lOffs) {
     double rxy;
     double ll[]=new double[3];
     if (x[0+xOffs] == 0 && x[1+xOffs] == 0 && x[2+xOffs] == 0) {
@@ -481,10 +471,10 @@ public class SwissLib
   /* conversion from polar (l[3]) to cartesian coordinates (x[3]).
    * x = l is allowed.
    */
-  public void swi_polcart(double l[], double x[]) {
+  public static void swi_polcart(double l[], double x[]) {
     swi_polcart(l, 0, x, 0);
   }
-  public void swi_polcart(double l[], int lOffs, double x[], int xOffs) {
+  public static void swi_polcart(double l[], int lOffs, double x[], int xOffs) {
     double xx[]=new double[3];
     double cosl1;
     cosl1 = SMath.cos(l[lOffs+1]);
@@ -502,10 +492,10 @@ public class SwissLib
    * if position is 0, function returns direction of
    * motion.
    */
-  public void swi_cartpol_sp(double x[], double l[]) {
+  public static void swi_cartpol_sp(double x[], double l[]) {
     swi_cartpol_sp(x, 0, l, 0);
   }
-  public void swi_cartpol_sp(double x[], int xOffs, double l[], int lOffs) {
+  public static void swi_cartpol_sp(double x[], int xOffs, double l[], int lOffs) {
     double xx[]=new double[6], ll[]=new double[6];
     double rxy, coslon, sinlon, coslat, sinlat;
     /* zero position */
@@ -561,10 +551,10 @@ public class SwissLib
    * x = l is allowed
    * explanation s. swi_cartpol_sp()
    */
-  public void swi_polcart_sp(double l[], double x[]) {
+  public static void swi_polcart_sp(double l[], double x[]) {
     swi_polcart_sp(l, 0, x, 0);
   }
-  public void swi_polcart_sp(double l[], int lOffs, double x[], int xOffs) {
+  public static void swi_polcart_sp(double l[], int lOffs, double x[], int xOffs) {
     double sinlon, coslon, sinlat, coslat;
     double xx[]=new double[6], rxy, rxyz;
     /* zero speed */
@@ -596,7 +586,7 @@ public class SwissLib
     x[2+xOffs] = xx[2];
   }
 
-  public double swi_dot_prod_unit(double[] x, double[] y) {
+  public static double swi_dot_prod_unit(double[] x, double[] y) {
     double dop = x[0]*y[0]+x[1]*y[1]+x[2]*y[2];
     double e1 = SMath.sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]);
     double e2 = SMath.sqrt(y[0]*y[0]+y[1]*y[1]+y[2]*y[2]);
@@ -676,7 +666,7 @@ public class SwissLib
     {1558.515853, 7774.939698, -2219.534038, -2523.969396, 247.850422, -846.485643, -1393.124055, 368.526116, 749.045012, 444.704518, 235.934465, 374.049623, -171.33018, -22.899655}
   };
 
-  void swi_ldp_peps(double tjd, double[] dpre, double[] deps) {
+  static void swi_ldp_peps(double tjd, double[] dpre, double[] deps) {
     int i;
     int npol = NPOL_PEPS;
     int nper = NPER_PEPS;
@@ -716,7 +706,7 @@ public class SwissLib
    * for long time intervals", in A&A 534, A22(2011).
    */
   /* precession of the ecliptic */
-  private void pre_pecl(double tjd, double[] vec) {
+  private static void pre_pecl(double tjd, double[] vec) {
     int i;
     int npol = NPOL_PECL;
     int nper = NPER_PECL;
@@ -757,7 +747,7 @@ public class SwissLib
   }
 
   /* precession of the equator */
-  private void pre_pequ(double tjd, double[] veq) {
+  private static void pre_pequ(double tjd, double[] veq) {
     int i;
     int npol = NPOL_PEQU;
     int nper = NPER_PEQU;
@@ -794,7 +784,7 @@ public class SwissLib
 
 
   /* precession matrix */
-  private void pre_pmat(double tjd, double[] rp) {
+  private static void pre_pmat(double tjd, double[] rp) {
     double peqr[] = new double[3], pecl[] = new double[3], v[] = new double[3], w, eqx[] = new double[3];
     /*equator pole */
     pre_pequ(tjd, peqr);
@@ -842,13 +832,13 @@ public class SwissLib
   static final double OFFSET_EPS_JPLHORIZONS = (35.95);
   static final double DCOR_EPS_JPL_TJD0 = 2437846.5;
   static final int NDCOR_EPS_JPL = 51;
-  double dcor_eps_jpl[] = new double[] {
-  36.726, 36.627, 36.595, 36.578, 36.640, 36.659, 36.731, 36.765,
-  36.662, 36.555, 36.335, 36.321, 36.354, 36.227, 36.289, 36.348, 36.257, 36.163,
-  35.979, 35.896, 35.842, 35.825, 35.912, 35.950, 36.093, 36.191, 36.009, 35.943,
-  35.875, 35.771, 35.788, 35.753, 35.822, 35.866, 35.771, 35.732, 35.543, 35.498,
-  35.449, 35.409, 35.497, 35.556, 35.672, 35.760, 35.596, 35.565, 35.510, 35.394,
-  35.385, 35.375, 35.415,
+  static final double[] dcor_eps_jpl = new double[] {
+    36.726, 36.627, 36.595, 36.578, 36.640, 36.659, 36.731, 36.765,
+    36.662, 36.555, 36.335, 36.321, 36.354, 36.227, 36.289, 36.348, 36.257, 36.163,
+    35.979, 35.896, 35.842, 35.825, 35.912, 35.950, 36.093, 36.191, 36.009, 35.943,
+    35.875, 35.771, 35.788, 35.753, 35.822, 35.866, 35.771, 35.732, 35.543, 35.498,
+    35.449, 35.409, 35.497, 35.556, 35.672, 35.760, 35.596, 35.565, 35.510, 35.394,
+    35.385, 35.375, 35.415,
   };
   double swi_epsiln(double J, int iflag) {
     double T, eps;
@@ -974,7 +964,7 @@ public class SwissLib
   private int precess_1(double[] R, double J, int direction, int prec_method) {
     return precess_1(R, 0, J, direction, prec_method);
   }
-  private int precess_1(double[] R, int rOffs, double J, int direction, int prec_method) {
+  private static int precess_1(double[] R, int rOffs, double J, int direction, int prec_method) {
     double T, Z = 0, z = 0, TH = 0;
     int i;
     double x[] = new double[3];
@@ -1209,7 +1199,7 @@ int pn = 0;
   private int precess_3(double R[], double J, int direction, int prec_meth) {
     return precess_3(R, 0, J, direction, prec_meth);
   }
-  private int precess_3(double R[], int rOffs, double J, int direction, int prec_meth) {
+  private static int precess_3(double R[], int rOffs, double J, int direction, int prec_meth) {
     double T;
     double x[] = new double[3], pmat[] = new double[9];
     int i, j;
@@ -1348,130 +1338,130 @@ int pn = 0;
    * .0386        .1808           .0895   .1129
    */
   static final short ENDMARK=-99;
-  static short nt[] = {
-  /* LS and OC are units of 0.0001"
-   *LS2 and OC2 are units of 0.00001"
-   *MM,MS,FF,DD,OM, LS, LS2,OC, OC2 */
-   0, 0, 0, 0, 2,  2062,  2, -895,  5,
-  -2, 0, 2, 0, 1,    46,  0,  -24,  0,
-   2, 0,-2, 0, 0,    11,  0,    0,  0,
-  -2, 0, 2, 0, 2,    -3,  0,    1,  0,
-   1,-1, 0,-1, 0,    -3,  0,    0,  0,
-   0,-2, 2,-2, 1,    -2,  0,    1,  0,
-   2, 0,-2, 0, 1,     1,  0,    0,  0,
-   0, 0, 2,-2, 2,-13187,-16, 5736,-31,
-   0, 1, 0, 0, 0,  1426,-34,   54, -1,
-   0, 1, 2,-2, 2,  -517, 12,  224, -6,
-   0,-1, 2,-2, 2,   217, -5,  -95,  3,
-   0, 0, 2,-2, 1,   129,  1,  -70,  0,
-   2, 0, 0,-2, 0,    48,  0,    1,  0,
-   0, 0, 2,-2, 0,   -22,  0,    0,  0,
-   0, 2, 0, 0, 0,    17, -1,    0,  0,
-   0, 1, 0, 0, 1,   -15,  0,    9,  0,
-   0, 2, 2,-2, 2,   -16,  1,    7,  0,
-   0,-1, 0, 0, 1,   -12,  0,    6,  0,
-  -2, 0, 0, 2, 1,    -6,  0,    3,  0,
-   0,-1, 2,-2, 1,    -5,  0,    3,  0,
-   2, 0, 0,-2, 1,     4,  0,   -2,  0,
-   0, 1, 2,-2, 1,     4,  0,   -2,  0,
-   1, 0, 0,-1, 0,    -4,  0,    0,  0,
-   2, 1, 0,-2, 0,     1,  0,    0,  0,
-   0, 0,-2, 2, 1,     1,  0,    0,  0,
-   0, 1,-2, 2, 0,    -1,  0,    0,  0,
-   0, 1, 0, 0, 2,     1,  0,    0,  0,
-  -1, 0, 0, 1, 1,     1,  0,    0,  0,
-   0, 1, 2,-2, 0,    -1,  0,    0,  0,
-   0, 0, 2, 0, 2, -2274, -2,  977, -5,
-   1, 0, 0, 0, 0,   712,  1,   -7,  0,
-   0, 0, 2, 0, 1,  -386, -4,  200,  0,
-   1, 0, 2, 0, 2,  -301,  0,  129, -1,
-   1, 0, 0,-2, 0,  -158,  0,   -1,  0,
-  -1, 0, 2, 0, 2,   123,  0,  -53,  0,
-   0, 0, 0, 2, 0,    63,  0,   -2,  0,
-   1, 0, 0, 0, 1,    63,  1,  -33,  0,
-  -1, 0, 0, 0, 1,   -58, -1,   32,  0,
-  -1, 0, 2, 2, 2,   -59,  0,   26,  0,
-   1, 0, 2, 0, 1,   -51,  0,   27,  0,
-   0, 0, 2, 2, 2,   -38,  0,   16,  0,
-   2, 0, 0, 0, 0,    29,  0,   -1,  0,
-   1, 0, 2,-2, 2,    29,  0,  -12,  0,
-   2, 0, 2, 0, 2,   -31,  0,   13,  0,
-   0, 0, 2, 0, 0,    26,  0,   -1,  0,
-  -1, 0, 2, 0, 1,    21,  0,  -10,  0,
-  -1, 0, 0, 2, 1,    16,  0,   -8,  0,
-   1, 0, 0,-2, 1,   -13,  0,    7,  0,
-  -1, 0, 2, 2, 1,   -10,  0,    5,  0,
-   1, 1, 0,-2, 0,    -7,  0,    0,  0,
-   0, 1, 2, 0, 2,     7,  0,   -3,  0,
-   0,-1, 2, 0, 2,    -7,  0,    3,  0,
-   1, 0, 2, 2, 2,    -8,  0,    3,  0,
-   1, 0, 0, 2, 0,     6,  0,    0,  0,
-   2, 0, 2,-2, 2,     6,  0,   -3,  0,
-   0, 0, 0, 2, 1,    -6,  0,    3,  0,
-   0, 0, 2, 2, 1,    -7,  0,    3,  0,
-   1, 0, 2,-2, 1,     6,  0,   -3,  0,
-   0, 0, 0,-2, 1,    -5,  0,    3,  0,
-   1,-1, 0, 0, 0,     5,  0,    0,  0,
-   2, 0, 2, 0, 1,    -5,  0,    3,  0, 
-   0, 1, 0,-2, 0,    -4,  0,    0,  0,
-   1, 0,-2, 0, 0,     4,  0,    0,  0,
-   0, 0, 0, 1, 0,    -4,  0,    0,  0,
-   1, 1, 0, 0, 0,    -3,  0,    0,  0,
-   1, 0, 2, 0, 0,     3,  0,    0,  0,
-   1,-1, 2, 0, 2,    -3,  0,    1,  0,
-  -1,-1, 2, 2, 2,    -3,  0,    1,  0,
-  -2, 0, 0, 0, 1,    -2,  0,    1,  0,
-   3, 0, 2, 0, 2,    -3,  0,    1,  0,
-   0,-1, 2, 2, 2,    -3,  0,    1,  0,
-   1, 1, 2, 0, 2,     2,  0,   -1,  0,
-  -1, 0, 2,-2, 1,    -2,  0,    1,  0,
-   2, 0, 0, 0, 1,     2,  0,   -1,  0,
-   1, 0, 0, 0, 2,    -2,  0,    1,  0,
-   3, 0, 0, 0, 0,     2,  0,    0,  0,
-   0, 0, 2, 1, 2,     2,  0,   -1,  0,
-  -1, 0, 0, 0, 2,     1,  0,   -1,  0,
+  static final short nt[] = {
+    /* LS and OC are units of 0.0001"
+     *LS2 and OC2 are units of 0.00001"
+     *MM,MS,FF,DD,OM, LS, LS2,OC, OC2 */
+     0, 0, 0, 0, 2,  2062,  2, -895,  5,
+    -2, 0, 2, 0, 1,    46,  0,  -24,  0,
+     2, 0,-2, 0, 0,    11,  0,    0,  0,
+    -2, 0, 2, 0, 2,    -3,  0,    1,  0,
+     1,-1, 0,-1, 0,    -3,  0,    0,  0,
+     0,-2, 2,-2, 1,    -2,  0,    1,  0,
+     2, 0,-2, 0, 1,     1,  0,    0,  0,
+     0, 0, 2,-2, 2,-13187,-16, 5736,-31,
+     0, 1, 0, 0, 0,  1426,-34,   54, -1,
+     0, 1, 2,-2, 2,  -517, 12,  224, -6,
+     0,-1, 2,-2, 2,   217, -5,  -95,  3,
+     0, 0, 2,-2, 1,   129,  1,  -70,  0,
+     2, 0, 0,-2, 0,    48,  0,    1,  0,
+     0, 0, 2,-2, 0,   -22,  0,    0,  0,
+     0, 2, 0, 0, 0,    17, -1,    0,  0,
+     0, 1, 0, 0, 1,   -15,  0,    9,  0,
+     0, 2, 2,-2, 2,   -16,  1,    7,  0,
+     0,-1, 0, 0, 1,   -12,  0,    6,  0,
+    -2, 0, 0, 2, 1,    -6,  0,    3,  0,
+     0,-1, 2,-2, 1,    -5,  0,    3,  0,
+     2, 0, 0,-2, 1,     4,  0,   -2,  0,
+     0, 1, 2,-2, 1,     4,  0,   -2,  0,
+     1, 0, 0,-1, 0,    -4,  0,    0,  0,
+     2, 1, 0,-2, 0,     1,  0,    0,  0,
+     0, 0,-2, 2, 1,     1,  0,    0,  0,
+     0, 1,-2, 2, 0,    -1,  0,    0,  0,
+     0, 1, 0, 0, 2,     1,  0,    0,  0,
+    -1, 0, 0, 1, 1,     1,  0,    0,  0,
+     0, 1, 2,-2, 0,    -1,  0,    0,  0,
+     0, 0, 2, 0, 2, -2274, -2,  977, -5,
+     1, 0, 0, 0, 0,   712,  1,   -7,  0,
+     0, 0, 2, 0, 1,  -386, -4,  200,  0,
+     1, 0, 2, 0, 2,  -301,  0,  129, -1,
+     1, 0, 0,-2, 0,  -158,  0,   -1,  0,
+    -1, 0, 2, 0, 2,   123,  0,  -53,  0,
+     0, 0, 0, 2, 0,    63,  0,   -2,  0,
+     1, 0, 0, 0, 1,    63,  1,  -33,  0,
+    -1, 0, 0, 0, 1,   -58, -1,   32,  0,
+    -1, 0, 2, 2, 2,   -59,  0,   26,  0,
+     1, 0, 2, 0, 1,   -51,  0,   27,  0,
+     0, 0, 2, 2, 2,   -38,  0,   16,  0,
+     2, 0, 0, 0, 0,    29,  0,   -1,  0,
+     1, 0, 2,-2, 2,    29,  0,  -12,  0,
+     2, 0, 2, 0, 2,   -31,  0,   13,  0,
+     0, 0, 2, 0, 0,    26,  0,   -1,  0,
+    -1, 0, 2, 0, 1,    21,  0,  -10,  0,
+    -1, 0, 0, 2, 1,    16,  0,   -8,  0,
+     1, 0, 0,-2, 1,   -13,  0,    7,  0,
+    -1, 0, 2, 2, 1,   -10,  0,    5,  0,
+     1, 1, 0,-2, 0,    -7,  0,    0,  0,
+     0, 1, 2, 0, 2,     7,  0,   -3,  0,
+     0,-1, 2, 0, 2,    -7,  0,    3,  0,
+     1, 0, 2, 2, 2,    -8,  0,    3,  0,
+     1, 0, 0, 2, 0,     6,  0,    0,  0,
+     2, 0, 2,-2, 2,     6,  0,   -3,  0,
+     0, 0, 0, 2, 1,    -6,  0,    3,  0,
+     0, 0, 2, 2, 1,    -7,  0,    3,  0,
+     1, 0, 2,-2, 1,     6,  0,   -3,  0,
+     0, 0, 0,-2, 1,    -5,  0,    3,  0,
+     1,-1, 0, 0, 0,     5,  0,    0,  0,
+     2, 0, 2, 0, 1,    -5,  0,    3,  0,
+     0, 1, 0,-2, 0,    -4,  0,    0,  0,
+     1, 0,-2, 0, 0,     4,  0,    0,  0,
+     0, 0, 0, 1, 0,    -4,  0,    0,  0,
+     1, 1, 0, 0, 0,    -3,  0,    0,  0,
+     1, 0, 2, 0, 0,     3,  0,    0,  0,
+     1,-1, 2, 0, 2,    -3,  0,    1,  0,
+    -1,-1, 2, 2, 2,    -3,  0,    1,  0,
+    -2, 0, 0, 0, 1,    -2,  0,    1,  0,
+     3, 0, 2, 0, 2,    -3,  0,    1,  0,
+     0,-1, 2, 2, 2,    -3,  0,    1,  0,
+     1, 1, 2, 0, 2,     2,  0,   -1,  0,
+    -1, 0, 2,-2, 1,    -2,  0,    1,  0,
+     2, 0, 0, 0, 1,     2,  0,   -1,  0,
+     1, 0, 0, 0, 2,    -2,  0,    1,  0,
+     3, 0, 0, 0, 0,     2,  0,    0,  0,
+     0, 0, 2, 1, 2,     2,  0,   -1,  0,
+    -1, 0, 0, 0, 2,     1,  0,   -1,  0,
 
-   1, 0, 0,-4, 0,    -1,  0,    0,  0,
-  -2, 0, 2, 2, 2,     1,  0,   -1,  0,
-  -1, 0, 2, 4, 2,    -2,  0,    1,  0,
-   2, 0, 0,-4, 0,    -1,  0,    0,  0,
-   1, 1, 2,-2, 2,     1,  0,   -1,  0,
-   1, 0, 2, 2, 1,    -1,  0,    1,  0,
-  -2, 0, 2, 4, 2,    -1,  0,    1,  0,
-  -1, 0, 4, 0, 2,     1,  0,    0,  0,
-   1,-1, 0,-2, 0,     1,  0,    0,  0,
-   2, 0, 2,-2, 1,     1,  0,   -1,  0,
-   2, 0, 2, 2, 2,    -1,  0,    0,  0,
-   1, 0, 0, 2, 1,    -1,  0,    0,  0,
-   0, 0, 4,-2, 2,     1,  0,    0,  0,
-   3, 0, 2,-2, 2,     1,  0,    0,  0,
-   1, 0, 2,-2, 0,    -1,  0,    0,  0,
-   0, 1, 2, 0, 1,     1,  0,    0,  0,
-  -1,-1, 0, 2, 1,     1,  0,    0,  0,
-   0, 0,-2, 0, 1,    -1,  0,    0,  0,
-   0, 0, 2,-1, 2,    -1,  0,    0,  0,
-   0, 1, 0, 2, 0,    -1,  0,    0,  0,
-   1, 0,-2,-2, 0,    -1,  0,    0,  0,
-   0,-1, 2, 0, 1,    -1,  0,    0,  0,
-   1, 1, 0,-2, 1,    -1,  0,    0,  0,
-   1, 0,-2, 2, 0,    -1,  0,    0,  0,
-   2, 0, 0, 2, 0,     1,  0,    0,  0,
-   0, 0, 2, 4, 2,    -1,  0,    0,  0,
-   0, 1, 0, 1, 0,     1,  0,    0,  0,
-/*#if NUT_CORR_1987  switch is handled in function swi_nutation_iau1980() */
-  /* corrections to IAU 1980 nutation series by Herring 1987
-   *             in 0.00001" !!!
-   *              LS      OC      */
-   101, 0, 0, 0, 1,-725, 0, 213, 0,
-   101, 1, 0, 0, 0, 523, 0, 208, 0,
-   101, 0, 2,-2, 2, 102, 0, -41, 0,
-   101, 0, 2, 0, 2, -81, 0,  32, 0,
-  /*              LC      OS !!!  */
-   102, 0, 0, 0, 1, 417, 0, 224, 0,
-   102, 1, 0, 0, 0,  61, 0, -24, 0,
-   102, 0, 2,-2, 2,-118, 0, -47, 0,
-/*#endif*/
-   ENDMARK,
+     1, 0, 0,-4, 0,    -1,  0,    0,  0,
+    -2, 0, 2, 2, 2,     1,  0,   -1,  0,
+    -1, 0, 2, 4, 2,    -2,  0,    1,  0,
+     2, 0, 0,-4, 0,    -1,  0,    0,  0,
+     1, 1, 2,-2, 2,     1,  0,   -1,  0,
+     1, 0, 2, 2, 1,    -1,  0,    1,  0,
+    -2, 0, 2, 4, 2,    -1,  0,    1,  0,
+    -1, 0, 4, 0, 2,     1,  0,    0,  0,
+     1,-1, 0,-2, 0,     1,  0,    0,  0,
+     2, 0, 2,-2, 1,     1,  0,   -1,  0,
+     2, 0, 2, 2, 2,    -1,  0,    0,  0,
+     1, 0, 0, 2, 1,    -1,  0,    0,  0,
+     0, 0, 4,-2, 2,     1,  0,    0,  0,
+     3, 0, 2,-2, 2,     1,  0,    0,  0,
+     1, 0, 2,-2, 0,    -1,  0,    0,  0,
+     0, 1, 2, 0, 1,     1,  0,    0,  0,
+    -1,-1, 0, 2, 1,     1,  0,    0,  0,
+     0, 0,-2, 0, 1,    -1,  0,    0,  0,
+     0, 0, 2,-1, 2,    -1,  0,    0,  0,
+     0, 1, 0, 2, 0,    -1,  0,    0,  0,
+     1, 0,-2,-2, 0,    -1,  0,    0,  0,
+     0,-1, 2, 0, 1,    -1,  0,    0,  0,
+     1, 1, 0,-2, 1,    -1,  0,    0,  0,
+     1, 0,-2, 2, 0,    -1,  0,    0,  0,
+     2, 0, 0, 2, 0,     1,  0,    0,  0,
+     0, 0, 2, 4, 2,    -1,  0,    0,  0,
+     0, 1, 0, 1, 0,     1,  0,    0,  0,
+  /*#if NUT_CORR_1987  switch is handled in function swi_nutation_iau1980() */
+    /* corrections to IAU 1980 nutation series by Herring 1987
+     *             in 0.00001" !!!
+     *              LS      OC      */
+     101, 0, 0, 0, 1,-725, 0, 213, 0,
+     101, 1, 0, 0, 0, 523, 0, 208, 0,
+     101, 0, 2,-2, 2, 102, 0, -41, 0,
+     101, 0, 2, 0, 2, -81, 0,  32, 0,
+    /*              LC      OS !!!  */
+     102, 0, 0, 0, 1, 417, 0, 224, 0,
+     102, 1, 0, 0, 0,  61, 0, -24, 0,
+     102, 0, 2,-2, 2,-118, 0, -47, 0,
+  /*#endif*/
+     ENDMARK,
   };
 
   private int swi_nutation_iau1980(double J, double nutlo[]) {
@@ -1799,7 +1789,7 @@ int pn = 0;
     return 0;
   }
 
-  private double bessel(double v[], int n, double t) {
+  private static final  double bessel(double v[], int n, double t) {
     int i, iy, k;
     double ans, p, B, d[] = new double[6];
     if (t <= 0) {
@@ -1899,13 +1889,13 @@ int pn = 0;
   static final double OFFSET_JPLHORIZONS = -52.3;
   static final double DCOR_RA_JPL_TJD0 = 2437846.5;
   static final int NDCOR_RA_JPL = 51;
-  double dcor_ra_jpl[] = new double[] {
-  -51.257, -51.103, -51.065, -51.503, -51.224, -50.796, -51.161, -51.181,
-  -50.932, -51.064, -51.182, -51.386, -51.416, -51.428, -51.586, -51.766, -52.038, -52.370,
-  -52.553, -52.397, -52.340, -52.676, -52.348, -51.964, -52.444, -52.364, -51.988, -52.212,
-  -52.370, -52.523, -52.541, -52.496, -52.590, -52.629, -52.788, -53.014, -53.053, -52.902,
-  -52.850, -53.087, -52.635, -52.185, -52.588, -52.292, -51.796, -51.961, -52.055, -52.134,
-  -52.165, -52.141, -52.255,
+  static final double dcor_ra_jpl[] = new double[] {
+    -51.257, -51.103, -51.065, -51.503, -51.224, -50.796, -51.161, -51.181,
+    -50.932, -51.064, -51.182, -51.386, -51.416, -51.428, -51.586, -51.766, -52.038, -52.370,
+    -52.553, -52.397, -52.340, -52.676, -52.348, -51.964, -52.444, -52.364, -51.988, -52.212,
+    -52.370, -52.523, -52.541, -52.496, -52.590, -52.629, -52.788, -53.014, -53.053, -52.902,
+    -52.850, -53.087, -52.635, -52.185, -52.588, -52.292, -51.796, -51.961, -52.055, -52.134,
+    -52.165, -52.141, -52.255,
   };
 
   private void swi_approx_jplhor(double x[], double tjd, int iflag, boolean backward) {
@@ -2008,7 +1998,7 @@ int pn = 0;
   }
 
   /* GCRS to FK5 */
-  void swi_icrs2fk5(double[] x, int iflag, boolean backward) {
+  static void swi_icrs2fk5(double[] x, int iflag, boolean backward) {
     double xx[]=new double[6], rb[][]=new double[3][3];
     int i;
     rb[0][0] = +0.9999999999999928;
@@ -2124,7 +2114,7 @@ int pn = 0;
   * @param nmax The size of the cpos array. A relict from the C version...
   * @return Number of generated Strings
   */
-  public int swi_cutstr(String s, String cutlist, String cpos[], int nmax) {
+  public static int swi_cutstr(String s, String cutlist, String cpos[], int nmax) {
 ////#ifdef TRACE0
 //    Trace.level++;
 //    Trace.log("SwissLib.swi_cutstr(String, String, String[], int)");
@@ -2184,44 +2174,44 @@ int pn = 0;
    */
   /*  C'_{s,j})_i     C'_{c,j})_i */
   static final int SIDTNTERM = 33;
-  private double stcf[] = new double[] {
-  2640.96,-0.39,
-  63.52,-0.02,
-  11.75,0.01,
-  11.21,0.01,
-  -4.55,0.00,
-  2.02,0.00,
-  1.98,0.00,
-  -1.72,0.00,
-  -1.41,-0.01,
-  -1.26,-0.01,
-  -0.63,0.00,
-  -0.63,0.00,
-  0.46,0.00,
-  0.45,0.00,
-  0.36,0.00,
-  -0.24,-0.12,
-  0.32,0.00,
-  0.28,0.00,
-  0.27,0.00,
-  0.26,0.00,
-  -0.21,0.00,
-  0.19,0.00,
-  0.18,0.00,
-  -0.10,0.05,
-  0.15,0.00,
-  -0.14,0.00,
-  0.14,0.00,
-  -0.14,0.00,
-  0.14,0.00,
-  0.13,0.00,
-  -0.11,0.00,
-  0.11,0.00,
-  0.11,0.00,
+  private static final double[] stcf = new double[] {
+    2640.96,-0.39,
+    63.52,-0.02,
+    11.75,0.01,
+    11.21,0.01,
+    -4.55,0.00,
+    2.02,0.00,
+    1.98,0.00,
+    -1.72,0.00,
+    -1.41,-0.01,
+    -1.26,-0.01,
+    -0.63,0.00,
+    -0.63,0.00,
+    0.46,0.00,
+    0.45,0.00,
+    0.36,0.00,
+    -0.24,-0.12,
+    0.32,0.00,
+    0.28,0.00,
+    0.27,0.00,
+    0.26,0.00,
+    -0.21,0.00,
+    0.19,0.00,
+    0.18,0.00,
+    -0.10,0.05,
+    0.15,0.00,
+    -0.14,0.00,
+    0.14,0.00,
+    -0.14,0.00,
+    0.14,0.00,
+    0.13,0.00,
+    -0.11,0.00,
+    0.11,0.00,
+    0.11,0.00,
   };
   static final int SIDTNARG = 14;
   /* l    l'   F    D   Om   L_Me L_Ve L_E  L_Ma L_J  L_Sa L_U  L_Ne p_A*/
-  private static final int stfarg[] = new int[] {
+  private static final int[] stfarg = new int[] {
      0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,
      0,   0,   0,   0,   2,   0,   0,   0,   0,   0,   0,   0,   0,   0,
      0,   0,   2,  -2,   3,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -2256,9 +2246,10 @@ int pn = 0;
      1,   0,  -2,   0,  -3,   0,   0,   0,   0,   0,   0,   0,   0,   0,
      1,   0,  -2,   0,  -1,   0,   0,   0,   0,   0,   0,   0,   0,   0,
   };
-  private double sidtime_non_polynomial_part(double tt) {
+
+  private static double sidtime_non_polynomial_part(double tt) {
     int i, j;
-    double delm[] = new double[SIDTNARG];
+    double[] delm = new double[SIDTNARG];
     double dadd, darg;
     /* L Mean anomaly of the Moon.*/
     delm[0] = swe_radnorm(2.35555598 + 8328.6914269554 * tt);
@@ -2553,7 +2544,7 @@ SweDate sd = new SweDate(jd);
   * @see swisseph.SweConst#SE_SPLIT_DEG_KEEP_DEG
   * @see swisseph.SweConst#SE_SPLIT_DEG_ZODIACAL
   */
-  public void swe_split_deg(double ddeg, int roundflag, IntObj ideg,
+  public static void swe_split_deg(double ddeg, int roundflag, IntObj ideg,
                             IntObj imin, IntObj isec, DblObj dsecfr,
                             IntObj isgn) {
     double dadd = 0;
@@ -2593,7 +2584,7 @@ SweDate sd = new SweDate(jd);
     }
   }  /* end split_deg */
 
-  public double swi_kepler(double E, double M, double ecce) {
+  public static double swi_kepler(double E, double M, double ecce) {
     double dE = 1, E0;
     double x;
     /* simple formula for small eccentricities */
@@ -2633,7 +2624,7 @@ public void swe_set_astro_models(int[] imodel) {
 }
 
 
-  public void swi_FK4_FK5(double xp[], double tjd) {
+  public static void swi_FK4_FK5(double xp[], double tjd) {
     if (xp[0] == 0 && xp[1] == 0 && xp[2] == 0) {
       return;
     }
@@ -2644,7 +2635,7 @@ public void swe_set_astro_models(int[] imodel) {
     swi_polcart(xp, xp);
   }
 
-  public void swi_FK5_FK4(double[] xp, double tjd) {
+  public static void swi_FK5_FK4(double[] xp, double tjd) {
     if (xp[0] == 0 && xp[1] == 0 && xp[2] == 0) {
       return;
     }
@@ -2655,13 +2646,13 @@ public void swe_set_astro_models(int[] imodel) {
     swi_polcart(xp, xp);
   }
 
-String swi_strcpy(String to, String from) {
-  return from;
-}
+  static String swi_strcpy(String to, String from) {
+    return from;
+  }
 
-String swi_strncpy(String to, String from, int n) { 
-  return from.substring(0, Math.min(from.length(), n));
-}
+  static String swi_strncpy(String to, String from, int n) {
+    return from.substring(0, Math.min(from.length(), n));
+  }
 //////////////////////////////////////////////////////////////////////////////
 // swejpl.c: /////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -2674,7 +2665,7 @@ String swi_strncpy(String to, String from, int n) {
   * @param x The double value to round to an integer
   * @return Integer value
   */
-  public int swe_d2l(double x) {
+  public static int swe_d2l(double x) {
     if (x >=0.) {
       return ((int) (x + 0.5));
     } else {
@@ -2689,7 +2680,7 @@ String swi_strncpy(String to, String from, int n) {
   * @param p2 The angle of point 2
   * @return The normalized difference between p1, p2
   */
-  public double swe_difdeg2n(double p1, double p2) {
+  public static double swe_difdeg2n(double p1, double p2) {
     double dif;
     dif = swe_degnorm(p1 - p2);
     if (dif  >= 180.0) {
@@ -2699,7 +2690,7 @@ String swi_strncpy(String to, String from, int n) {
   }
 
 // Well: used by Swetest.java... //#ifndef ASTROLOGY
-  public double swe_difrad2n(double p1, double p2) {
+  public static double swe_difrad2n(double p1, double p2) {
     double dif;
     dif = swe_radnorm(p1 - p2);
     if (dif  >= SwephData.TWOPI / 2) {
@@ -2718,7 +2709,7 @@ String swi_strncpy(String to, String from, int n) {
   * @param src String to parse to a double
   * @return Double value
   */
-  public static synchronized double atof(String src) {
+  public static double atof(String src) {
     // atof() (in C) allows extra strings after the number, and even no number
     // at all, so we have to work around this...
     int idx=0;
@@ -2731,7 +2722,7 @@ String swi_strncpy(String to, String from, int n) {
     if (sout.length()==0 || sout.replace('.',' ').trim().length()==0) {
       return 0.;
     }
-    return Double.valueOf(sout).doubleValue();
+    return Double.parseDouble(sout);
   }
 
   /**
@@ -2740,7 +2731,7 @@ String swi_strncpy(String to, String from, int n) {
   * @param src String to parse to an integer
   * @return Integer value
   */
-  public static synchronized int atoi(String src) {
+  public static int atoi(String src) {
     // atoi() (in C) allows extra strings after the number, and even no number
     // at all, so we have to work around this...
     int idx=0;
@@ -2752,7 +2743,7 @@ String swi_strncpy(String to, String from, int n) {
     if (sout.length()==0 || sout.replace('.',' ').trim().length()==0) {
       return 0;
     }
-    return Integer.valueOf(sout).intValue();
+    return Integer.valueOf(sout);
   }
 
 static final double PREC_IAU_CTIES=2.0; // J2000 +/- two centuries

@@ -5,10 +5,10 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <name>Swisseph</name>
+    <name>SWE</name>
 
-    <groupId>org.swisseph</groupId>
-    <artifactId>swisseph</artifactId>
+    <groupId>swisseph</groupId>
+    <artifactId>swe</artifactId>
     <version>2.10</version>
 
     <properties>
@@ -17,7 +17,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         
-        <junit-jupiter.version>5.7.0</junit-jupiter.version>
+        <junit-jupiter.version>5.7.1</junit-jupiter.version>
     </properties>
 
     <dependencies>
@@ -25,27 +25,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jfree</groupId>
-            <artifactId>jfreesvg</artifactId>
-            <version>3.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.6</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>2.56</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>

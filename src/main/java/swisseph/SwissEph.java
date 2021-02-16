@@ -81,13 +81,16 @@
 */
 package swisseph;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.swisseph.ISwissEph;
 import org.swisseph.api.ISweJulianDate;
 import org.swisseph.app.SweJulianDate;
 import swisseph.SweDate.IDate;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -109,19 +112,16 @@ import static swisseph.SweConst.SE_GREG_CAL;
 */
 public class SwissEph implements ISwissEph {
     private static final long serialVersionUID = -7212831364223370468L;
-    
-  SwissData swed;
-  SwephMosh smosh;
-  SwephJPL sj;
-  SwissLib sl;
-  Swecl sc=null;
-  Swemmoon sm;
+
+  final SwissData swed;
+  final SwephMosh smosh;
+  final SwephJPL sj;
+  final SwissLib sl;
+  final Swemmoon sm;
+
   SweHouse sh=null;
   SweHel shl=null;
-
-  double lastLat=0.;
-  double lastLong=0.;
-  int lastHSys=-1;
+  Swecl sc=null;
   
     @Override
     public boolean isNativeAPI() {
@@ -160,10 +160,10 @@ public class SwissEph implements ISwissEph {
   * @see SwissEph#swe_set_ephe_path(java.lang.String)
   */
   public SwissEph(String path) {
-    if (swed == null) {
-      swed = new SwissData();
-    }
+    swed = new SwissData();
+
     SweDate.setSwissEphObject(this);	// to set the swed object in SweDate
+
     sl       = new SwissLib(this.swed);
     sm       = new Swemmoon(this.swed, this.sl);
     smosh    = new SwephMosh(this.sl, this, this.swed);
@@ -256,6 +256,12 @@ public class SwissEph implements ISwissEph {
   */
   public String swe_java_version() {
     return SwephData.SE_JAVA_VERSION;
+  }
+
+  @Override
+  public String swe_get_library_path() {
+      return new File(getClass().getProtectionDomain().getCodeSource()
+              .getLocation().getFile()).getAbsolutePath();
   }
 
   /* The routine called by the user.
@@ -1164,6 +1170,7 @@ if(path == null) return;
   * @see #preloadFixstarsFile(java.lang.StringBuilder)
   * @see SweDate#setGlobalTidalAcc(double)
   */
+  @Override
   public int swe_fixstar(StringBuilder star, double tjd, int iflag, double xx[],
                          StringBuilder serr) {
     int i;
@@ -1395,6 +1402,7 @@ String slast_starname;
   * @see #preloadFixstarsFile(java.lang.StringBuilder)
   * @see SweDate#setGlobalTidalAcc(double)
   */
+  @Override
   public int swe_fixstar_ut(StringBuilder star, double tjd_ut, int iflag,
                             double[] xx, StringBuilder serr) {
     SweDate.swi_set_tid_acc(tjd_ut, iflag, 0);  
@@ -1416,6 +1424,7 @@ String slast_starname;
   * @param ipl The planet number
   * @return The name of the planet
   */
+  @Override
   public String swe_get_planet_name(int ipl) {
     String s="";
     int i;
@@ -1693,9 +1702,7 @@ String slast_starname;
         java.util.regex.Pattern.matches("sepl[_m][0-9]+.se1", fname)) {
       return new FileData().getDatafileTimerange(this, fname, swed.ephepath);
     }
-    if (sj==null) {
-      sj=new SwephJPL(this, swed, sl);
-    }
+
     return sj.getJPLRange(fname);
   }
 
@@ -1729,6 +1736,7 @@ String slast_starname;
   * @param xaz Output parameter: a double[3] returning values as specified
   * above.
   */
+  @Override
   public void swe_azalt(double tjd_ut, int calc_flag, double[] geopos,
                         double atpress, double attemp, double[] xin,
                         double[] xaz) {
@@ -1756,12 +1764,9 @@ String slast_starname;
   * @param xout Output parameter: a double[2] returning either ecliptic or
   * equatorial coordinates
   */
-  public void swe_azalt_rev(double tjd_ut, int calc_flag, double[] geopos,
-                        double[] xin, double[] xout) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    sc.swe_azalt_rev(tjd_ut, calc_flag, geopos, xin, xout);
+  @Override
+  public void swe_azalt_rev(double tjd_ut, int calc_flag, double[] geopos, double[] xin, double[] xout) {
+    getSwecl().swe_azalt_rev(tjd_ut, calc_flag, geopos, xin, xout);
   }
 
   /**
@@ -1802,12 +1807,9 @@ String slast_starname;
   * @see SweConst#SE_ECL_PARTIAL
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_lun_eclipse_how(double tjd_ut, int ifl, double[] geopos,
-                                 double[] attr, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_lun_eclipse_how(tjd_ut, ifl, geopos, attr, serr);
+  @Override
+  public int swe_lun_eclipse_how(double tjd_ut, int ifl, double[] geopos, double[] attr, StringBuilder serr) {
+    return getSwecl().swe_lun_eclipse_how(tjd_ut, ifl, geopos, attr, serr);
   }
 
   /**
@@ -1862,13 +1864,9 @@ String slast_starname;
   * @see SweConst#SE_ECL_NONCENTRAL
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_lun_eclipse_when(double tjd_start, int ifl, int ifltype,
-                                  double[] tret, int backward,
-                                  StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_lun_eclipse_when(tjd_start,ifl,ifltype,tret,backward,serr);
+  @Override
+  public int swe_lun_eclipse_when(double tjd_start, int ifl, int ifltype, double[] tret, int backward, StringBuilder serr) {
+    return getSwecl().swe_lun_eclipse_when(tjd_start,ifl,ifltype,tret,backward,serr);
   }
 
   /**
@@ -1903,15 +1901,10 @@ String slast_starname;
   * @see SweConst#SE_NODBIT_FOPOINT
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_nod_aps(double tjd_et, int ipl, int iflag, int  method,
-                         double[] xnasc, double[] xndsc,
-                         double[] xperi, double[] xaphe,
-                         StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_nod_aps(tjd_et, ipl, iflag, method, xnasc, xndsc,
-                          xperi, xaphe, serr);
+  @Override
+  public int swe_nod_aps(double tjd_et, int ipl, int iflag, int  method, double[] xnasc, double[] xndsc,
+                         double[] xperi, double[] xaphe, StringBuilder serr) {
+    return getSwecl().swe_nod_aps(tjd_et, ipl, iflag, method, xnasc, xndsc, xperi, xaphe, serr);
   }
 
   /**
@@ -1946,15 +1939,10 @@ String slast_starname;
   * @see SweConst#SE_NODBIT_FOPOINT
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_nod_aps_ut(double tjd_ut, int ipl, int iflag, int  method,
-                            double[] xnasc, double[] xndsc,
-                            double[] xperi, double[] xaphe,
-                            StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_nod_aps_ut(tjd_ut, ipl, iflag, method, xnasc, xndsc,
-                             xperi, xaphe, serr);
+  @Override
+  public int swe_nod_aps_ut(double tjd_ut, int ipl, int iflag, int  method, double[] xnasc, double[] xndsc,
+                            double[] xperi, double[] xaphe, StringBuilder serr) {
+    return getSwecl().swe_nod_aps_ut(tjd_ut, ipl, iflag, method, xnasc, xndsc, xperi, xaphe, serr);
   }
 
   /**
@@ -1997,12 +1985,9 @@ String slast_starname;
   * @see SweConst#SEFLG_HELCTR
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_pheno(double tjd, int ipl, int iflag, double[] attr,
-                       StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_pheno(tjd, ipl, iflag, attr, serr);
+  @Override
+  public int swe_pheno(double tjd, int ipl, int iflag, double[] attr, StringBuilder serr) {
+    return getSwecl().swe_pheno(tjd, ipl, iflag, attr, serr);
   }
 
   /**
@@ -2037,12 +2022,9 @@ String slast_starname;
   * @see SweConst#SEFLG_HELCTR
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_pheno_ut(double tjd_ut, int ipl, int iflag, double[] attr,
-                          StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_pheno_ut(tjd_ut, ipl, iflag, attr, serr);
+  @Override
+  public int swe_pheno_ut(double tjd_ut, int ipl, int iflag, double[] attr, StringBuilder serr) {
+    return getSwecl().swe_pheno_ut(tjd_ut, ipl, iflag, attr, serr);
   }
 
   /**
@@ -2054,12 +2036,9 @@ String slast_starname;
   * @param calc_flag SweConst.SE_TRUE_TO_APP or SweConst.SE_APP_TO_TRUE
   * @return The converted altitude
   */
-  public double swe_refrac(double inalt, double atpress, double attemp,
-                           int calc_flag) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_refrac(inalt, atpress, attemp, calc_flag);
+  @Override
+  public double swe_refrac(double inalt, double atpress, double attemp, int calc_flag) {
+    return getSwecl().swe_refrac(inalt, atpress, attemp, calc_flag);
   }
   /**
   * Calculates the true altitude from the apparent altitude or vice versa.
@@ -2079,11 +2058,9 @@ String slast_starname;
   * </pre>
   * @return The converted altitude; see parameter dret for more output values
   */
+  @Override
   public double swe_refrac_extended(double inalt, double geoalt, double atpress, double lapse_rate, double attemp, int calc_flag, double[] dret) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_refrac_extended(inalt, geoalt, atpress, lapse_rate, attemp, calc_flag, dret);
+    return getSwecl().swe_refrac_extended(inalt, geoalt, atpress, lapse_rate, attemp, calc_flag, dret);
   }
 
   /**
@@ -2135,15 +2112,10 @@ String slast_starname;
   * @see SweConst#SE_BIT_FIXED_DISC_SIZE
   * @see DblObj
   */
-  public int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname,
-                            int epheflag, int rsmi, double[] geopos,
-                            double atpress, double attemp, DblObj tret,
-                            StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_rise_trans(tjd_ut, ipl, starname, epheflag, rsmi, geopos,
-                             atpress, attemp, tret, serr);
+  @Override
+  public int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi, double[] geopos,
+                            double atpress, double attemp, DblObj tret, StringBuilder serr) {
+    return getSwecl().swe_rise_trans(tjd_ut, ipl, starname, epheflag, rsmi, geopos, atpress, attemp, tret, serr);
   }
   /**
   * Same as swe_rise_trans(), but allows to define the height of the horizon
@@ -2190,19 +2162,9 @@ String slast_starname;
   * @see DblObj
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_rise_trans_true_hor(
-                 double tjd_ut, int ipl, StringBuilder starname,
-	         int epheflag, int rsmi,
-                 double[] geopos, 
-	         double atpress, double attemp,
-	         double horhgt,
-                 DblObj tret,
-                 StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_rise_trans_true_hor(tjd_ut, ipl, starname, epheflag, rsmi, geopos,
-                             atpress, attemp, horhgt, tret, serr);
+  public int swe_rise_trans_true_hor(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
+                 double[] geopos, double atpress, double attemp, double horhgt, DblObj tret, StringBuilder serr) {
+    return getSwecl().swe_rise_trans_true_hor(tjd_ut, ipl, starname, epheflag, rsmi, geopos, atpress, attemp, horhgt, tret, serr);
   }
 
   /**
@@ -2245,12 +2207,9 @@ String slast_starname;
   * @see SweConst#SEFLG_MOSEPH
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_sol_eclipse_how(double tjd_ut, int ifl, double[] geopos,
-                                 double[] attr, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_sol_eclipse_how(tjd_ut, ifl, geopos, attr, serr);
+  @Override
+  public int swe_sol_eclipse_how(double tjd_ut, int ifl, double[] geopos, double[] attr, StringBuilder serr) {
+    return getSwecl().swe_sol_eclipse_how(tjd_ut, ifl, geopos, attr, serr);
   }
 
   /**
@@ -2302,14 +2261,8 @@ String slast_starname;
   * @see SweDate#setGlobalTidalAcc(double)
   */
   @Override
-  public int swe_sol_eclipse_when_glob(double tjd_start, int ifl, int ifltype,
-                                       double tret[], int backward,
-                                       StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_sol_eclipse_when_glob(tjd_start, ifl, ifltype, tret,
-                                        backward, serr);
+  public int swe_sol_eclipse_when_glob(double tjd_start, int ifl, int ifltype, double tret[], int backward, StringBuilder serr) {
+    return getSwecl().swe_sol_eclipse_when_glob(tjd_start, ifl, ifltype, tret, backward, serr);
   }
 
   /**
@@ -2380,15 +2333,9 @@ String slast_starname;
   * @see SweDate#setGlobalTidalAcc(double)
   */
   @Override
-  public int swe_sol_eclipse_when_loc(double tjd_start, int ifl,
-                                      double[] geopos, double[] tret,
-                                      double[] attr, int backward,
-                                      StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_sol_eclipse_when_loc(tjd_start, ifl, geopos, tret, attr,
-                                       backward, serr);
+  public int swe_sol_eclipse_when_loc(double tjd_start, int ifl, double[] geopos, double[] tret,
+                                      double[] attr, int backward, StringBuilder serr) {
+    return getSwecl().swe_sol_eclipse_when_loc(tjd_start, ifl, geopos, tret, attr, backward, serr);
   }
 
   /**
@@ -2440,12 +2387,9 @@ String slast_starname;
   * @see SweConst#SEFLG_MOSEPH
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_sol_eclipse_where(double tjd_ut, int ifl, double[] geopos,
-                                   double[] attr, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_sol_eclipse_where(tjd_ut, ifl, geopos, attr, serr);
+  @Override
+  public int swe_sol_eclipse_where(double tjd_ut, int ifl, double[] geopos, double[] attr, StringBuilder serr) {
+    return getSwecl().swe_sol_eclipse_where(tjd_ut, ifl, geopos, attr, serr);
   }
 
 
@@ -2545,12 +2489,10 @@ String slast_starname;
   * @see SweConst#SEFLG_MOSEPH
   * @see SweDate#setGlobalTidalAcc(double)
   */
+  @Override
   public int swe_lun_occult_when_loc(double tjd_start, int ipl, StringBuilder starname, int ifl,
        double[] geopos, double[] tret, double[] attr, int backward, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_lun_occult_when_loc(tjd_start, ipl, starname, ifl, geopos, tret, attr, backward, serr);
+    return getSwecl().swe_lun_occult_when_loc(tjd_start, ipl, starname, ifl, geopos, tret, attr, backward, serr);
   }
 
   /* When is the next lunar eclipse, observable at a geographic position?
@@ -2579,12 +2521,10 @@ String slast_starname;
    * attr[10]     saros series member number
    *         declare as attr[20] at least !
    */
-  public int swe_lun_eclipse_when_loc(double tjd_start, int ifl,
-       double geopos[], double tret[], double attr[], int backward, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_lun_eclipse_when_loc(tjd_start, ifl, geopos, tret, attr, backward, serr);
+  @Override
+  public int swe_lun_eclipse_when_loc(double tjd_start, int ifl, double geopos[], double tret[],
+                                      double attr[], int backward, StringBuilder serr) {
+    return getSwecl().swe_lun_eclipse_when_loc(tjd_start, ifl, geopos, tret, attr, backward, serr);
   }
 
   /**
@@ -2627,17 +2567,9 @@ String slast_starname;
   * @see SweDate#setGlobalTidalAcc(double)
   */
   @Override
-  public int swe_lun_occult_where(double tjd_ut,
-                                  int ipl,
-                                  StringBuilder starname,
-                                  int ifl,
-                                  double[] geopos,
-                                  double[] attr,
-                                  StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_lun_occult_where(tjd_ut, ipl, starname, ifl, geopos, attr, serr);
+  public int swe_lun_occult_where(double tjd_ut, int ipl, StringBuilder starname, int ifl, double[] geopos,
+                                  double[] attr, StringBuilder serr) {
+    return getSwecl().swe_lun_occult_where(tjd_ut, ipl, starname, ifl, geopos, attr, serr);
   }
 
 
@@ -2749,13 +2681,10 @@ String slast_starname;
   * @see SweConst#SEFLG_MOSEPH
   * @see SweDate#setGlobalTidalAcc(double)
   */
-  public int swe_lun_occult_when_glob(
-       double tjd_start, int ipl, StringBuilder starname, int ifl, int ifltype,
+  @Override
+  public int swe_lun_occult_when_glob(double tjd_start, int ipl, StringBuilder starname, int ifl, int ifltype,
        double[] tret, int backward, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_lun_occult_when_glob(tjd_start, ipl, starname, ifl, ifltype, tret, backward, serr);
+    return getSwecl().swe_lun_occult_when_glob(tjd_start, ipl, starname, ifl, ifltype, tret, backward, serr);
   }
 
   /* function finds the gauquelin sector position of a planet or fixed star
@@ -2806,12 +2735,21 @@ String slast_starname;
   * @see SweConst#SEFLG_JPLEPH
   * @see SweConst#SEFLG_MOSEPH
   */
-  public int swe_gauquelin_sector(double t_ut, int ipl, StringBuilder starname, int iflag, int imeth, double[] geopos, double atpress, double attemp, DblObj dgsect, StringBuilder serr) {
-    if (sc==null) {
-      sc=new Swecl(this, sl, sm, swed);
-    }
-    return sc.swe_gauquelin_sector(t_ut, ipl, starname, iflag, imeth, geopos, atpress, attemp, dgsect, serr);
+  public int swe_gauquelin_sector(double t_ut, int ipl, StringBuilder starname, int iflag, int imeth,
+                                  double[] geopos, double atpress, double attemp, DblObj dgsect, StringBuilder serr) {
+    return getSwecl().swe_gauquelin_sector(t_ut, ipl, starname, iflag, imeth, geopos, atpress, attemp, dgsect, serr);
   }
+
+  @Override
+  public int swe_gauquelin_sector(double t_ut, int ipl, StringBuilder starname, int iflag, int imeth,
+                                 double[] geopos, double atpress, double attemp, double[] dgsect, StringBuilder serr) {
+    DblObj dblObj = new DblObj();
+    int retc = getSwecl().swe_gauquelin_sector(t_ut, ipl, starname, iflag,
+            imeth, geopos, atpress, attemp, dblObj, serr);
+    dgsect[0] = dblObj.val;
+    return retc;
+  }
+
   ////////////////////////////////////////////////////////////////////////////
   // Methods from SweHouse.java: /////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
@@ -2840,16 +2778,13 @@ String slast_starname;
   * @return The name of the house system
   */
   public String swe_house_name(char hsys) {
-    if (sh==null) {
-      sh=new SweHouse(sl, this, swed);
-    }
-    return sh.swe_house_name((int)hsys);
+    return getSweHouse().swe_house_name((int)hsys);
   }
   
   @Override
   public String swe_house_name(int hsys) {
       if ( sh == null ) sh = new SweHouse(sl, this, swed);
-      return sh.swe_house_name(hsys);
+      return getSweHouse().swe_house_name(hsys);
   }
 
   /**
@@ -2872,15 +2807,12 @@ String slast_starname;
   * calculation was not possible.
   * @see #swe_houses(double, int, double, double, int, double[], double[])
   */
-  public double swe_house_pos(double armc, double geolat, double eps,
-                              int hsys, double xpin[], StringBuilder serr) {
-    if (sh==null) {
-      sh=new SweHouse(sl, this, swed);
-    }
+  @Override
+  public double swe_house_pos(double armc, double geolat, double eps, int hsys, double xpin[], StringBuilder serr) {
     if (xpin.length != 6) {
       xpin = new double[]{xpin[0], xpin[1], 0, 0, 0, 0};
     }
-    return sh.swe_house_pos(armc, geolat, eps, hsys, xpin, serr);
+    return getSweHouse().swe_house_pos(armc, geolat, eps, hsys, xpin, serr);
   }
 
 
@@ -2906,12 +2838,9 @@ String slast_starname;
   * Porphyry house calculation method in this case, so that valid houses will be
   * returned anyway, just in a different house system than requested.
   */
-  public int swe_houses_armc(double armc, double geolat, double eps,
-                              int hsys, double[] cusp, double[] ascmc) {
-    if (sh==null) {
-      sh=new SweHouse(sl, this, swed);
-    }
-    return sh.swe_houses_armc(armc, geolat, eps, hsys, cusp, ascmc, 0);
+  @Override
+  public int swe_houses_armc(double armc, double geolat, double eps, int hsys, double[] cusp, double[] ascmc) {
+    return getSweHouse().swe_houses_armc(armc, geolat, eps, hsys, cusp, ascmc, 0);
   }
 
 
@@ -2987,18 +2916,27 @@ String slast_starname;
                         double[] ascmc) {
     return swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusp, ascmc, 0);
   }
+
   public int swe_houses(double tjd_ut, int iflag, double geolat,
                         double geolon, int hsys, double[] cusp,
                         double[] ascmc, int aOffs) {
-    if (sh==null) {
-      sh=new SweHouse(sl, this, swed);
-    }
-    return sh.swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusp, ascmc, aOffs);
+
+    return getSweHouse().swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusp, ascmc, aOffs);
   }
   
   @Override
   public int swe_houses_ex(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
       return swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusps, ascmc);
+  }
+
+  @Override
+  public int swe_houses(double tjd_ut, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
+    throw new NotImplementedException("swe_houses");
+  }
+
+  SweHouse getSweHouse() {
+    if (sh != null) return sh;
+    return sh = new SweHouse(sl, this, swed);
   }
 
   /**
@@ -7830,7 +7768,8 @@ if (false) {
   * @return     SweConst.OK. All errors will throw a
   *             SwissephException.
   */
-  protected int swe_fixstar_mag(StringBuilder star, double[] mag, StringBuilder serr) throws SwissephException {
+  @Override
+  public int swe_fixstar_mag(StringBuilder star, double[] mag, StringBuilder serr) throws SwissephException {
     int i;
     int star_nr = 0;
     boolean  isnomclat = false;
@@ -8116,6 +8055,7 @@ if (false) {
   * @return SweConst.ERR on error, SweConst.OK else
   * @see SweDate#setGlobalTidalAcc(double)
   */
+  @Override
   public int swe_time_equ(double tjd_ut, double E[], StringBuilder serr) {
     int retval;
     double t, dt, x[] = new double[6];
@@ -8137,7 +8077,7 @@ if (false) {
     return SweConst.OK;
   }
 
-
+  @Override
   public int swe_lmt_to_lat(double tjd_lmt, double geolon, double[] tjd_lat, StringBuilder serr) {
     int retval;
     double E[] = new double[1], tjd_lmt0;
@@ -8147,6 +8087,7 @@ if (false) {
     return retval;
   }
 
+  @Override
   public int swe_lat_to_lmt(double tjd_lat, double geolon, double[] tjd_lmt, StringBuilder serr) {
     int retval;
     double E[] = new double[1], tjd_lmt0;
@@ -8258,6 +8199,11 @@ if (false) {
         return getSwissLib().swe_sidtime(tjd_ut);
     }
 
+  @Override
+  public double swe_sidtime0(double tjd_ut, double eps, double nut) {
+    return getSwissLib().swe_sidtime0(tjd_ut, eps, nut);
+  }
+
     @Override
     public double swe_julday(int year, int month, int day, double hour, int gregflag) {
         return SweDate.swe_julday(year, month, day, hour, gregflag == SE_GREG_CAL);
@@ -8336,7 +8282,7 @@ if (false) {
             isec = new IntObj(), isgn = new IntObj();
     final DblObj dfrc = new DblObj();
 
-    getSwissLib().swe_split_deg(dDeg, roundFlag, ihour, imin, isec, dfrc, isgn);
+    SwissLib.swe_split_deg(dDeg, roundFlag, ihour, imin, isec, dfrc, isgn);
 
     iDegMinSec[0]=ihour.val;
     iDegMinSec[1]=imin.val;
@@ -8356,6 +8302,169 @@ if (false) {
     return getSweHel().swe_heliacal_ut(tjdstart_ut, geopos, datm, dobs, objectName, typeEvent, iflag, dret, serr);
   }
 
+  @Override
+  public int swe_heliacal_pheno_ut(double tjd_ut, double[] geopos, double[] datm, double[] dobs, String objectNameIn,
+                                    int typeEvent, int helflag, double[] darr, StringBuilder serr) {
+    return getSweHel().swe_heliacal_pheno_ut(tjd_ut, geopos, datm, dobs, objectNameIn,
+            typeEvent, helflag, darr, serr);
+  }
+
+  @Override
+  public int swe_vis_limit_mag(double tjdut, double[] geopos, double[] datm, double[] dobs,
+                                StringBuilder objectName, int helflag, double[] dret, StringBuilder serr) {
+    return getSweHel().swe_vis_limit_mag(tjdut, geopos, datm, dobs,
+            objectName, helflag, dret, serr);
+  }
+
+  @Override
+  public int swe_heliacal_angle(double tjdut, double[] dgeo, double[] datm, double[] dobs,
+                                 int helflag, double mag, double azi_obj, double azi_sun,
+                                 double azi_moon, double alt_moon, double[] dret, StringBuilder serr) {
+    return getSweHel().swe_heliacal_angle(tjdut, dgeo, datm, dobs,
+            helflag, mag, azi_obj, azi_sun, azi_moon, alt_moon, dret, serr);
+  }
+
+  @Override
+  public int swe_topo_arcus_visionis(double tjdut, double[] dgeo, double[] datm, double[] dobs,
+                                      int helflag, double mag, double azi_obj, double alt_obj, double azi_sun,
+                                      double azi_moon, double alt_moon, double[] dret, StringBuilder serr) {
+    return getSweHel().swe_topo_arcus_visionis(tjdut, dgeo, datm, dobs,
+            helflag, mag, azi_obj, alt_obj, azi_sun,
+            azi_moon, alt_moon, dret, serr);
+  }
+
+  @Override
+  public void swe_set_astro_models(StringBuilder samod, int iflag) {
+    throw new NotImplementedException("swe_set_astro_models");
+  }
+
+  @Override
+  public void swe_get_astro_models(StringBuilder samod, StringBuilder sdet, int iflag) {
+    throw new NotImplementedException("swe_get_astro_models");
+  }
+
+  @Override
+  public int swe_calc_pctr(double tjd, int ipl, int iplctr, int iflag, double[] xxret, StringBuilder serr) {
+    throw new NotImplementedException("swe_calc_pctr");
+  }
+
+  @Override
+  public int swe_fixstar2(StringBuilder star, double tjd, int iflag, double[] xx, StringBuilder serr) {
+    throw new NotImplementedException("swe_fixstar2");
+  }
+
+  @Override
+  public int swe_fixstar2_ut(StringBuilder star, double tjd_ut, int iflag, double[] xx, StringBuilder serr) {
+    throw new NotImplementedException("swe_fixstar2_ut");
+  }
+
+  @Override
+  public int swe_fixstar2_mag(StringBuilder star, double[] mag, StringBuilder serr) {
+    throw new NotImplementedException("swe_fixstar2_mag");
+  }
+
+  @Override
+  public int swe_get_ayanamsa_ex(double tjd_et, int iflag, double[] daya, StringBuilder serr) {
+    throw new NotImplementedException("swe_get_ayanamsa_ex");
+  }
+
+  @Override
+  public int swe_get_ayanamsa_ex_ut(double tjd_ut, int iflag, double[] daya, StringBuilder serr) {
+    throw new NotImplementedException("swe_get_ayanamsa_ex_ut");
+  }
+
+  @Override
+  public String swe_get_current_file_data(int ifno, double[] tfstart, double[] tfend, int[] denum) {
+    throw new NotImplementedException("swe_get_current_file_data");
+  }
+
+  @Override
+  public int swe_date_conversion(
+          int y, int m, int d,         /* year, month, day */
+          double utime,   /* universal time in hours (decimal) */
+          char c,         /* calendar g[regorian]|j[ulian] */
+          double[] tjd) {
+    throw new NotImplementedException("swe_date_conversion");
+  }
+
+  @Override
+  public int swe_houses_ex2(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps,
+                             double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
+    throw new NotImplementedException("swe_houses_ex2");
+  }
+
+  @Override
+  public int swe_houses_armc_ex2(double armc, double geolat, double eps, int hsys, double[] cusps,
+                                  double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
+    throw new NotImplementedException("swe_houses_armc_ex2");
+  }
+
+  @Override
+  public void swe_set_lapse_rate(double lapse_rate) {
+    getSwecl().swe_set_lapse_rate(lapse_rate);
+  }
+
+  @Override
+  public int swe_get_orbital_elements(double tjd_et, int ipl, int iflag, double[] dret, StringBuilder serr) {
+    throw new NotImplementedException("swe_houses_ex2");
+  }
+
+  @Override
+  public int swe_orbit_max_min_true_distance(double tjd_et, int ipl, int iflag, double[] dmax,
+                                              double[] dmin, double[] dtrue, StringBuilder serr) {
+    throw new NotImplementedException("swe_houses_ex2");
+  }
+
+  @Override
+  public void swe_set_interpolate_nut(/*AS_BOOL*/int do_interpolate) {
+    throw new NotImplementedException("swe_set_interpolate_nut");
+  }
+
+  /* coordinate transformation polar -> polar */
+  @Override
+  public void swe_cotrans(double[] xpo, double[] xpn, double eps) {
+    SwissLib.swe_cotrans(xpo, xpn, eps);
+  }
+
+  @Override
+  public void swe_cotrans_sp(double[] xpo, double[] xpn, double eps) {
+    SwissLib.swe_cotrans_sp(xpo, xpn, eps);
+  }
+
+  @Override
+  public void swe_set_delta_t_userdef(double dt) {
+    throw new NotImplementedException("swe_set_delta_t_userdef");
+  }
+
+  @Override
+  public double swe_degnorm(double x) {
+    return SwissLib.swe_degnorm(x);
+  }
+
+  @Override
+  public double swe_radnorm(double x) {
+    return SwissLib.swe_radnorm(x);
+  }
+
+  @Override
+  public double swe_rad_midp(double x1, double x0) {
+    return SwissLib.swe_rad_midp(x1, x0);
+  }
+
+  @Override
+  public double swe_deg_midp(double x1, double x0) {
+    return SwissLib.swe_deg_midp(x1, x0);
+  }
+
+  @Override
+  public int swe_rise_trans_true_hor(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi, double[] geopos,
+                                     double atpress, double attemp, double horhgt, double[] tret, StringBuilder serr) {
+    final DblObj dblObj = new DblObj();
+    int retc = getSwecl().swe_rise_trans_true_hor(tjd_ut, ipl, starname, epheflag, rsmi,
+            geopos, atpress, attemp, horhgt, dblObj, serr);
+    tret[0] = dblObj.val;
+    return retc;
+  }
 
 } // Ende class SwissEph
 

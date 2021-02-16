@@ -97,17 +97,17 @@ public class FilePtr
   private long fpos = 0;
   private String host;
   private int port;
-  private int BUFSIZE;
+  private final int BUFSIZE;
   // Holds max. 1 BUFSIZE byte chunks of read data: startidx, endidx, data:
   private long startIdx = -1;  // long, as it holds the file pointer pos.
   private long endIdx = -1;
-  private byte[] data;
-  private byte inbuf[];
+  private final byte[] data;
+  private final byte[] inbuf;
   private long savedLength = -1;
 
   private boolean bigendian = true;
 
-  private boolean useHTTP;
+  private final boolean useHTTP;
 
   /**
   * Creates a new FilePtr instance. Well, the parameters are rather

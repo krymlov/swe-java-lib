@@ -68,16 +68,13 @@
 */
 package swisseph;
 
-class SwephMosh
-		implements java.io.Serializable
-		{
+class SwephMosh implements java.io.Serializable {
+  private static final long serialVersionUID = -970061929152280341L;
 
-  SwissLib sl=null;
-  SwissEph sw=null;
-  SwissData swed=null;
-  Swemmoon sm=null;
-  SweDate sd=null;
-
+  final SwissLib sl;
+  final SwissEph sw;
+  final SwissData swed;
+  final Swemmoon sm;
 
   private static final double TIMESCALE=3652500.0;
   private static final int FICT_GEO=1;
@@ -110,22 +107,15 @@ class SwephMosh
     860492.1546,
   };
 
-  double ss[][]=new double[9][24];
-  double cc[][]=new double[9][24];
-
-
+  final double[][] ss =new double[9][24];
+  final double[][] cc =new double[9][24];
 
   SwephMosh(SwissLib sl, SwissEph sw, SwissData swed) {
     this.sl    = sl;
     this.sw    = sw;
     this.swed  = swed;
-    if (this.sl   ==null) { this.sl   =new SwissLib(); }
-    if (this.sw   ==null) { this.sw   =new SwissEph(); }
-    if (this.swed ==null) { this.swed =new SwissData(); }
-    this.sm    = new Swemmoon(swed, sl);
+    this.sm    = sw.sm;
   }
-
-
 
   /* orbital elements of planets that are computed from osculating elements
    *   epoch

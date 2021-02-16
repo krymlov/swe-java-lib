@@ -1,5 +1,4 @@
 /*
- * Copyright (C) By the Author
  * Author    Yura Krymlov
  * Created   2020-05
  */
@@ -11,6 +10,8 @@ import org.swisseph.api.ISweJulianDate;
 import org.swisseph.app.SweJulianDate;
 import org.swisseph.app.SweRuntimeException;
 import swisseph.DblObj;
+import swisseph.SweConst;
+import swisseph.SwephExp;
 
 import java.io.Serializable;
 import java.util.Calendar;
@@ -19,8 +20,8 @@ import static java.lang.Double.isNaN;
 import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.*;
+import static swisseph.SweConst.ERR;
 import static swisseph.SweConst.SE_GREG_CAL;
-import static swisseph.SweConst.SE_JUL_CAL;
 
 /**
  * @author Yura
@@ -31,10 +32,12 @@ public interface ISwissEph extends Serializable {
     /**
      * @return true if it is the native implementation
      */
-    boolean isNativeAPI();
+    default boolean isNativeAPI() {
+        return true;
+    }
 
     static int getCalendarType(final double julDay) {
-        return julDay >= JD_GC0 ? SE_GREG_CAL : SE_JUL_CAL;
+        return julDay >= JD_GC0 ? SweConst.SE_GREG_CAL : SweConst.SE_JUL_CAL;
     }
 
     default ISweJulianDate getJulianDate(final double julDay) {
@@ -150,75 +153,238 @@ public interface ISwissEph extends Serializable {
         return new SweJulianDate(julianDate, tmzjdt.date(), utcjdt.utime());
     }
 
-    void swe_close();
-
     String swe_get_ephe_path();
-
-    void swe_set_ephe_path(String path);
-
-    //String swe_get_library_path();
-    String swe_version();
-
-    boolean swe_set_topo();
 
     double swe_get_geo_alt();
 
-    void swe_set_topo(double geolon, double geolat, double geoalt);
+    boolean swe_set_topo();
 
-    void swe_set_sid_mode(int sid_mode, double t0, double ayan_t0);
+    /***********************************************************
+     * exported functions
+     ***********************************************************/
 
-    double swe_sidtime(double tjd_ut);
+    default int swe_heliacal_ut(double tjdstart_ut, double[] geopos, double[] datm, double[] dobs,
+                                String objectName, int typeEvent, int iflag, double[] dret, StringBuilder serr) {
+        return SwephExp.swe_heliacal_ut(tjdstart_ut, geopos, datm, dobs, objectName, typeEvent, iflag, dret, serr);
+    }
 
-    double swe_get_ayanamsa_ut(double tjd_ut);
+    default int swe_heliacal_pheno_ut(double tjd_ut, double[] geopos, double[] datm, double[] dobs, String objectNameIn,
+                                      int typeEvent, int helflag, double[] darr, StringBuilder serr) {
+        return SwephExp.swe_heliacal_pheno_ut(tjd_ut, geopos, datm, dobs, objectNameIn,
+                typeEvent, helflag, darr, serr);
+    }
 
-    String swe_get_ayanamsa_name(int isidmode);
+    default int swe_vis_limit_mag(double tjdut, double[] geopos, double[] datm, double[] dobs,
+                                  StringBuilder objectName, int helflag, double[] dret, StringBuilder serr) {
+        return SwephExp.swe_vis_limit_mag(tjdut, geopos, datm, dobs,
+                objectName, helflag, dret, serr);
+    }
 
-    double swe_get_ayanamsa(double tjd_et);
+    /* the following are secret, for Victor Reijs' */
+    default int swe_heliacal_angle(double tjdut, double[] dgeo, double[] datm, double[] dobs,
+                                   int helflag, double mag, double azi_obj, double azi_sun,
+                                   double azi_moon, double alt_moon, double[] dret, StringBuilder serr) {
+        return SwephExp.swe_heliacal_angle(tjdut, dgeo, datm, dobs,
+                helflag, mag, azi_obj, azi_sun,
+                azi_moon, alt_moon, dret, serr);
+    }
 
-    String swe_get_planet_name(int ipl);
+    default int swe_topo_arcus_visionis(double tjdut, double[] dgeo, double[] datm, double[] dobs,
+                                        int helflag, double mag, double azi_obj, double alt_obj, double azi_sun,
+                                        double azi_moon, double alt_moon, double[] dret, StringBuilder serr) {
+        return SwephExp.swe_topo_arcus_visionis(tjdut, dgeo, datm, dobs,
+                helflag, mag, azi_obj, alt_obj, azi_sun,
+                azi_moon, alt_moon, dret, serr);
+    }
 
-    int swe_houses_ex(double tjd_ut, int iflag, double geolat, double geolon,
-                      int hsys, double[] cusps, double[] ascmc);
+    /* the following is secret, for Dieter, allows to test old models of
+     * precession, nutation, etc. Search for SE_MODEL_... in this file */
+    default void swe_set_astro_models(StringBuilder samod, int iflag) {
+        SwephExp.swe_set_astro_models(samod, iflag);
+    }
 
-    int swe_calc(double tjd, int ipl, int iflag, double xx[], StringBuilder serr);
+    default void swe_get_astro_models(StringBuilder samod, StringBuilder sdet, int iflag) {
+        SwephExp.swe_get_astro_models(samod, sdet, iflag);
+    }
 
-    int swe_calc_ut(double tjd_ut, int ipl, int iflag, double xx[], StringBuilder serr);
+    /****************************
+     * exports from sweph.c
+     ****************************/
 
-    int swe_sol_eclipse_when_loc(double tjd_start, int ifl, double[] geopos,
-                                 double[] tret, double[] attr, int backward, StringBuilder serr);
+    default String swe_version() {
+        return SwephExp.swe_version();
+    }
 
-    int swe_sol_eclipse_when_glob(double tjd_start, int ifl, int ifltype,
-                                  double[] tret, int backward, StringBuilder serr);
+    default String swe_get_library_path() {
+        return SwephExp.swe_get_library_path();
+    }
 
-    int swe_lun_eclipse_when_loc(double tjd_start, int ifl, double geopos[], double tret[], double attr[], int backward, StringBuilder serr);
+    /* planets, moon, nodes etc. */
+    default int swe_calc(double tjd, int ipl, int iflag, double[] xx, StringBuilder serr) {
+        return SwephExp.swe_calc(tjd, ipl, iflag, xx, serr);
+    }
 
-    int swe_lun_eclipse_when(double tjd_start, int ifl, int ifltype, double[] tret, int backward, StringBuilder serr);
+    default int swe_calc_ut(double tjd_ut, int ipl, int iflag, double[] xx, StringBuilder serr) {
+        return SwephExp.swe_calc_ut(tjd_ut, ipl, iflag, xx, serr);
+    }
 
-    int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
-                       double[] geopos, double atpress, double attemp, DblObj tret, StringBuilder serr);
+    default int swe_calc_pctr(double tjd, int ipl, int iplctr, int iflag, double[] xxret, StringBuilder serr) {
+        return SwephExp.swe_calc_pctr(tjd, ipl, iplctr, iflag, xxret, serr);
+    }
 
-    double swe_deltat(double tjd);
+    /* fixed stars */
+    default int swe_fixstar(StringBuilder star, double tjd, int iflag, double[] xx, StringBuilder serr) {
+        return SwephExp.swe_fixstar(star, tjd, iflag, xx, serr);
+    }
 
-    double swe_deltat_ex(double tjd, int iflag, StringBuilder serr);
+    default int swe_fixstar_ut(StringBuilder star, double tjd_ut, int iflag, double[] xx, StringBuilder serr) {
+        return SwephExp.swe_fixstar_ut(star, tjd_ut, iflag,
+                xx, serr);
+    }
 
-    void swe_set_jpl_file(String fname);
+    default int swe_fixstar_mag(StringBuilder star, double[] mag, StringBuilder serr) {
+        return SwephExp.swe_fixstar_mag(star, mag, serr);
+    }
 
-    String swe_house_name(int hsys);
+    default int swe_fixstar2(StringBuilder star, double tjd, int iflag, double[] xx, StringBuilder serr) {
+        return SwephExp.swe_fixstar2(star, tjd, iflag, xx, serr);
+    }
 
-    void swe_set_tid_acc(double t_acc);
+    default int swe_fixstar2_ut(StringBuilder star, double tjd_ut, int iflag, double[] xx, StringBuilder serr) {
+        return SwephExp.swe_fixstar2_ut(star, tjd_ut, iflag, xx, serr);
+    }
 
-    double swe_get_tid_acc();
+    default int swe_fixstar2_mag(StringBuilder star, double[] mag, StringBuilder serr) {
+        return SwephExp.swe_fixstar2_mag(star, mag, serr);
+    }
 
-    double swe_julday(int year, int month, int day, double hour, int gregFlag);
+    /* close Swiss Ephemeris */
+    default void swe_close() {
+        SwephExp.swe_close();
+    }
 
-    ISweJulianDate swe_revjul(double jd, int gregFlag);
+    /* set directory path of ephemeris files */
+    default void swe_set_ephe_path(String path) {
+        SwephExp.swe_set_ephe_path(path);
+    }
 
-    ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour,
-                                 int min, double sec, int gregflag, StringBuilder serr);
+    /* set file name of JPL file */
+    default void swe_set_jpl_file(String fname) {
+        SwephExp.swe_set_jpl_file(fname);
+    }
 
-    ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag);
+    /* get planet name */
+    default String swe_get_planet_name(int ipl) {
+        return SwephExp.swe_get_planet_name(ipl);
+    }
 
-    ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag);
+    /* set geographic position of observer */
+    default void swe_set_topo(double geolon, double geolat, double geoalt) {
+        SwephExp.swe_set_topo(geolon, geolat, geoalt);
+    }
+
+    /* set sidereal mode */
+    default void swe_set_sid_mode(final int sid_mode, final double t0, final double ayan_t0) {
+        SwephExp.swe_set_sid_mode(sid_mode, t0, ayan_t0);
+    }
+
+    /* get ayanamsa */
+    default int swe_get_ayanamsa_ex(double tjd_et, int iflag, double[] daya, StringBuilder serr) {
+        return SwephExp.swe_get_ayanamsa_ex(tjd_et, iflag, daya, serr);
+    }
+
+    default int swe_get_ayanamsa_ex_ut(double tjd_ut, int iflag, double[] daya, StringBuilder serr) {
+        return SwephExp.swe_get_ayanamsa_ex_ut(tjd_ut, iflag, daya, serr);
+    }
+
+    default double swe_get_ayanamsa(double tjd_et) {
+        return SwephExp.swe_get_ayanamsa(tjd_et);
+    }
+
+    default double swe_get_ayanamsa_ut(double tjd_ut) {
+        return SwephExp.swe_get_ayanamsa_ut(tjd_ut);
+    }
+
+    default String swe_get_ayanamsa_name(int isidmode) {
+        return SwephExp.swe_get_ayanamsa_name(isidmode);
+    }
+
+    default String swe_get_current_file_data(int ifno, double[] tfstart, double[] tfend, int[] denum) {
+        return SwephExp.swe_get_current_file_data(ifno, tfstart, tfend, denum);
+    }
+
+    /****************************
+     * exports from swedate.c
+     ****************************/
+
+    default int swe_date_conversion(
+            int y, int m, int d,         /* year, month, day */
+            double utime,   /* universal time in hours (decimal) */
+            char c,         /* calendar g[regorian]|j[ulian] */
+            double[] tjd) {
+        return SwephExp.swe_date_conversion(
+                y, m, d,         /* year, month, day */
+                utime,   /* universal time in hours (decimal) */
+                c,         /* calendar g[regorian]|j[ulian] */
+                tjd);
+    }
+
+    default double swe_julday(int year, int month, int day, double utime, int gregflag) {
+        return SwephExp.swe_julday(year, month, day, utime, gregflag);
+    }
+
+    default ISweJulianDate swe_revjul(double jd, int gregflag) {
+        final double[] utime = new double[1];
+        final int[] yearMonDay = new int[3];
+
+        SwephExp.swe_revjul(jd, gregflag, yearMonDay, utime);
+        return new SweJulianDate(jd, yearMonDay, utime[0], SE_GREG_CAL == gregflag);
+    }
+
+    default ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour, int min, double sec, int gregflag, StringBuilder serr) {
+        final double[] dret = new double[2];
+
+        int res = SwephExp.swe_utc_to_jd(year, month, day, hour, min, sec, gregflag, dret, serr);
+        if (res == ERR) return null;
+
+        double time = hour;
+        time += (min / d60);
+        time += (sec / d3600);
+
+        // dret[0] = Julian day number TT (ET)
+        // dret[1] = Julian day number UT1
+
+        return new SweJulianDate(dret[1], new int[]{year, month, day,
+                hour, min, (int) sec}, time, SE_GREG_CAL == gregflag);
+    }
+
+    default ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
+        final int[] outYearMonthDayHourMin = new int[6];
+        final double[] outDsec = new double[1];
+
+        SwephExp.swe_jdet_to_utc(tjd_et, gregflag, outYearMonthDayHourMin, outDsec);
+        outYearMonthDayHourMin[IDXI_SECONDS] = (int) outDsec[0];
+
+        double time = outYearMonthDayHourMin[IDXI_HOUR];
+        time += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
+        time += (outDsec[0] / d3600);
+
+        return new SweJulianDate(tjd_et, outYearMonthDayHourMin, time, SE_GREG_CAL == gregflag);
+    }
+
+    default ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
+        final int[] outYearMonthDayHourMin = new int[6];
+        final double[] outDsec = new double[1];
+
+        SwephExp.swe_jdut1_to_utc(tjd_ut, gregflag, outYearMonthDayHourMin, outDsec);
+        outYearMonthDayHourMin[IDXI_SECONDS] = (int) outDsec[0];
+
+        double time = outYearMonthDayHourMin[IDXI_HOUR];
+        time += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
+        time += (outDsec[0] / d3600);
+
+        return new SweJulianDate(tjd_ut, outYearMonthDayHourMin, time, SE_GREG_CAL == gregflag);
+    }
 
     /**
      * Transforms local time to UTC or UTC to local time
@@ -229,15 +395,273 @@ public interface ISwissEph extends Serializable {
      * For conversion from local time to utc, use +timezone.
      * For conversion from utc to local time, use -timezone.
      */
-    ISweJulianDate swe_utc_time_zone(int iyear, int imonth, int iday, int ihour,
-                                     int imin, double dsec, boolean utcToLocal, double timezone);
+    default ISweJulianDate swe_utc_time_zone(int iyear, int imonth, int iday,
+                                             int ihour, int imin, double dsec, boolean utcToLocal, double timezone) {
+        final int[] outYearMonthDayHourMin = new int[6];
+        final double[] outDsec = new double[1];
 
-    void swe_split_deg(double ddeg, int roundflag, int[] iDegMinSec, double[] dsecfr, int[] isgn);
+        // For conversion from local time to utc, use +timezone
+        // For conversion from utc to local time, use -timezone
 
-    int swe_heliacal_ut(double tjdstart_ut, double[] geopos, double[] datm,
-                        double[] dobs, String objectName, int typeEvent,
-                        int iflag, double[] dret, StringBuilder serr);
+        SwephExp.swe_utc_time_zone(iyear, imonth, iday, ihour, imin, dsec,
+                utcToLocal ? -timezone : +timezone, outYearMonthDayHourMin, outDsec);
 
-    int swe_lun_occult_where(double tjd, int ipl, StringBuilder starname, int ifl,
-                             double[] geopos, double[] attr, StringBuilder serr);
+        outYearMonthDayHourMin[IDXI_SECONDS] = (int) outDsec[0];
+        double utime = outYearMonthDayHourMin[IDXI_HOUR];
+        utime += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
+        utime += (outDsec[0] / d3600);
+
+        SweJulianDate sweJulDate = new SweJulianDate(outYearMonthDayHourMin, utime, true);
+        sweJulDate.timeZone(timezone);
+        return sweJulDate;
+    }
+
+    /****************************
+     * exports from swehouse.c
+     ****************************/
+
+    default int swe_houses(double tjd_ut, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
+        return SwephExp.swe_houses(
+                tjd_ut, geolat, geolon, hsys,
+                cusps, ascmc);
+    }
+
+    default int swe_houses_ex(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
+        return SwephExp.swe_houses_ex(tjd_ut, iflag, geolat, geolon, hsys, cusps, ascmc);
+    }
+
+    default int swe_houses_ex2(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps,
+                               double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
+        return SwephExp.swe_houses_ex2(tjd_ut, iflag, geolat, geolon, hsys,
+                cusps, ascmc, cusp_speed, ascmc_speed, serr);
+    }
+
+    default int swe_houses_armc(double armc, double geolat, double eps, int hsys, double[] cusps, double[] ascmc) {
+        return SwephExp.swe_houses_armc(armc, geolat, eps, hsys, cusps, ascmc);
+    }
+
+    default int swe_houses_armc_ex2(double armc, double geolat, double eps, int hsys, double[] cusps,
+                                    double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
+        return SwephExp.swe_houses_armc_ex2(armc, geolat, eps, hsys, cusps, ascmc, cusp_speed, ascmc_speed, serr);
+    }
+
+    default double swe_house_pos(double armc, double geolat, double eps, int hsys, double[] xpin, StringBuilder serr) {
+        return SwephExp.swe_house_pos(armc, geolat, eps, hsys, xpin, serr);
+    }
+
+    default String swe_house_name(int hsys) {
+        return SwephExp.swe_house_name(hsys);
+    }
+
+    /****************************
+     * exports from swecl.c
+     ****************************/
+
+    default int swe_gauquelin_sector(double t_ut, int ipl, StringBuilder starname, int iflag, int imeth,
+                                     double[] geopos, double atpress, double attemp, double[] dgsect, StringBuilder serr) {
+        return SwephExp.swe_gauquelin_sector(t_ut, ipl, starname, iflag, imeth, geopos, atpress, attemp, dgsect, serr);
+    }
+
+    /* computes geographic location and attributes of solar
+     * eclipse at a given tjd */
+    default int swe_sol_eclipse_where(double tjd, int ifl, double[] geopos, double[] attr, StringBuilder serr) {
+        return SwephExp.swe_sol_eclipse_where(tjd, ifl, geopos, attr, serr);
+    }
+
+    default int swe_lun_occult_where(double tjd, int ipl, StringBuilder starname, int ifl,
+                                     double[] geopos, double[] attr, StringBuilder serr) {
+        return SwephExp.swe_lun_occult_where(tjd, ipl, starname, ifl, geopos, attr, serr);
+    }
+
+    /* computes attributes of a solar eclipse for given tjd, geolon, geolat */
+    default int swe_sol_eclipse_how(double tjd, int ifl, double[] geopos, double[] attr, StringBuilder serr) {
+        return SwephExp.swe_sol_eclipse_how(tjd, ifl, geopos, attr, serr);
+    }
+
+    /* finds time of next local eclipse */
+    default int swe_sol_eclipse_when_loc(double tjd_start, int ifl, double[] geopos, double[] tret,
+                                         double[] attr, int backward, StringBuilder serr) {
+        return SwephExp.swe_sol_eclipse_when_loc(tjd_start, ifl, geopos, tret, attr, backward, serr);
+    }
+
+    default int swe_lun_occult_when_loc(double tjd_start, int ipl, StringBuilder starname, int ifl, double[] geopos,
+                                        double[] tret, double[] attr, int backward, StringBuilder serr) {
+        return SwephExp.swe_lun_occult_when_loc(tjd_start, ipl, starname, ifl, geopos,
+                tret, attr, backward, serr);
+    }
+
+    /* finds time of next eclipse globally */
+    default int swe_sol_eclipse_when_glob(double tjd_start, int ifl, int ifltype, double[] tret, int backward,
+                                          StringBuilder serr) {
+        return SwephExp.swe_sol_eclipse_when_glob(tjd_start, ifl, ifltype, tret, backward, serr);
+    }
+
+
+    /* finds time of next occultation globally */
+    default int swe_lun_occult_when_glob(double tjd_start, int ipl, StringBuilder starname, int ifl, int ifltype,
+                                         double[] tret, int backward, StringBuilder serr) {
+        return SwephExp.swe_lun_occult_when_glob(tjd_start, ipl, starname, ifl, ifltype, tret, backward, serr);
+    }
+
+    /* computes attributes of a lunar eclipse for given tjd */
+    default int swe_lun_eclipse_how(double tjd_ut, int ifl, double[] geopos, double[] attr, StringBuilder serr) {
+        return SwephExp.swe_lun_eclipse_how(tjd_ut, ifl, geopos, attr, serr);
+    }
+
+    default int swe_lun_eclipse_when(double tjd_start, int ifl, int ifltype, double[] tret, int backward, StringBuilder serr) {
+        return SwephExp.swe_lun_eclipse_when(tjd_start, ifl, ifltype, tret, backward, serr);
+    }
+
+    default int swe_lun_eclipse_when_loc(double tjd_start, int ifl, double[] geopos, double[] tret,
+                                         double[] attr, int backward, StringBuilder serr) {
+        return SwephExp.swe_lun_eclipse_when_loc(tjd_start, ifl, geopos, tret, attr, backward, serr);
+    }
+
+    /* planetary phenomena */
+    default int swe_pheno(double tjd, int ipl, int iflag, double[] attr, StringBuilder serr) {
+        return SwephExp.swe_pheno(tjd, ipl, iflag, attr, serr);
+    }
+
+    default int swe_pheno_ut(double tjd_ut, int ipl, int iflag, double[] attr, StringBuilder serr) {
+        return SwephExp.swe_pheno_ut(tjd_ut, ipl, iflag, attr, serr);
+    }
+
+    default double swe_refrac(double inalt, double atpress, double attemp, int calc_flag) {
+        return SwephExp.swe_refrac(inalt, atpress, attemp, calc_flag);
+    }
+
+    default double swe_refrac_extended(double inalt, double geoalt, double atpress, double attemp, double lapse_rate, int calc_flag, double[] dret) {
+        return SwephExp.swe_refrac_extended(inalt, geoalt, atpress, attemp, lapse_rate, calc_flag, dret);
+    }
+
+    default void swe_set_lapse_rate(double lapse_rate) {
+        SwephExp.swe_set_lapse_rate(lapse_rate);
+    }
+
+    default void swe_azalt(double tjd_ut, int calc_flag, double[] geopos, double atpress,
+                           double attemp, double[] xin, double[] xaz) {
+        SwephExp.swe_azalt(tjd_ut, calc_flag, geopos, atpress, attemp, xin, xaz);
+    }
+
+    default void swe_azalt_rev(double tjd_ut, int calc_flag, double[] geopos, double[] xin, double[] xout) {
+        SwephExp.swe_azalt_rev(tjd_ut, calc_flag, geopos, xin, xout);
+    }
+
+    default int swe_rise_trans_true_hor(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
+                                        double[] geopos, double atpress, double attemp, double horhgt, double[] tret, StringBuilder serr) {
+        return SwephExp.swe_rise_trans_true_hor(tjd_ut, ipl, starname, epheflag, rsmi, geopos, atpress, attemp, horhgt, tret, serr);
+    }
+
+    default int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
+                               double[] geopos, double atpress, double attemp, DblObj tretObj, StringBuilder serr) {
+        final double[] tret = new double[1];
+
+        int res = SwephExp.swe_rise_trans(tjd_ut, ipl, starname, epheflag,
+                rsmi, geopos, atpress, attemp, tret, serr);
+
+        tretObj.val = tret[0];
+        return res;
+    }
+
+    default int swe_nod_aps(double tjd_et, int ipl, int iflag, int method, double[] xnasc, double[] xndsc,
+                            double[] xperi, double[] xaphe, StringBuilder serr) {
+        return SwephExp.swe_nod_aps(tjd_et, ipl, iflag, method, xnasc, xndsc, xperi, xaphe, serr);
+    }
+
+    default int swe_nod_aps_ut(double tjd_ut, int ipl, int iflag, int method, double[] xnasc, double[] xndsc,
+                               double[] xperi, double[] xaphe, StringBuilder serr) {
+        return SwephExp.swe_nod_aps_ut(tjd_ut, ipl, iflag, method, xnasc, xndsc, xperi, xaphe, serr);
+    }
+
+    default int swe_get_orbital_elements(double tjd_et, int ipl, int iflag, double[] dret, StringBuilder serr) {
+        return SwephExp.swe_get_orbital_elements(tjd_et, ipl, iflag, dret, serr);
+    }
+
+    default int swe_orbit_max_min_true_distance(double tjd_et, int ipl, int iflag, double[] dmax,
+                                                double[] dmin, double[] dtrue, StringBuilder serr) {
+        return SwephExp.swe_orbit_max_min_true_distance(tjd_et, ipl, iflag, dmax, dmin, dtrue, serr);
+    }
+
+    /****************************
+     * exports from swephlib.c
+     ****************************/
+
+    /* delta t */
+    default double swe_deltat(double tjd) {
+        return SwephExp.swe_deltat(tjd);
+    }
+
+    default double swe_deltat_ex(double tjd, int iflag, StringBuilder serr) {
+        return SwephExp.swe_deltat_ex(tjd, iflag, serr);
+    }
+
+    /* equation of time */
+    default int swe_time_equ(double tjd, double[] te, StringBuilder serr) {
+        return SwephExp.swe_time_equ(tjd, te, serr);
+    }
+
+    default int swe_lmt_to_lat(double tjd_lmt, double geolon, double[] tjd_lat, StringBuilder serr) {
+        return SwephExp.swe_lmt_to_lat(tjd_lmt, geolon, tjd_lat, serr);
+    }
+
+    default int swe_lat_to_lmt(double tjd_lat, double geolon, double[] tjd_lmt, StringBuilder serr) {
+        return SwephExp.swe_lat_to_lmt(tjd_lat, geolon, tjd_lmt, serr);
+    }
+
+    /* sidereal time */
+    default double swe_sidtime0(double tjd_ut, double eps, double nut) {
+        return SwephExp.swe_sidtime0(tjd_ut, eps, nut);
+    }
+
+    default double swe_sidtime(final double tjd_ut) {
+        return SwephExp.swe_sidtime(tjd_ut);
+    }
+
+    default void swe_set_interpolate_nut(/*AS_BOOL*/int do_interpolate) {
+        SwephExp.swe_set_interpolate_nut(do_interpolate);
+    }
+
+    /* coordinate transformation polar -> polar */
+    default void swe_cotrans(double[] xpo, double[] xpn, double eps) {
+        SwephExp.swe_cotrans(xpo, xpn, eps);
+    }
+
+    default void swe_cotrans_sp(double[] xpo, double[] xpn, double eps) {
+        SwephExp.swe_cotrans_sp(xpo, xpn, eps);
+    }
+
+    /* tidal acceleration to be used in swe_deltat() */
+    default double swe_get_tid_acc() {
+        return SwephExp.swe_get_tid_acc();
+    }
+
+    default void swe_set_tid_acc(double t_acc) {
+        SwephExp.swe_set_tid_acc(t_acc);
+    }
+
+    /* set a user defined delta t to be returned by functions
+     * swe_deltat() and swe_deltat_ex() */
+    default void swe_set_delta_t_userdef(double dt) {
+        SwephExp.swe_set_delta_t_userdef(dt);
+    }
+
+    default double swe_degnorm(double x) {
+        return SwephExp.swe_degnorm(x);
+    }
+
+    default double swe_radnorm(double x) {
+        return SwephExp.swe_radnorm(x);
+    }
+
+    default double swe_rad_midp(double x1, double x0) {
+        return SwephExp.swe_rad_midp(x1, x0);
+    }
+
+    default double swe_deg_midp(double x1, double x0) {
+        return SwephExp.swe_deg_midp(x1, x0);
+    }
+
+    default void swe_split_deg(double dDeg, int roundFlag, int[] iDegMinSec, double[] dSecFr, int[] iSign) {
+        SwephExp.swe_split_deg(dDeg, roundFlag, iDegMinSec, dSecFr, iSign);
+    }
 }

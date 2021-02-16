@@ -68,13 +68,7 @@
 */
 package swisseph;
 
-class GenConst
-		implements java.io.Serializable
-		{
- double clight,
-        aunit,
-        helgravconst,
-        ratme,
-        sunradius;
-
+class GenConst implements java.io.Serializable {
+    private static final long serialVersionUID = -3237520335701990546L;
+    double clight, aunit, helgravconst, ratme, sunradius;
 }

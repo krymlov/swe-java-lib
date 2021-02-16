@@ -22,15 +22,17 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import static java.lang.Double.NaN;
+import static java.lang.Double.POSITIVE_INFINITY;
+import static swisseph.SwissData.ODEGREE_STRING;
+
 /**
 * Test program for planetary transits.
 * See class swisseph.SwissEph.<P>
 * Invoke with parameter -h to get the help text.
 * @see swisseph.SwissEph
 */
-public class Transits
-		implements java.io.Serializable
-		{
+public class Transits implements java.io.Serializable {
 
   // Consecutive transit calculations need a minimum time difference
   static final double MIN_TIME_DIFF = 1./24./3600./2.;
@@ -333,10 +335,10 @@ public class Transits
   "                     1 Lahiri                  11 Babylonian, Kugler3\n"+
   "                     2 DeLuce                  12 Babylonian, Huber\n"+
   "                     3 Raman                   13 Babylonian, Mercier\n"+
-  "                     4 Ushashashi              14 t0=Aldebaran, 15"+swed.ODEGREE_STRING+" taurus\n"+
+  "                     4 Ushashashi              14 t0=Aldebaran, 15"+ ODEGREE_STRING+" taurus\n"+
   "                     5 Krishnamurti            15 Hipparchos\n"+
   "                     6 Djwhal Khul             16 Sassanian\n"+
-  "                     7 Sri Yukteshwar          17 Galactic center=0"+swed.ODEGREE_STRING+" sagitt.\n"+
+  "                     7 Sri Yukteshwar          17 Galactic center=0"+ ODEGREE_STRING+" sagitt.\n"+
   "                     8 JN Bhasin               18 J2000\n"+
   "                     9 Babylonian, Kugler1     19 J1900\n"+
   "                                               20 B1950\n"+
@@ -472,7 +474,7 @@ public class Transits
   "     Last transit over alcabitius-MC over 180 degrees at D-Helmstedt:\n"+
   "       java Transits -omc -house11,52.22,b -lon180 -btoday -utnow -r\n\n"+
   "     The first complete Nakshatras cycle in year 2006 starting with\n"+
-  "     Ashvini (0"+swed.ODEGREE_STRING+" in sidereal zodiac) and Lahiri ayanamsh related to a\n"+
+  "     Ashvini (0"+ ODEGREE_STRING+" in sidereal zodiac) and Lahiri ayanamsh related to a\n"+
   "     topocentric position somewhere in Germany:\n"+
   "       java Transits -b1/1/2006 -ut -topo11.0/52.22/160 -p1 -lon0+13.3333333333333 -n27 -sid1 -fv6dtj -ilocen -oloc\n\n"+
   "     Transits of pluto or uranus or neptune over 0 degrees/day of\n"+
@@ -538,44 +540,40 @@ public class Transits
 
   /**************************************************************/
 
-
   private final ISwissEph sw;
   private final SwissOut out;
   private final SwissErr err;
-  
-  private final Extlib   el = new Extlib();
-  private final SwissLib sl = new SwissLib();
-  private final SwissData swed = new SwissData();
 
   Locale[] locs = Locale.getAvailableLocales();
   String locale = "en_US"; // Make en_US the default
+
   String Nlocale = null;   // Locale to localize numbers on input
   String Dlocale = null;   // Locale to interpret dates on input
   String nlocale = null;   // Locale to localize numbers on output
   String dlocale = null;   // Locale to interpret dates on output
 
-  boolean force24hSystem = false;
-
-
   String dateFracSeparator = ".";
   String numIFracSeparator = ".";
   String numOFracSeparator = ".";
+
+  boolean force24hSystem = false;
+
   // For formatting dates:
   SimpleDateFormat dif = null;
   SimpleDateFormat dof = null;
+
   // For formatting the decimal parts of the seconds in dates:
   // Fraction of a second not (yet?) supported on input.
   NumberFormat dnof = null;
+
   // For formatting other numbers:
   NumberFormat nnif = null;
   NumberFormat nnof = null;
-  int secondsIdx = 0;
 
-  double tzOffset = 0;
-
-  int randomCount = 0;
   double randomFactor = 0;
-
+  double tzOffset = 0;
+  int secondsIdx = 0;
+  int randomCount = 0;
 
     public Transits(ISwissEph sw) {
         this.out = new SwissOut();
@@ -598,21 +596,19 @@ public class Transits
   * Test program for transit calculations.
   * @param argv See -h parameter for help on all parameters.
   */
-    /*
-    public static void main(String argv[]) {
-    Transits sc=new Transits(new SwissEph("ephe"));
-    
+  /*
+  public static void main(String argv[]) {
+    Transits sc = new Transits(new SwissEph("ephe"));
+
     // Uses the CURRENT time zone offset in all cases!
     // sc.tzOffset = TimeZone.getDefault().getOffset(new Date().getTime())/1000.0/3600.0/24.0;
     Calendar cal = Calendar.getInstance();
-    
-    sc.tzOffset = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET))/1000.0/3600.0/24.0;
-    
+
+    sc.tzOffset = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / 1000.0 / 3600.0 / 24.0;
+
     int status = sc.startCalculations(argv, true);
     System.out.println(sc.getSwissOut());
-    
-    System.exit(status);
-    }*/
+  }*/
 
   /**
   * If you want to use this class in your own programs, you would
@@ -626,7 +622,7 @@ public class Transits
     return startCalculations(argv, false);
   }
 
-  private int startCalculations(String[] argv, boolean withErrMsg) {
+  public int startCalculations(String[] argv, boolean withErrMsg) {
     TransitArguments a = null;
     TransitCalculator tcs[] = null;
 
@@ -694,11 +690,11 @@ err.println(np);
       // Output calculated data
       a.sde1.setJulDay(tr.jdET);
       if (a.rollover) {
-        while (a.to.values[0].doubleValue() < 0) {
-          a.to.values[0] = new Double(a.to.values[0].doubleValue() + a.rolloverVal);
+        while (a.to.values[0] < 0) {
+          a.to.values[0] = a.to.values[0] + a.rolloverVal;
         }
-        if (a.to.values[0].doubleValue() > a.rolloverVal) {
-          a.to.values[0] = new Double(a.to.values[0].doubleValue()%a.rolloverVal);
+        if (a.to.values[0] > a.rolloverVal) {
+          a.to.values[0] = a.to.values[0] % a.rolloverVal;
         }
       }
       out.println(printFormatted(a, tr));
@@ -715,9 +711,9 @@ err.println(np);
       //    Add 'to.offset' to each transitVal unconditionally
       for(int tvn = 0; tvn < a.to.values.length; tvn++) {
         if (a.duplicateTransitPoints) {
-          a.to.values[tvn] = new Double(tr.transitValue);
+          a.to.values[tvn] = tr.transitValue;
         } else if (a.varyingTransitPoints) {
-          a.to.values[tvn] = new Double(a.to.values[tvn].doubleValue() + a.to.offset);
+          a.to.values[tvn] = a.to.values[tvn] + a.to.offset;
         }
       }
 
@@ -750,7 +746,7 @@ err.println(np);
                                       a.v.duplicateTransitPoints && a.v.rollover,
                                       a.v.duplicateTransitPoints};
 
-    double jd = 0./0.;
+    double jd = NaN;
     int errCnt = 0, skipCnt = 0;
     a.v.outOfTimeRange = false;
     boolean skip = false;
@@ -831,26 +827,16 @@ err.println(np);
   }
 
 
-  double calcTransit(TransitCalculator tc,
-                     double val,
-                     double jdStart,
-                     double jdEnd,
-                     boolean back)
-      throws SwissephException {
+  double calcTransit(TransitCalculator tc, double val, double jdStart, double jdEnd, boolean back) throws SwissephException {
     tc.setOffset(val);
-    try {
-      double et = TransitCalculator.getTransitET(tc, jdStart, back, jdEnd);
-      return et;
-    } catch (SwissephException swe) {
-      throw swe;
-    }
+    return TransitCalculator.getTransitET(tc, jdStart, back, jdEnd);
   }
 
 
   // Return a String of each of the planets combinations as a
   // sequence of the two characters meaning both planets
   String getPlanetCombinations(String planets1, String planets2) {
-    String pls0 = ""; // For 0 deg., 0 deg/day, 180 deg. in long.,
+    StringBuilder pls0 = new StringBuilder(); // For 0 deg., 0 deg/day, 180 deg. in long.,
                       // and any value in dist, the order of the
                       // planets does not matter. So skip the
                       // the second entry in this case (e.g.,
@@ -860,7 +846,7 @@ err.println(np);
                       // are duplicates of pls0 planet combinations in
                       // the other order. E.g., when pls0 contains the
                       // combination '08', pls will contain '80'.
-    String pls = "";
+    StringBuilder pls = new StringBuilder();
     for(int n1 = 0; n1 < planets1.length(); n1++) {
       String pl1 = planets1.substring(n1, n1+1);
       if (pl1.charAt(0) == '/') {	// asteroid like "/399046/"
@@ -893,18 +879,18 @@ err.println(np);
             // require more iterations than others.
             if (comb.indexOf('0') >= 0 || comb.indexOf('1') >= 0 ||
                 "23".equals(comb) || "32".equals(comb)) {
-              pls0 += comb;
+              pls0.append(comb);
             } else {
-              pls0 = comb + pls0;
+              pls0.insert(0, comb);
             }
           } else {
             idxR = pls.indexOf(revComb);
             if (idxR < 0 || (idxR >= 0 && (idxR & 0x00000001) == 1)) {
               if (comb.indexOf('0') >= 0 || comb.indexOf('1') >= 0 ||
                   "23".equals(comb) || "32".equals(comb)) {
-                pls += comb;
+                pls.append(comb);
               } else {
-                pls = comb + pls;
+                pls.insert(0, comb);
               }
             }
           }
@@ -917,7 +903,7 @@ err.println(np);
   // Return a String of each of the planet-object combinations as a
   // sequence of one character (== planet) plus house string
   String getHouseobjectCombinations(String planets, String objects) {
-    String pls = "";
+    StringBuilder pls = new StringBuilder();
     for(int n1 = 0; n1 < planets.length(); n1++) {
       String pl = planets.substring(n1, n1+1);
       if (pl.charAt(0) == '/') {	// asteroid like "/399046/"
@@ -929,16 +915,16 @@ err.println(np);
       for(int n2 = 0; n2 < ar_objects.length; n2++) {
         int obj = string_to_houseobject(ar_objects[n2]);
         String comb = pl + "" + obj;
-        pls += comb + " ";
+        pls.append(comb).append(" ");
       }
     }
-    return pls;
+    return pls.toString();
   }
 
   String group(ObjFormatter f, int cnt, String pad) {
-    String s = "";
+    StringBuilder s = new StringBuilder();
     for(int i=0; i<cnt; i++) {
-      s += pad + f.format(i);
+      s.append(pad).append(f.format(i));
     }
     return s.substring(pad.length());
   }
@@ -992,18 +978,18 @@ err.println(np);
         lastChar = ch;
       }
       if (dblString.length() > 0) {
-        return Double.valueOf(dblString).doubleValue();
+        return Double.parseDouble(dblString);
       }
     }
 
-    return 0./0.;
+    return NaN;
   }
 
   // Print the date according to the format string given by the -f flag.
   // Planets and (calculation) flag are only needed for calculation of
   // actual positions or speeds when using -fp
   String printFormatted(TransitArguments a, TransitResult tr) {
-    String s = "";
+    StringBuilder s = new StringBuilder(255);
     StringBuilder serr = null;
     double[] xx = null;
     int idx, pflags, ret;
@@ -1012,12 +998,12 @@ err.println(np);
     int cnt = 0;
     for (int n = 0; n < a.outputFormat.length(); n++) {
       if (n > 0) {
-        s += "   ";
+        s.append("   ");
       }
       switch ((int)a.outputFormat.charAt(n)) {
         // Print date and time:
         case (int)'n': // output planet name(s):
-                       s += getPlanetnameString(a, tr);
+                       s.append(getPlanetnameString(a, tr));
                        break;
         case (int)'d': // output date, read optional decimal places:
                        cnt = 0;
@@ -1030,14 +1016,14 @@ err.println(np);
                            break;
                          }
                        }
-                       s += jdToDate(a.sde1, a.isUt, a.isLt, cnt);
+                       s.append(jdToDate(a.sde1, a.isUt, a.isLt, cnt));
                        break;
         case (int)'t': // Append 'ET', 'UT', or 'LT':
                        cnt = 0;
                        if (n != 0) {
-                         s = s.substring(0,s.length() - 2);
+                         s = new StringBuilder(s.substring(0, s.length() - 2));
                        }
-                       s += (a.isLt?"LT":(a.isUt?"UT":"ET"));
+                       s.append(a.isLt ? "LT" : (a.isUt ? "UT" : "ET"));
                        break;
         // Print date as julian day number:
         case (int)'j': // read optional decimal places:
@@ -1054,7 +1040,7 @@ err.println(np);
                          }
                        }
                        if (!cntIsSet) { cnt = 8; }
-                       s += printJD(a.sde1.getJulDay(), a.isUT, a.isLT, cnt);
+                       s.append(printJD(a.sde1.getJulDay(), a.isUT, a.isLT, cnt));
                        break;
         // Output degree etc.:
         case (int)'v': // read optional decimal places:
@@ -1071,9 +1057,9 @@ err.println(np);
                          }
                        }
                        if (!cntIsSet) { cnt = 2; }
-                       s += printFloat(tr.transitValue, 3, cnt, (a.rollover?a.rolloverVal:0.)) + swed.ODEGREE_STRING+"";
+                       s.append(printFloat(tr.transitValue, 3, cnt, (a.rollover ? a.rolloverVal : 0.))).append(ODEGREE_STRING);
                        if ((a.iflag & SweConst.SEFLG_TRANSIT_SPEED) != 0) {
-                         s += "/day";
+                         s.append("/day");
                        }
                        break;
         // Verify option, output actual position or speed:
@@ -1094,16 +1080,16 @@ err.println(np);
 
 
                        if (a.pls1 != null) {
-                         s += verifyPlanet(a, tr, 1, cnt);
+                         s.append(verifyPlanet(a, tr, 1, cnt));
                        }
                        if (a.objects1 != null) {
-                         s += verifyHouseobject(a, tr, 1, cnt);
+                         s.append(verifyHouseobject(a, tr, 1, cnt));
                        }
                        if (a.pls2 != null) {
-                         s += verifyPlanet(a, tr, 2, cnt);
+                         s.append(verifyPlanet(a, tr, 2, cnt));
                        }
                        if (a.objects2 != null) {
-                         s += verifyHouseobject(a, tr, 2, cnt);
+                         s.append(verifyHouseobject(a, tr, 2, cnt));
                        }
                        break;
         // Verify option, 'P' adds output of two planet's position (speed) difference:
@@ -1124,14 +1110,14 @@ err.println(np);
                        if (!cntIsSet) { cnt = 8; }
 
                        if (a.pls1 != null) {
-                         s += verifyPlanet(a, tr, 1, cnt, true);
+                         s.append(verifyPlanet(a, tr, 1, cnt, true));
                        } else {
-                         s += verifyPlanet(a, tr, 2, cnt, true);
+                         s.append(verifyPlanet(a, tr, 2, cnt, true));
                        }
                        break;
       }
     }
-    return s;
+    return s.toString();
   }
 
 
@@ -1284,7 +1270,7 @@ err.println(np);
     boolean multipleValues = false;
     boolean isExponent = false;
 
-    Vector<Double> tmpValues = new Vector<Double>();
+    Vector<Double> tmpValues = new Vector<>();
 
     String dblString = "";
     char lastChar = '\0';
@@ -1481,8 +1467,8 @@ err.println(4);
     } else if ("iso".equals(locale)) {
       return locale;
     }
-    for(int n=0; n < locs.length; n++) {
-      if (locs[n].toString().equals(locale)) {
+    for (Locale loc : locs) {
+      if (loc.toString().equals(locale)) {
         return locale;
       }
     }
@@ -1515,7 +1501,7 @@ err.println("Use option -locales to list all available Locales.");
     String s1 = "";
     String s2 = "";
 
-    String s = null;
+    StringBuilder s = null;
     String pat = dof.toPattern();
     // sx.getDate() will round by itself, but rounding is not allowed
     // to occur anymore. We only need an accuracy to a second for
@@ -1525,12 +1511,12 @@ err.println("Use option -locales to list all available Locales.");
     if (sx.getYear() == 0) {
       // DateFormat.format() will not allow a year "0"...
       // Hack: We take the normal pattern and replace 0001 by 0000
-      s = dof.format(sx.getDate(0));
-      int idxy = el.getPatternLastIdx(pat, "yyyy", dof);
+      s = new StringBuilder(dof.format(sx.getDate(0)));
+      int idxy = Extlib.getPatternLastIdx(pat, "yyyy", dof);
 
-      s = s.substring(0,idxy+2) +
-          s.substring(idxy,idxy+1) +
-          s.substring(idxy+3);
+      s = new StringBuilder(s.substring(0, idxy + 2) +
+              s.substring(idxy, idxy + 1) +
+              s.substring(idxy + 3));
     } else if (sx.getYear() < 0) {
       // We add one year, as the date formatter skips year 0
       sx.setYear(sx.getYear()+1);
@@ -1545,19 +1531,19 @@ err.println("Use option -locales to list all available Locales.");
       String sep = (idx>0 && pat.charAt(idx-1)=='-'?" ":"");
       pat = pat.substring(0,idx) + sep + "'-'" + pat.substring(idx);
       dfm.applyPattern(pat);
-      s = dfm.format(sx.getDate(0));
+      s = new StringBuilder(dfm.format(sx.getDate(0)));
     } else {
-      s = dof.format(sx.getDate(0));
+      s = new StringBuilder(dof.format(sx.getDate(0)));
     }
 
     if (decPlaces > 0) {
-      secondsIdx = el.getPatternLastIdx(pat, "ss", dof);
+      secondsIdx = Extlib.getPatternLastIdx(pat, "ss", dof);
       s1 = s.substring(0,secondsIdx + 1/* +idxAdd */);
       s2 = s.substring(secondsIdx + 1/* +idxAdd */);
-      s = dateFracSeparator;
+      s = new StringBuilder(dateFracSeparator);
       for (int i = decPlaces; i > 0; i--) {
         mseconds = (mseconds * 10) % 10;
-        s += dnof.format((int)mseconds);
+        s.append(dnof.format((int) mseconds));
       }
     }
 
@@ -1573,10 +1559,10 @@ err.println("Use option -locales to list all available Locales.");
     if (decPlaces > 18) { decPlaces = 18; }
     // Well, could be another width, if necessary...
     if (width > 61) { width = 61; }
-    String s = "                                                            ";
+    StringBuilder s = new StringBuilder("                                                            ");
     if (val < 0) {
       val = -val;
-      s += "-";
+      s.append("-");
     }
 
     val += 0.5/SMath.pow(10,decPlaces);
@@ -1589,19 +1575,19 @@ err.println("Use option -locales to list all available Locales.");
     }
 
     int len = (String.valueOf((int)val)).length();
-    s += nnof.format((int)val);
-    s = s.substring(SMath.max(len,s.length()-width));
+    s.append(nnof.format((int) val));
+    s = new StringBuilder(s.substring(SMath.max(len, s.length() - width)));
 
     if (decPlaces > 0) {
-      s += numOFracSeparator;
+      s.append(numOFracSeparator);
       double parts = val - (int)val;
       for (int i = decPlaces; i > 0; i--) {
         parts = (parts * 10) % 10;
-        s += nnof.format((int)parts);
+        s.append(nnof.format((int) parts));
       }
     }
 
-    return s;
+    return s.toString();
   }
 
 
@@ -1615,18 +1601,18 @@ err.println("Use option -locales to list all available Locales.");
                         0.5/SMath.pow(10,decPlaces));
     jd = sx.getJulDay();
 
-    String s = nnof.format((int)jd);
+    StringBuilder s = new StringBuilder(nnof.format((int) jd));
 
     if (decPlaces > 0) {
-      s += numOFracSeparator;
+      s.append(numOFracSeparator);
       double parts = SMath.abs(jd - (int)jd);
       for (int i = decPlaces; i > 0; i--) {
         parts = (parts * 10) % 10;
-        s += nnof.format((int)parts);
+        s.append(nnof.format((int) parts));
       }
     }
 
-    return s;
+    return s.toString();
   }
 
 
@@ -1634,7 +1620,7 @@ err.println("Use option -locales to list all available Locales.");
     int deg=(int)d;
     int min=(int)((d%1.)*60.);
     int sec=(int)(((d*60.)%1.)*60.);
-    return ((deg<10?" ":"")+nnof.format(deg)+swed.ODEGREE_STRING+""+
+    return ((deg<10?" ":"")+nnof.format(deg)+ ODEGREE_STRING+""+
             (min<10?nnof.format(0):"")+nnof.format(min)+"'"+
             (sec<10?nnof.format(0):"")+nnof.format(sec)+"\"");
   }
@@ -1678,7 +1664,7 @@ err.println("Use option -locales to list all available Locales.");
       // We just parse the date as a sequence of three integers
       // How these three numbers will be interpreted (y-m-d or d-m-y
       // or whatever) will be determined from the locale pattern.
-      int ints[] = new int[]{0, 0, 0};
+      int[] ints = new int[]{0, 0, 0};
       int jday, jmon, jyear;
       int i=0, n=0;
       boolean neg=false;
@@ -1702,7 +1688,7 @@ err.println("Use option -locales to list all available Locales.");
         }
       } catch (StringIndexOutOfBoundsException siobe) {
         if (neg) { ints[n]=-ints[n]; }
-      } catch (ArrayIndexOutOfBoundsException aob) {
+      } catch (ArrayIndexOutOfBoundsException ignored) {
       }
       // order the integers into date parts according to the locale:
       String pat = dif.toPattern().toLowerCase();
@@ -1767,7 +1753,7 @@ err.println("Use option -locales to list all available Locales.");
   int make_ephemeris_path(int iflag, String argv0) {
     String path="", s="";
     int sp;
-    String dirglue = swed.DIR_GLUE;
+    String dirglue = SwissData.DIR_GLUE;
     int pathlen=0;
     /* moshier needs no ephemeris path */
     if ((iflag & SweConst.SEFLG_MOSEPH)!=0)
@@ -1793,7 +1779,7 @@ err.println("Use option -locales to list all available Locales.");
     if (s.startsWith("/")) {
       try {
         s = s.substring(0, pos) + s.substring(s.indexOf('/', pos+1) + 1);
-      } catch (Exception e) {
+      } catch (Exception ignored) {
       }
     } else {
       s = s.substring(0, pos) + s.substring(pos + 1);
@@ -1836,7 +1822,7 @@ err.println("Use option -locales to list all available Locales.");
     if (Character.isDigit(letter)) {
       try {
         return Integer.parseInt(""+letter) + SweConst.SE_SUN;	// Allows for all kind of numbers
-      } catch (NumberFormatException nf) {
+      } catch (NumberFormatException ignored) {
       }
     }
     if (letter >= (int)'A' && letter <= (int)'I')
@@ -1866,46 +1852,47 @@ err.println("Use option -locales to list all available Locales.");
   }
   int string_to_houseobject(String s) {
     s = s.toLowerCase();
-    if ("house1".equals(s)) {
-      return SweConst.SE_HOUSE1;
-    } else if ("house2".equals(s)) {
-      return SweConst.SE_HOUSE2;
-    } else if ("house3".equals(s)) {
-      return SweConst.SE_HOUSE3;
-    } else if ("house4".equals(s)) {
-      return SweConst.SE_HOUSE4;
-    } else if ("house5".equals(s)) {
-      return SweConst.SE_HOUSE5;
-    } else if ("house6".equals(s)) {
-      return SweConst.SE_HOUSE6;
-    } else if ("house7".equals(s)) {
-      return SweConst.SE_HOUSE7;
-    } else if ("house8".equals(s)) {
-      return SweConst.SE_HOUSE8;
-    } else if ("house9".equals(s)) {
-      return SweConst.SE_HOUSE9;
-    } else if ("house10".equals(s)) {
-      return SweConst.SE_HOUSE10;
-    } else if ("house11".equals(s)) {
-      return SweConst.SE_HOUSE11;
-    } else if ("house12".equals(s)) {
-      return SweConst.SE_HOUSE12;
-    } else if ("asc".equals(s)) {
-      return SweConst.SE_ASC;
-    } else if ("mc".equals(s)) {
-      return SweConst.SE_MC;
-    } else if ("armc".equals(s)) {
-      return SweConst.SE_ARMC;
-    } else if ("vertex".equals(s)) {
-      return SweConst.SE_VERTEX;
-    } else if ("equasc".equals(s)) {
-      return SweConst.SE_EQUASC;
-    } else if ("coasc1".equals(s)) {
-      return SweConst.SE_COASC1;
-    } else if ("coasc2".equals(s)) {
-      return SweConst.SE_COASC2;
-    } else if ("polasc".equals(s)) {
-      return SweConst.SE_POLASC;
+    switch (s) {
+      case "house1":
+        return SweConst.SE_HOUSE1;
+      case "house2":
+        return SweConst.SE_HOUSE2;
+      case "house3":
+        return SweConst.SE_HOUSE3;
+      case "house4":
+        return SweConst.SE_HOUSE4;
+      case "house5":
+        return SweConst.SE_HOUSE5;
+      case "house6":
+        return SweConst.SE_HOUSE6;
+      case "house7":
+        return SweConst.SE_HOUSE7;
+      case "house8":
+        return SweConst.SE_HOUSE8;
+      case "house9":
+        return SweConst.SE_HOUSE9;
+      case "house10":
+        return SweConst.SE_HOUSE10;
+      case "house11":
+        return SweConst.SE_HOUSE11;
+      case "house12":
+        return SweConst.SE_HOUSE12;
+      case "asc":
+        return SweConst.SE_ASC;
+      case "mc":
+        return SweConst.SE_MC;
+      case "armc":
+        return SweConst.SE_ARMC;
+      case "vertex":
+        return SweConst.SE_VERTEX;
+      case "equasc":
+        return SweConst.SE_EQUASC;
+      case "coasc1":
+        return SweConst.SE_COASC1;
+      case "coasc2":
+        return SweConst.SE_COASC2;
+      case "polasc":
+        return SweConst.SE_POLASC;
     }
 
     return 0;
@@ -1952,28 +1939,28 @@ err.println("Use option -locales to list all available Locales.");
   }
 
   String getPlanetNames(String pls, String pad) {
-    String s = "";
+    StringBuilder s = new StringBuilder();
     for(int n = 0; n < pls.length(); n++) {
       int pl = string_to_ipl(pls.substring(n));
       if (pl > SweConst.SE_AST_OFFSET) {
         n += ("//" + (pl-SweConst.SE_AST_OFFSET)).length() - 1;
       }
-      s += pad + sw.swe_get_planet_name(pl);
+      s.append(pad).append(sw.swe_get_planet_name(pl));
     }
     return s.substring(pad.length());
   }
 
   String getHouseobjectNames(String houses, String pad) {
-    String s = "";
+    StringBuilder s = new StringBuilder();
     String[] ar_houses = houses.split("[,/]");
-    for(int n = 0; n < ar_houses.length; n++) {
-      int house = string_to_houseobject(ar_houses[n]);
-      s += pad + SwissEph.getHouseobjectname(house);
+    for (String ar_house : ar_houses) {
+      int house = string_to_houseobject(ar_house);
+      s.append(pad).append(SwissEph.getHouseobjectname(house));
     }
     return s.substring(pad.length());
   }
 
-  TransitArguments parseArgs(String argv[])
+  TransitArguments parseArgs(String[] argv)
       throws IllegalArgumentException {
     TransitArguments a = new TransitArguments();
 
@@ -2164,7 +2151,7 @@ err.println("Use option -locales to list all available Locales.");
       } else if (argv[i].equals("-cv")) {
         a.convert = true;
       } else if (argv[i].equals("-locales")) {
-        String[] locs = el.getLocales();
+        String[] locs = Extlib.getLocales();
         for (int n=0; n<locs.length; n++) {
           out.println(locs[n]);
         }
@@ -2293,19 +2280,19 @@ err.println("Use option -locales to list all available Locales.");
     dlocale = checkLocale(dlocale, defLocale, true);
     nlocale = checkLocale(nlocale, defLocale);
 
-    dif = el.createLocDateTimeFormatter(Dlocale, true); // DateInputFormat
-    dof = el.createLocDateTimeFormatter(dlocale, force24hSystem); // DateOutputFormat
-    dnof = NumberFormat.getInstance(el.getLocale(nlocale)); // NumberOutputFormat for fractions of seconds
-    dateFracSeparator = el.getDecimalSeparator(dnof);
-    nnif = NumberFormat.getInstance(el.getLocale(Nlocale));
+    dif = Extlib.createLocDateTimeFormatter(Dlocale, true); // DateInputFormat
+    dof = Extlib.createLocDateTimeFormatter(dlocale, force24hSystem); // DateOutputFormat
+    dnof = NumberFormat.getInstance(Extlib.getLocale(nlocale)); // NumberOutputFormat for fractions of seconds
+    dateFracSeparator = Extlib.getDecimalSeparator(dnof);
+    nnif = NumberFormat.getInstance(Extlib.getLocale(Nlocale));
     nnif.setGroupingUsed(false);
-    numIFracSeparator = el.getDecimalSeparator(nnif);
-    nnof = NumberFormat.getInstance(el.getLocale(nlocale));
+    numIFracSeparator = Extlib.getDecimalSeparator(nnif);
+    nnof = NumberFormat.getInstance(Extlib.getLocale(nlocale));
     nnof.setGroupingUsed(false);
     nnof.setMaximumFractionDigits(12);
 
-    numOFracSeparator = el.getDecimalSeparator(nnof);
-    secondsIdx = el.getPatternLastIdx(dof.toPattern(), "s", dof); // No input with parts of seconds?
+    numOFracSeparator = Extlib.getDecimalSeparator(nnof);
+    secondsIdx = Extlib.getPatternLastIdx(dof.toPattern(), "s", dof); // No input with parts of seconds?
 
     a.to = parseTransitValString(a.transitValString);
     if (a.to == null) {
@@ -2413,7 +2400,7 @@ err.println("Use option -locales to list all available Locales.");
 
     // If -topo is given, read topographic values (lon / lat / height)
     if (a.topoS != null) {
-      if (a.topoS.length() == 0) { // Default: Z�rich
+      if (a.topoS.length() == 0) { // Default: Zürich
         a.topoS = "8" + numIFracSeparator + "55;47" + numIFracSeparator + "38;400";
       }
       try {
@@ -2851,7 +2838,7 @@ err.println("Use option -locales to list all available Locales.");
     out.print("Reference point:   " + (a.mpp1 || a.mpo1?" ":""));
     if (a.calcSpeed) {	// no house object transits possible
       ObjFormatter dblf = new ObjFormatter(a.to.values,
-                                           swed.ODEGREE_STRING+"/day",
+                                           ODEGREE_STRING+"/day",
                                            nnof);
       if (a.pls2 != null) {
         if (a.yogaTransit) {
@@ -2864,7 +2851,7 @@ err.println("Use option -locales to list all available Locales.");
           line = (a.helio?"heliocentric ":"") + "speed of " +
                   group(dblf, a.to.values.length, " or ") + " " +
                   (a.to.values.length!=1?"higher than":
-                     (a.to.values[0].doubleValue()<0?"lower than":"higher than")) +
+                     (a.to.values[0] <0?"lower than":"higher than")) +
                   " speed of "+ getPlanetNames(a.pls2, " or ");
         }
         line += " in "+
@@ -2905,7 +2892,7 @@ err.println("Use option -locales to list all available Locales.");
       }
     } else { // Transit over a lon / lat / dist position:
       ObjFormatter dblf = new ObjFormatter(a.to.values,
-                                   (a.to.idxOffset==2?" AU":""+swed.ODEGREE_STRING),
+                                   (a.to.idxOffset==2?" AU":""+ ODEGREE_STRING),
                                    nnof);
       if (a.pls2 != null) {
         if (a.yogaTransit) {
@@ -2939,7 +2926,7 @@ err.println("Use option -locales to list all available Locales.");
                     (a.helio?" (heliocentric)":"");
           } else {
             line += (a.to.values.length!=1?"ahead of":
-                           (a.to.values[0].doubleValue()<0?"before":"after")) + " " + 
+                           (a.to.values[0] <0?"before":"after")) + " " +
               (a.helio?"heliocentric ":"") +
               (a.equatorial ?
                   (a.to.idxOffset==0?"right ascension":"declination") :
@@ -2960,7 +2947,7 @@ err.println("Use option -locales to list all available Locales.");
                   (a.helio?" (heliocentric)":"");
         } else {
           line += (a.to.values.length!=1?"ahead of":
-                         (a.to.values[0].doubleValue()<0?"before":"after")) + " " + 
+                         (a.to.values[0] <0?"before":"after")) + " " +
             (a.helio?"heliocentric ":"") +
             (a.equatorial ?
                 (a.to.idxOffset==0?"right ascension":"declination") :
@@ -3013,7 +3000,7 @@ err.println("Use option -locales to list all available Locales.");
   TransitCalculator[] initCalculators(TransitArguments a)
       throws IllegalArgumentException {
     // Init all required TransitCalculators:
-    TransitCalculator tcs[] = null;
+    TransitCalculator[] tcs;
     a.idxDuplicates = Integer.MAX_VALUE;
 
     if (a.pls1 != null && a.pls2 != null) {  // relative or yoga or partile transits between two planets
@@ -3065,9 +3052,9 @@ err.println("Use option -locales to list all available Locales.");
         ci++;
         try {
           if (randomCount == 0) {
-            tcs[t] = new TCPlanetPlanet(sw, a.pl1, a.pl2, a.iflag, a.to.values[0].doubleValue());
+            tcs[t] = new TCPlanetPlanet(sw, a.pl1, a.pl2, a.iflag, a.to.values[0]);
           } else {
-            tcs[t] = new TCPlanetPlanet(sw, a.pl1, a.pl2, a.iflag, a.to.values[0].doubleValue(), randomCount, randomFactor);
+            tcs[t] = new TCPlanetPlanet(sw, a.pl1, a.pl2, a.iflag, a.to.values[0], randomCount, randomFactor);
           }
         } catch (SwissephException se) {
 err.println(pls1 + " / " + pls2);
@@ -3114,9 +3101,9 @@ err.println(pls1 + " / " + pls2);
 
         try {
           if (randomCount == 0) {
-            tcs[t] = new TCPlanetHouse(sw, a.pl1, a.iflag, objno, a.hsys, a.house_flags, a.house_lon, a.house_lat, a.to.values[0].doubleValue());
+            tcs[t] = new TCPlanetHouse(sw, a.pl1, a.iflag, objno, a.hsys, a.house_flags, a.house_lon, a.house_lat, a.to.values[0]);
           } else {
-            tcs[t] = new TCPlanetHouse(sw, a.pl1, a.iflag, objno, a.hsys, a.house_flags, a.house_lon, a.house_lat, a.to.values[0].doubleValue(), randomCount, randomFactor);
+            tcs[t] = new TCPlanetHouse(sw, a.pl1, a.iflag, objno, a.hsys, a.house_flags, a.house_lon, a.house_lat, a.to.values[0], randomCount, randomFactor);
           }
         } catch (SwissephException se) {
 //System.err.println(pls1 + " / " + pls2);
@@ -3141,7 +3128,7 @@ err.println(pls1 + " / " + pls2);
       a.objNumbers = new int[tk.countTokens()][2];
       for(int t = 0; t < tcs.length; t++) {
         int objno = getObjectFromString(tk.nextToken());
-        tcs[t] = new TCHouses(sw, objno, a.hsys, a.house_lon, a.house_lat, a.house_flags, a.to.values[0].doubleValue());
+        tcs[t] = new TCHouses(sw, objno, a.hsys, a.house_lon, a.house_lat, a.house_flags, a.to.values[0]);
         a.plNumbers[t][0] = -1;
         a.plNumbers[t][1] = -1;
         a.objNumbers[t][0] = objno;
@@ -3184,9 +3171,9 @@ err.println(pls1 + " / " + pls2);
         a.pl1 = string_to_ipl(a.pls1.substring(ppos));
         try {
           if (randomCount == 0) {
-            tcs[t] = new TCPlanet(sw, a.pl1, a.iflag, a.to.values[0].doubleValue());
+            tcs[t] = new TCPlanet(sw, a.pl1, a.iflag, a.to.values[0]);
           } else {
-            tcs[t] = new TCPlanet(sw, a.pl1, a.iflag, a.to.values[0].doubleValue(), randomCount, randomFactor);
+            tcs[t] = new TCPlanet(sw, a.pl1, a.iflag, a.to.values[0], randomCount, randomFactor);
           }
         } catch (SwissephException se) {
           if (se.getType() == SwissephException.FILE_NOT_FOUND) {
@@ -3243,7 +3230,7 @@ err.println(pls1 + " / " + pls2);
       try {
         int hn = Integer.parseInt(s.substring(5));
         return -hn;
-      } catch (Exception e) {
+      } catch (NumberFormatException ignored) {
       }
     }
     return 0;
@@ -3280,7 +3267,7 @@ err.println(pls1 + " / " + pls2);
       // Calculate this planet or planet combination for all possible or
       // requested transit values 'a.to.values'.
       for(int tvn = 0; tvn < a.to.values.length; tvn++) {
-        a.v.transitVal = a.to.values[tvn].doubleValue();
+        a.v.transitVal = a.to.values[tvn];
         tr2 = calcNeighbouringTransits(a);
 
          // Select closest transit point of all current transit calculations
@@ -3309,7 +3296,7 @@ err.println(pls1 + " / " + pls2);
     do {
       sorted = true;
       for (int i = 0; i < d.length - 1; i++) {
-        if (SMath.abs(d[i].doubleValue()) > SMath.abs(d[i+1].doubleValue())) {
+        if (SMath.abs(d[i]) > SMath.abs(d[i + 1])) {
           tmp = d[i+1]; d[i+1] = d[i]; d[i] = tmp;
           sorted = false;
         }
@@ -3366,18 +3353,20 @@ err.println(pls1 + " / " + pls2);
 
 
 static final class TransitValues implements java.io.Serializable {
+  private static final long serialVersionUID = 8760342507390748397L;
+
   TransitCalculator tc = null;
   int tcIndex = 0; // Keep track of which tc is saved to jdET
 
-  double transitVal = 0./0.;
-  double jdStart = 0./0.;
-  double jdEnd = 0./0.;
-  double tvOffset = 0./0.;
+  double transitVal = NaN;
+  double jdStart = NaN;
+  double jdEnd = NaN;
+  double tvOffset = NaN;
 
-  double zTmp = 0./0.;
-  double z0 = 0./0.; // The final minimum value
-  double zm = 0./0.;
-  double zp = 0./0.;
+  double zTmp = NaN;
+  double z0 = NaN; // The final minimum value
+  double zm = NaN;
+  double zp = NaN;
 
   boolean varyingTransitPoints = false;  // e.g. -lon60+10 with -n, -N, -b -b, -b -B
   boolean duplicateTransitPoints = false; // e.g. -lon60+10 -N / -B only
@@ -3388,9 +3377,9 @@ static final class TransitValues implements java.io.Serializable {
 }
 
 
-static final class TransitOffsets
-		implements java.io.Serializable
-		{
+static final class TransitOffsets implements java.io.Serializable {
+  private static final long serialVersionUID = 708705440072177032L;
+
   int idxOffset = 0;           // The index into the xx[] array in swe_calc*()
                                // 0 to 5: lon / lat / dist / speed in lon /
                                //         lat / dist
@@ -3402,146 +3391,148 @@ static final class TransitOffsets
 }
 
 
-static final class ObjFormatter
-		implements java.io.Serializable
-		{
-  Object[] arr = null;
-  String postfix = "";
-  NumberFormat nnof = null;
+  static final class ObjFormatter implements java.io.Serializable {
+    private static final long serialVersionUID = 8283299354324521302L;
 
-  ObjFormatter(Object[] arr, String postfix, NumberFormat nnof) {
-    this.arr = arr;
-    this.postfix = postfix;
-    this.nnof = nnof;
-  }
-  String format(int idx) {
-    if (nnof != null && (arr[idx] instanceof Double || arr[idx] instanceof Integer)) {
-      return nnof.format(arr[idx]) + postfix;
+    Object[] arr = null;
+    String postfix = "";
+    NumberFormat nnof = null;
+
+    ObjFormatter(Object[] arr, String postfix, NumberFormat nnof) {
+      this.arr = arr;
+      this.postfix = postfix;
+      this.nnof = nnof;
     }
-    return arr[idx] + postfix;
+
+    String format(int idx) {
+      if (nnof != null && (arr[idx] instanceof Double || arr[idx] instanceof Integer)) {
+        return nnof.format(arr[idx]) + postfix;
+      }
+      return arr[idx] + postfix;
+    }
   }
-}
 
 
+  static final class TransitArguments implements java.io.Serializable {
+    private static final long serialVersionUID = -5286690431744244692L;
+
+    // CH-Zuerich:
+    double top_lon = 8.55;
+    double top_lat = 47.38;
+    double top_elev = 400;
+
+    // Default values for optional parameter:
+    boolean withHeader = true;
+    boolean back = false;
+    boolean isUt = false; // Time of starting date
+    boolean isUT = false; // Time of end date
+    boolean isLt = false; // Time of starting date, use local time
+    boolean isLT = false; // Time of end date, use local time
+    boolean calcSpeed = false;
+    int sidmode = -1;                 // Means: tropical mode
+    int whicheph = SweConst.SEFLG_SWIEPH;
+    String ephepath = SweConst.SE_EPHE_PATH;
+    String sBeginhour = "";
+    double beginhour = 0;
+    String pls2 = null;
+    int pls2_cnt = 0;
+    int pl2 = -2;                   // Means: not set
+    int obj1 = -2;                   // Means: not set
+    int obj2 = -2;                   // Means: not set
+    double count = 1;
+    String htopoS = null;
+    double house_lon = 0;
+    double house_lat = 0;
+    int house_flags = 0;
+    String topoS = null;
+    boolean convert = false;
+    String fname = SweConst.SE_FNAME_DFT;
 
 
-static final class TransitArguments implements java.io.Serializable {
-  // CH-Zuerich:
-  double top_lon = 8.55;
-  double top_lat = 47.38;
-  double top_elev = 400;
+    // Derived values:
+    boolean countIsSet = false;
+    // duplicateTransitPoints, e.g. -lat0+0.01 with -N / -B only
+    boolean duplicateTransitPoints = false;   // multiple transit points
+    // varyingTransitPoints, e.g. -lat0+0.01 with -N, -n / -b -B, -b -b
+    boolean varyingTransitPoints = false;
+    boolean yogaTransit = true;
+    boolean partileStart = false;
+    boolean partileEnd = false;
+    boolean helio = false;
+    boolean equatorial = false;
+    int iflag = 0;  // Flags to be used for transit calculations
+    int cflag = 0;  // Flags to be used for pure calculations
 
-  // Default values for optional parameter:
-  boolean withHeader = true;
-  boolean back = false;
-  boolean isUt = false; // Time of starting date
-  boolean isUT = false; // Time of end date
-  boolean isLt = false; // Time of starting date, use local time
-  boolean isLT = false; // Time of end date, use local time
-  boolean calcSpeed = false;
-  int sidmode=-1;                 // Means: tropical mode
-  int whicheph = SweConst.SEFLG_SWIEPH;
-  String ephepath = SweConst.SE_EPHE_PATH;
-  String sBeginhour = "";
-  double beginhour = 0;
-  String pls2 = null;
-  int pls2_cnt = 0;
-  int pl2 = -2;                   // Means: not set
-  int obj1 = -2;                   // Means: not set
-  int obj2 = -2;                   // Means: not set
-  double count = 1;
-  String htopoS = null;
-  double house_lon = 0;
-  double house_lat = 0;
-  int house_flags = 0;
-  String topoS = null;
-  boolean convert = false;
-  String fname = SweConst.SE_FNAME_DFT;
+    boolean outputFormatIsSet = false;
+    String outputFormat = "dt";
+    double extPrecision = 1;
+    double zm = 0;
+    double zp = 0;
 
+    // A string containing the type and value of the transit point, e.g.:
+    //    +lon0         for yoga transits over 0 degrees in longitude.
+    //    -lat0+0.01    for transits over 0 degrees in latitude with 0.01 degree
+    //                  increment.
+    //    -lon30/45/60/90/120/180/270
+    //                  for transits over any of these longitudinal degrees
+    String transitValString = "";
 
-
-  // Derived values:
-  boolean countIsSet = false;
-  // duplicateTransitPoints, e.g. -lat0+0.01 with -N / -B only
-  boolean duplicateTransitPoints = false;   // multiple transit points
-  // varyingTransitPoints, e.g. -lat0+0.01 with -N, -n / -b -B, -b -b
-  boolean varyingTransitPoints = false;
-  boolean yogaTransit = true;
-  boolean partileStart = false;
-  boolean partileEnd = false;
-  boolean helio = false;
-  boolean equatorial = false;
-  int iflag = 0;  // Flags to be used for transit calculations
-  int cflag = 0;  // Flags to be used for pure calculations
-
-  boolean outputFormatIsSet = false;
-  String outputFormat = "dt";
-  double extPrecision = 1;
-  double zm = 0;
-  double zp = 0;
-
-  // A string containing the type and value of the transit point, e.g.:
-  //    +lon0         for yoga transits over 0 degrees in longitude.
-  //    -lat0+0.01    for transits over 0 degrees in latitude with 0.01 degree
-  //                  increment.
-  //    -lon30/45/60/90/120/180/270
-  //                  for transits over any of these longitudinal degrees
-  String transitValString="";
-
-  // Required parameters:
-  int pl1 = -2;
-  String pls1 = null;
-  int pls_cnt = 0;		// Count of objects when pls1 and pls2 are used
-  int pls1_cnt = 0;
-  String objects1 = null;	// pls1 OR objects...
-  String objects2 = null;	// pls2 OR objects...
-  int obj_cnt = 0;		// Count of objects when a planet and an object are used
-  char hsys = ' ';
-  String begindate = null;
-  String enddate = null;
-  String sEndhour = "";
-  double endhour = 1./0.;         // Means: not set
-  boolean endTimeIsSet = false;
+    // Required parameters:
+    int pl1 = -2;
+    String pls1 = null;
+    int pls_cnt = 0;        // Count of objects when pls1 and pls2 are used
+    int pls1_cnt = 0;
+    String objects1 = null;    // pls1 OR objects...
+    String objects2 = null;    // pls2 OR objects...
+    int obj_cnt = 0;        // Count of objects when a planet and an object are used
+    char hsys = ' ';
+    String begindate = null;
+    String enddate = null;
+    String sEndhour = "";
+    double endhour = POSITIVE_INFINITY;         // Means: not set
+    boolean endTimeIsSet = false;
 
 
-  // Intermediate or other derived parameters:
-  TransitOffsets to = null;
-  boolean mpp1 = false; // More than one planet
-  boolean mpp2 = false; // More than one planet on relative or yoga transits
-  boolean mpo1 = false; // More than one (house or ascendent) object
-  boolean mpo2 = false; // More than one (house or ascendent) object
+    // Intermediate or other derived parameters:
+    TransitOffsets to = null;
+    boolean mpp1 = false; // More than one planet
+    boolean mpp2 = false; // More than one planet on relative or yoga transits
+    boolean mpo1 = false; // More than one (house or ascendent) object
+    boolean mpo2 = false; // More than one (house or ascendent) object
 
-  double tjde1 = 0.;
-  double tjde2 = 0.;
-  int[][] plNumbers = null;
-  int[][] objNumbers = null;
-  SweDate   sde1 = new SweDate();
-  SweDate   sde2 = new SweDate();
-  boolean rollover = false;
-  double rolloverVal = 360.;
-  TransitValues v = new TransitValues();
-  int idxDuplicates = 0;
-  boolean withDuplicates = true;
+    double tjde1 = 0.;
+    double tjde2 = 0.;
+    int[][] plNumbers = null;
+    int[][] objNumbers = null;
+    SweDate sde1 = new SweDate();
+    SweDate sde2 = new SweDate();
+    boolean rollover = false;
+    double rolloverVal = 360.;
+    TransitValues v = new TransitValues();
+    int idxDuplicates = 0;
+    boolean withDuplicates = true;
 
-  double jdET2 = 0.;
-}
+    double jdET2 = 0.;
+  }
 
   static final class TransitResult implements java.io.Serializable {
+    private static final long serialVersionUID = 198468111608876327L;
+
     // The index in the array of all TransitCalculators returning the
     // nearest transit point:
-    public int tcsNo = 0;
+    int tcsNo = 0;
 
-  // The nearest transit point found, Double.MAX_VALUE or -Double.MAX_VALUE,
-  // if no transit found:
-  public double jdET = 0./0.;
+    // The nearest transit point found, Double.MAX_VALUE or -Double.MAX_VALUE,
+    // if no transit found:
+    double jdET = NaN;
 
-  // The planet numbers:
-  public int pl1 = 0;
-  public int pl2 = 0;
-  public int obj1 = 0;
-  public int obj2 = 0;
+    // The planet numbers:
+    int pl1 = 0;
+    int pl2 = 0;
+    int obj1 = 0;
+    int obj2 = 0;
 
-  public double transitValue = 0./0.;
+    double transitValue = NaN;
 
     public String toString() {
       return "tcs[" + tcsNo + "];pl:" + pl1 + "/" + pl2 + ";obj:" + obj1 + "/" + obj2 + ";" + jdET;

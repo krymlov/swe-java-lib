@@ -68,9 +68,7 @@
 */
 package swisseph;
 
-public class SwissData
-		implements java.io.Serializable
-		{
+public class SwissData implements java.io.Serializable {
 
   /**
   * The character to be used as the degree character. Only textmode
@@ -84,7 +82,7 @@ public class SwissData
     public static final String ODEGREE_STRING = "°"; /* degree as string, utf8 encoding */
 
 
-  public static final String ayanamsa_name[] = {
+  public static final String[] ayanamsa_name = {
      "Fagan/Bradley",
      "Lahiri",
      "Robert DeLuce",
@@ -179,7 +177,9 @@ public class SwissData
     SwephData.SEI_CHIRON, SwephData.SEI_PHOLUS, SwephData.SEI_CERES,
     SwephData.SEI_PALLAS, SwephData.SEI_JUNO, SwephData.SEI_VESTA, };
 
-//////////////////////////////////////////////////////////////////////////////
+  private static final long serialVersionUID = -1799981620288707398L;
+
+  //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
   boolean ephe_path_is_set=false;	/* ephe_path_is_set = FALSE */
@@ -198,11 +198,12 @@ public class SwissData
   boolean ayana_is_set=false;		/* ayana_is_set, ayanamsa is set */
   boolean is_old_starfile=false;	/* is_old_starfile, fixstars.cat is used (default is sefstars.txt) */
 
-  final FileData fidat[] = new FileData[SwephData.SEI_NEPHFILES];
   final GenConst gcdat;
-  final PlanData pldat[] = new PlanData[SwephData.SEI_NPLANETS];
-  final PlanData nddat[] = new PlanData[SwephData.SEI_NNODE_ETC];
-  final SavePositions savedat[] = new SavePositions[SweConst.SE_NPLANETS+1];
+  final FileData[] fidat = new FileData[SwephData.SEI_NEPHFILES];
+  final PlanData[] pldat = new PlanData[SwephData.SEI_NPLANETS];
+  final PlanData[] nddat = new PlanData[SwephData.SEI_NNODE_ETC];
+  final SavePositions[] savedat = new SavePositions[SweConst.SE_NPLANETS+1];
+  int[] astro_models = new int[SwephData.SEI_NMODELS];
   final Epsilon oec, oec2000;
   final Nut nut, nut2000, nutv;
   final TopoData topd;
@@ -215,7 +216,7 @@ public class SwissData
   //double deps[36525];
   double[] dpsi;
   double[] deps;
-  int astro_models[] = new int[SwephData.SEI_NMODELS];
+
   int timeout;
 
   /**

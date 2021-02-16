@@ -72,14 +72,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 
-class FileData
-		implements java.io.Serializable
-		{
+class FileData implements java.io.Serializable {
+  private static final long serialVersionUID = -8017157699677408928L;
+
   final byte SEI_FILE_NMAXPLAN=50;
 
   // The error handling and error strings are different from the original C version.
   // If required, one would have to rewrite some code
-  String serr_file_damage = "Ephemeris file %s is damaged (0). ";
+  static final String serr_file_damage = "Ephemeris file %s is damaged (0). ";
 
   String fnam;          /* ephemeris file name */
   int fversion;         /* version number of file */
@@ -91,7 +91,7 @@ class FileData
   double tfend = 0;         /*      through this date          */
   int iflg;             /* byte reorder flag and little/bigendian flag */
   short npl;            /* how many planets in file */
-  final int ipl[] = new int[SEI_FILE_NMAXPLAN]; /* planet numbers */
+  final int[] ipl = new int[SEI_FILE_NMAXPLAN]; /* planet numbers */
 
   void clearData() {
     int j;
@@ -122,7 +122,7 @@ class FileData
    * serr         error string
    */
   int read_const(int ifno, StringBuilder serr, SwissData swed) {
-    String s="";
+    StringBuilder s= new StringBuilder();
     String s2="";
     String sastnam="";
     int i, ipli, kpl;
@@ -146,10 +146,10 @@ class FileData
       do {
         cLast=(char)b;
         b=fptr.readByte();
-        s+=(char)b;
+        s.append((char) b);
       } while (cLast!='\r' && (char)(b)!='\n' && s.length()<SwissData.AS_MAXCH);
 
-      s=s.trim();
+      s = new StringBuilder(s.toString().trim());
       int offs=0;
       int ver=-1;
       while (!Character.isDigit(s.charAt(offs))) { offs++; }
@@ -166,19 +166,19 @@ class FileData
       /*************************************
        * correct file name?                *
        *************************************/
-      b=0; s="";
+      b=0; s = new StringBuilder();
       do {
         cLast=(char)b;
         b=fptr.readByte();
-        s+=(char)b;
+        s.append((char) b);
       } while (cLast!='\r' && (char)(b)!='\n' && s.length()<SwissData.AS_MAXCH);
 
       s2=fnam.substring(fnam.lastIndexOf(SwissData.DIR_GLUE)+1).toLowerCase();
-      s=s.trim().toLowerCase();
-      if (!s.equals(s2)) {
+      s = new StringBuilder(s.toString().trim().toLowerCase());
+      if (!s.toString().equals(s2)) {
         // Http addresses will end with '/' independent of DIR_GLUE...
         s2=fnam.substring(fnam.lastIndexOf("/")+1).toLowerCase();
-        if (!s.equals(s2)) {
+        if (!s.toString().equals(s2)) {
           s2=fnam.substring(fnam.lastIndexOf(SwissData.DIR_GLUE)+1).toLowerCase();
           if (serr != null) {
             serr.setLength(0);
@@ -192,11 +192,11 @@ class FileData
       /*************************************
        * copyright                         *
        *************************************/
-      b=0; s="";
+      b=0; s = new StringBuilder();
       do {
         cLast=(char)b;
         b=fptr.readByte();
-        s+=(char)b;
+        s.append((char) b);
       } while (cLast!='\r' && (char)(b)!='\n' && s.length()<SwissData.AS_MAXCH);
 
       /****************************************
@@ -204,15 +204,15 @@ class FileData
        ****************************************/
       // Read up to end of line or AS_MAXCH*2 into var. 's':
       if (ifno == SwephData.SEI_FILE_ANY_AST) {
-        b=0; s="";
+        b=0; s = new StringBuilder();
         do {
           cLast=(char)b;
           b=fptr.readByte();
-          s+=(char)b;
+          s.append((char) b);
         } while (cLast!='\r' && (char)(b)!='\n' && s.length()<SwissData.AS_MAXCH*2);
         /* MPC number and name; will be analyzed below:
          * search "asteroid name" */
-        String sp = s;
+        String sp = s.toString();
         // Strip leading white space from 'sp':
         while(Character.isWhitespace(sp.charAt(0))) {
           sp = sp.substring(1);
@@ -226,7 +226,7 @@ class FileData
         i = s.length() - sp.length();
         sastnam = sp.substring(0,lastnam+i);
         /* save elements, they are required for swe_plan_pheno() */
-        swed.astelem = s;
+        swed.astelem = s.toString();
         /* required for magnitude */
         swed.ast_H = SwissLib.atof(s.substring(35 + i));
         swed.ast_G = SwissLib.atof(s.substring(42 + i));
@@ -344,9 +344,9 @@ lng = 0;
           astnam=sastnam.substring(SMath.min(sastnam.length(),j+1),
                                    SMath.min(sastnam.length(),j+1+lastnam));
           /* overread old ast. name field */
-          s="";
+          s = new StringBuilder();
           for(i=0; i<30; i++) {
-            s+=(char)fptr.readByte();
+            s.append((char) fptr.readByte());
           }
         } else {
           /* older elements record structure: the name
@@ -372,13 +372,13 @@ lng = 0;
         throw new SwissephException(tfstart, SwissephException.DAMAGED_FILE_ERROR,
             SweConst.ERR, serr);
       }
-      b=0; s="";
+      b=0; s = new StringBuilder();
 byte[] ba=new byte[2*SwissData.AS_MAXCH];
       for(i=0;i<fpos;i++) {
         cLast=(char)b;
         b=fptr.readByte();
         ba[i]=b;
-        s+=(char)b;
+        s.append((char) b);
       }
   if ((int)swi_crc32(/*(unsigned char *)*/ ba, (int) fpos) != (int)ulng) {
     label_file_damage(serr, " (5)");
@@ -523,7 +523,7 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
   }
 
 
-  private short read2(FilePtr fp, long fpos, int freord, int fendian)
+  private static short read2(FilePtr fp, long fpos, int freord, int fendian)
       throws Exception { // IOException, BufferUnderflowException
     if (fpos >= 0) {
       fp.seek(fpos);
@@ -540,7 +540,7 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
     return val;
   }
 
-  private int read3(FilePtr fp, long fpos, int freord, int fendian)
+  private static int read3(FilePtr fp, long fpos, int freord, int fendian)
       throws Exception { // IOException, BufferUnderflowException
     if (fpos >= 0) {
       fp.seek(fpos);
@@ -563,7 +563,7 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
     return val;
   }
 
-  private int read4(FilePtr fp, long fpos, boolean unsigned, int freord, int fendian)
+  private static int read4(FilePtr fp, long fpos, boolean unsigned, int freord, int fendian)
       throws Exception { // IOException, BufferUnderflowException
     if (fpos >= 0) {
       fp.seek(fpos);
@@ -589,7 +589,7 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
     return val;
   }
 
-  private double read8(FilePtr fp, long fpos, int freord, int fendian)
+  private static double read8(FilePtr fp, long fpos, int freord, int fendian)
       throws Exception { // IOException, BufferUnderflowException
     if (fpos >= 0) {
       fp.seek(fpos);

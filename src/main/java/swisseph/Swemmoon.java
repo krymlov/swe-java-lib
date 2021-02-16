@@ -74,11 +74,10 @@
 */
 package swisseph;
 
-class Swemmoon
-		implements java.io.Serializable
-		{
+class Swemmoon implements java.io.Serializable {
+  private static final long serialVersionUID = -3961868863567373908L;
 
- /*
+          /*
  * Expansions for the geocentric ecliptic longitude,
  * latitude, and distance of the Moon referred to the mean equinox
  * and ecliptic of date.
@@ -197,27 +196,20 @@ class Swemmoon
  * 18-feb-2006  replaced LP by SWELP because of name collision
  */
 
-  SwissData swed;
-  SwissLib sl;
-
-  Swemmoon() {
-    this(null,null);
-  }
+  final SwissData swed;
+  final SwissLib sl;
 
   Swemmoon(SwissData swed, SwissLib sl) {
     this.swed=swed;
-    this.sl=sl;
-    if (this.swed ==null) { this.swed =new SwissData(); }
-    if (this.sl   ==null) { this.sl   =new SwissLib(); }
+    this.sl = sl;
   }
-
 
   /* The following coefficients were calculated by a simultaneous least
    * squares fit between the analytical theory and DE404 on the finite
    * interval from -3000 to +3000.
    * The coefficients were estimated from 34,247 Lunar positions.
    */
-  static final double z[] = {
+  static final double[] z = {
     /* The following are scaled in arc seconds, time in Julian centuries.
        They replace the corresponding terms in the mean elements.  */
     -1.312045233711e+01, /* F, t^2 */
@@ -252,7 +244,7 @@ class Swemmoon
   /* Perturbation tables
    */
   static final int NLR=118;
-  static final short LR[]={
+  static final short[] LR ={
   /*
                  Longitude    Radius
    D  l' l  F    1"  .0001"  1km  .0001km */
@@ -379,7 +371,7 @@ class Swemmoon
 
 
   static final int NMB=77;
-  static final short MB[]={
+  static final short[] MB ={
   /*
                  Latitude
    D  l' l  F    1"  .0001" */
@@ -464,7 +456,7 @@ class Swemmoon
   };
 
   static final int NLRT=38;
-  static final short LRT[]={
+  static final short[] LRT ={
   /*
   Multiply by T
                  Longitude    Radius
@@ -511,7 +503,7 @@ class Swemmoon
   };
 
   static final int NBT=16;
-  static final short BT[]={
+  static final short[] BT ={
   /*
   Multiply by T
                Latitude
@@ -536,7 +528,7 @@ class Swemmoon
   };
 
   static final int NLRT2=25;
-  static final short LRT2[]={
+  static final short[] LRT2 ={
   /*
   Multiply by T^2
              Longitude    Radius
@@ -570,7 +562,7 @@ class Swemmoon
   };
 
   static final int NBT2=12;
-  static final short BT2[]={
+  static final short[] BT2 ={
   /*
   Multiply by T^2
              Latitiude
@@ -592,7 +584,7 @@ class Swemmoon
 
   /* corrections for mean lunar node in degrees, from -13100 to 17200,
    * in 100-year steps. corrections are set to 0 between the years 0 and 3000 */
-  private static final double mean_node_corr[] = new double[]{
+  private static final double[] mean_node_corr = new double[]{
   -2.56,
   -2.473, -2.392347, -2.316425, -2.239639, -2.167764, -2.095100, -2.024810, -1.957622, -1.890097, -1.826389,
   -1.763335, -1.701047, -1.643016, -1.584186, -1.527309, -1.473352, -1.418917, -1.367736, -1.317202, -1.267269,
@@ -629,7 +621,7 @@ class Swemmoon
 
   /* corrections for mean lunar apsides in degrees, from -13100 to 17200,
    * in 100-year steps. corrections are set to 0 between the years 0 and 3000 */
-  private static final double mean_apsis_corr[] = new double[]{
+  private static final double[] mean_apsis_corr = new double[]{
   7.525,
   7.290, 7.057295, 6.830813, 6.611723, 6.396775, 6.189569, 5.985968, 5.788342, 5.597304, 5.410167,
   5.229946, 5.053389, 4.882187, 4.716494, 4.553532, 4.396734, 4.243718, 4.094282, 3.950865, 3.810366,
@@ -668,13 +660,13 @@ class Swemmoon
    * to the same instant.  The distinction between them
    * is required by altaz().
    */
-  double ss[][]=new double[5][8];
-  double cc[][]=new double[5][8];
+  final double[][] ss =new double[5][8];
+  final double[][] cc =new double[5][8];
 
   double l;                /* Moon's ecliptic longitude */
   double B;                /* Ecliptic latitude */
 
-  double moonpol[]=new double[3];
+  final double[] moonpol =new double[3];
 
   /* Orbit calculation begins.
    */
@@ -1125,7 +1117,7 @@ class Swemmoon
     mean_elements();
     dcor = corr_mean_node(J) * 3600;
     /* longitude */
-    pol[offs] = sl.swi_mod2PI((SWELP - NF - dcor) * SwephData.STR);
+    pol[offs] = SwissLib.swi_mod2PI((SWELP - NF - dcor) * SwephData.STR);
     /* latitude */
     pol[offs+1] = 0.0;
     /* distance */
@@ -1184,7 +1176,7 @@ class Swemmoon
       return SweConst.ERR;
     }
     mean_elements();
-    pol[offs] = sl.swi_mod2PI((SWELP - MP) * SwephData.STR + SMath.PI);
+    pol[offs] = SwissLib.swi_mod2PI((SWELP - MP) * SwephData.STR + SMath.PI);
     pol[offs+1] = 0;
     pol[offs+2] = SwephData.MOON_MEAN_DIST * (1 + SwephData.MOON_MEAN_ECC) /
                                                  SweConst.AUNIT; /* apogee */
@@ -1210,16 +1202,16 @@ class Swemmoon
      * We neglect this influence.
      */
     dcor = corr_mean_apog(J) * SwissData.DEGTORAD;
-    pol[offs] = sl.swi_mod2PI(pol[offs] - dcor);
+    pol[offs] = SwissLib.swi_mod2PI(pol[offs] - dcor);
     /* apogee is now projected onto ecliptic */
     node = (SWELP - NF) * SwephData.STR;
     dcor = corr_mean_node(J) * SwissData.DEGTORAD;
-    node = sl.swi_mod2PI(node - dcor);
-    pol[offs] = sl.swi_mod2PI(pol[offs] - node);
-    sl.swi_polcart(pol, offs, pol, offs);
-    sl.swi_coortrf(pol, offs, pol, offs, -SwephData.MOON_MEAN_INCL * SwissData.DEGTORAD);
-    sl.swi_cartpol(pol, offs, pol, offs);
-    pol[offs] = sl.swi_mod2PI(pol[offs] + node);
+    node = SwissLib.swi_mod2PI(node - dcor);
+    pol[offs] = SwissLib.swi_mod2PI(pol[offs] - node);
+    SwissLib.swi_polcart(pol, offs, pol, offs);
+    SwissLib.swi_coortrf(pol, offs, pol, offs, -SwephData.MOON_MEAN_INCL * SwissData.DEGTORAD);
+    SwissLib.swi_cartpol(pol, offs, pol, offs);
+    pol[offs] = SwissLib.swi_mod2PI(pol[offs] + node);
     return SweConst.OK;
   }
 
@@ -1326,9 +1318,9 @@ class Swemmoon
    */
   void ecldat_equ2000(double tjd, double[] xpm) {
     /* cartesian */
-    sl.swi_polcart(xpm, xpm);
+    SwissLib.swi_polcart(xpm, xpm);
     /* equatorial */
-    sl.swi_coortrf2(xpm, xpm, -swed.oec.seps, swed.oec.ceps);
+    SwissLib.swi_coortrf2(xpm, xpm, -swed.oec.seps, swed.oec.ceps);
     /* j2000 */
     sl.swi_precess(xpm, tjd, 0, SwephData.J_TO_J2000);/**/
   }
@@ -1351,17 +1343,17 @@ class Swemmoon
     T = (tjd - SwephData.J2000) / 36525.0;
     T2 = T*T;
     mean_elements();
-    node.val = sl.swe_degnorm((SWELP - NF) * SwephData.STR * SwissData.RADTODEG);
-    peri.val = sl.swe_degnorm((SWELP - MP) * SwephData.STR * SwissData.RADTODEG);
+    node.val = SwissLib.swe_degnorm((SWELP - NF) * SwephData.STR * SwissData.RADTODEG);
+    peri.val = SwissLib.swe_degnorm((SWELP - MP) * SwephData.STR * SwissData.RADTODEG);
     T -= 1.0 / 36525;
     mean_elements();
-    dnode.val = sl.swe_degnorm(node.val - (SWELP-NF) * SwephData.STR * SwissData.RADTODEG);
+    dnode.val = SwissLib.swe_degnorm(node.val - (SWELP-NF) * SwephData.STR * SwissData.RADTODEG);
     dnode.val -= 360;
-    dperi.val = sl.swe_degnorm(peri.val - (SWELP-MP) * SwephData.STR * SwissData.RADTODEG);
+    dperi.val = SwissLib.swe_degnorm(peri.val - (SWELP-MP) * SwephData.STR * SwissData.RADTODEG);
     dcor = corr_mean_node(tjd);
-    node.val = sl.swe_degnorm(node.val - dcor);
+    node.val = SwissLib.swe_degnorm(node.val - dcor);
     dcor = corr_mean_apog(tjd);
-    peri.val = sl.swe_degnorm(peri.val - dcor);
+    peri.val = SwissLib.swe_degnorm(peri.val - dcor);
   }
 
   void mean_elements() {
