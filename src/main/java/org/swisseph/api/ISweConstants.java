@@ -106,11 +106,12 @@ public interface ISweConstants {
     // MILLIARCSEC
     double d1d3600000 = d1/d3600000;
 
-    double DELTA_D10000 = 0.00001;
-    double DELTA_D100000 = 0.000001;
-    double DELTA_D1000000 = 0.0000001;
+    double DELTA_D005 = 0.005;
+    double DELTA_D00001 = 0.00001;
+    double DELTA_D000001 = 0.000001;
+    double DELTA_D0000001 = 0.0000001;
 
-    double DSTEP_ROUND = DELTA_D10000/d3600;
+    double DSTEP_ROUND = DELTA_D00001 /d3600;
     
     double ARCTIC_CIRCLE_LATITUDE = 66.5;
 

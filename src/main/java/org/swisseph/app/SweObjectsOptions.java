@@ -72,7 +72,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     }
 
     public SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode) {
-        this(ayanamsa, houseSystem, trueNode, SS_TRUEPOS_SPEED_FLAGS);
+        this(ayanamsa, houseSystem, trueNode, DEFAULT_SS_TRUEPOS_NONUT_SPEED_FLAGS);
     }
 
     public SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode, int calcFlags) {
