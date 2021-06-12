@@ -31,7 +31,7 @@ public class SweObjectsTest extends ASwissephTest {
 
     @Test
     void testSweVersion() {
-        Assertions.assertEquals(getSwephExp().swe_version(), "2.10");
+        Assertions.assertEquals(getSwephExp().swe_version(), "2.10.01");
         Assertions.assertEquals(getSwissEph().swe_version(), "2.01.00");
     }
 
