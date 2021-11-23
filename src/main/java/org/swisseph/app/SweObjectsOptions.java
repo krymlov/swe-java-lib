@@ -11,95 +11,37 @@ import org.swisseph.api.ISweHouseSystem;
 import org.swisseph.api.ISweObjectsOptions;
 
 import static org.swisseph.api.ISweConstants.CH_VS;
-import static org.swisseph.api.ISweConstants.d0;
 import static org.swisseph.app.SweAyanamsa.getLahiri;
 import static org.swisseph.app.SweAyanamsa.getTrueSpica;
+import static swisseph.SweConst.SE_SIDM_USER;
 
 /**
  * @author Yura Krymlov
  * @version 1.1, 2019-12
  */
 public class SweObjectsOptions implements ISweObjectsOptions {
-    private static final long serialVersionUID = 9075839757472544858L;
+    private static final long serialVersionUID = 461264153326654053L;
 
-    public static final ISweObjectsOptions LAHIRI_TRADITIONAL = new SweObjectsOptions(getLahiri());
-    public static final ISweObjectsOptions LAHIRI_CITRAPAKSA = new SweObjectsOptions(getTrueSpica());
+    public static final ISweObjectsOptions LAHIRI_TRADITIONAL = new Builder().ayanamsa(getLahiri()).build();
+    public static final ISweObjectsOptions LAHIRI_CITRAPAKSA = new Builder().ayanamsa(getTrueSpica()).build();
 
     protected final ISweHouseSystem houseSystem;
     protected final ISweAyanamsa ayanamsa;
-
-    /**
-     * true or mean node to use for RA/KE calculation
-     */
     protected final boolean trueNode;
-
-    /**
-     * Special preset of flags for planets calculation
-     */
     protected final int calcFlags;
-
-    // Reference date (Julian day), if sid_mode is SE_SIDM_USER
-    // Initial ayanamsha at t0, if sid_mode is SE_SIDM_USER
+    protected final int riseSetFlags;
     protected final double initialJulianDay, initialAyanamsa;
 
-    public SweObjectsOptions() {
-        this(SweAyanamsa.byDefault());
-    }
-
     /**
-     * @param trueNode true or mean node to use for RA/KE calculation
+     * @param initialJulianDay - initial julian day (reference date)
+     * @param initialAyanamsa  - initial ayanamsa (at reference date)
      */
-    public SweObjectsOptions(boolean trueNode) {
-        this(SweAyanamsa.byDefault(), trueNode);
-    }
-
-    public SweObjectsOptions(ISweAyanamsa ayanamsa) {
-        this(ayanamsa, false);
-    }
-
-    /**
-     * @param trueNode true or mean node to use for RA/KE calculation
-     */
-    public SweObjectsOptions(ISweAyanamsa ayanamsa, boolean trueNode) {
-        this(ayanamsa, SweHouseSystem.byDefault(), trueNode);
-    }
-
-    /**
-     * @param trueNode true or mean node to use for RA/KE calculation
-     */
-    public SweObjectsOptions(ISweHouseSystem houseSystem, boolean trueNode) {
-        this(SweAyanamsa.byDefault(), houseSystem, trueNode);
-    }
-
-    public SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode) {
-        this(ayanamsa, houseSystem, trueNode, DEFAULT_SS_TRUEPOS_NONUT_SPEED_FLAGS);
-    }
-
-    public SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode, int calcFlags) {
-        this(ayanamsa, houseSystem, trueNode, calcFlags, d0, d0);
-    }
-
-    public SweObjectsOptions(ISweObjectsOptions opt, ISweAyanamsa ayanamsa) {
-        this(ayanamsa, opt.houseSystem(), opt.trueNode(), opt.calcFlags(),
-                opt.initialJulianDay(), opt.initialAyanamsa());
-    }
-
-    public SweObjectsOptions(ISweObjectsOptions opt, ISweHouseSystem houseSystem) {
-        this(opt.ayanamsa(), houseSystem, opt.trueNode(), opt.calcFlags(),
-                opt.initialJulianDay(), opt.initialAyanamsa());
-    }
-
-    /**
-     * This sets a user ayanamsha mode for the sidereal planet calculations.
-     *
-     * @param initialJulianDay   - initial julian day (reference date)
-     * @param initialAyanamsa - initial ayanamsa (at reference date)
-     *                        This is (tropical position - sidereal position) at ayanamsaJulday
-     */
-    public SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode,
-                             int calcFlags, double initialJulianDay, double initialAyanamsa) {
+    protected SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode,
+                                int calcFlags, double initialJulianDay, double initialAyanamsa,
+                                int riseSetFlags) {
         this.initialJulianDay = initialJulianDay;
         this.initialAyanamsa = initialAyanamsa;
+        this.riseSetFlags = riseSetFlags;
         this.houseSystem = houseSystem;
         this.calcFlags = calcFlags;
         this.trueNode = trueNode;
@@ -116,24 +58,44 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         return ayanamsa;
     }
 
+    /**
+     * true or mean node to use for RA/KE calculation
+     */
     @Override
     public boolean trueNode() {
         return trueNode;
     }
 
+    /**
+     * Reference date (Julian day), if sid_mode is SE_SIDM_USER
+     */
     @Override
     public double initialJulianDay() {
         return initialJulianDay;
     }
 
+    /**
+     * Initial ayanamsha at t0, if sid_mode is SE_SIDM_USER
+     */
     @Override
     public double initialAyanamsa() {
         return initialAyanamsa;
     }
 
+    /**
+     * Special preset of flags for planets calculation
+     */
     @Override
     public int calcFlags() {
         return calcFlags;
+    }
+
+    /**
+     * This is a flag to swe_rise_trans()
+     */
+    @Override
+    public int riseSetFlags() {
+        return riseSetFlags;
     }
 
     @Override
@@ -150,5 +112,81 @@ public class SweObjectsOptions implements ISweObjectsOptions {
                 .append(trueNode()).append(CH_VS)
                 .append(riseSetFlags())
                 .toString();
+    }
+
+    public static final class Builder {
+        private ISweHouseSystem houseSystem = SweHouseSystem.byDefault();
+        private int calcFlags = DEFAULT_SS_TRUEPOS_NONUT_SPEED_FLAGS;
+        private ISweAyanamsa ayanamsa = SweAyanamsa.byDefault();
+        private int riseSetFlags = DEFAULT_SS_RISE_SET_FLAGS;
+        private double initialJulianDay, initialAyanamsa;
+        private boolean trueNode;
+
+        public Builder options(ISweObjectsOptions options) {
+            this.initialJulianDay = options.initialJulianDay();
+            this.initialAyanamsa = options.initialAyanamsa();
+            this.riseSetFlags = options.riseSetFlags();
+            this.houseSystem = options.houseSystem();
+            this.calcFlags = options.calcFlags();
+            this.trueNode = options.trueNode();
+            this.ayanamsa = options.ayanamsa();
+            return this;
+        }
+
+        public Builder riseSetFlags(int flags) {
+            this.riseSetFlags = flags;
+            return this;
+        }
+
+        /**
+         * true or mean node to use for RA/KE calculation
+         */
+        public Builder trueNode(boolean trueNode) {
+            this.trueNode = trueNode;
+            return this;
+        }
+
+        /**
+         * Special preset of flags for planets calculation
+         */
+        public Builder calculationFlags(int flags) {
+            this.calcFlags = flags;
+            return this;
+        }
+
+        public Builder ayanamsa(ISweAyanamsa ayanamsa) {
+            this.ayanamsa = ayanamsa;
+            return this;
+        }
+
+        public Builder houseSystem(ISweHouseSystem houseSystem) {
+            this.houseSystem = houseSystem;
+            return this;
+        }
+
+        /**
+         * Reference date (Julian day) if sid_mode is SE_SIDM_USER
+         */
+        public Builder initialJulianDay(double initJulianDay) {
+            if (ayanamsa.fid() == SE_SIDM_USER) {
+                this.initialJulianDay = initJulianDay;
+            }
+            return this;
+        }
+
+        /**
+         * Initial ayanamsha if sid_mode is SE_SIDM_USER
+         */
+        public Builder initialAyanamsa(double initAyanamsa) {
+            if (ayanamsa.fid() == SE_SIDM_USER) {
+                this.initialAyanamsa = initAyanamsa;
+            }
+            return this;
+        }
+
+        public ISweObjectsOptions build() {
+            return new SweObjectsOptions(ayanamsa, houseSystem, trueNode, calcFlags,
+                    initialJulianDay, initialAyanamsa, riseSetFlags);
+        }
     }
 }

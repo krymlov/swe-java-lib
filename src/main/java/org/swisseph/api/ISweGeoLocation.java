@@ -6,8 +6,11 @@
 
 package org.swisseph.api;
 
+import swisseph.SMath;
+
 import java.io.Serializable;
 
+import static org.swisseph.api.ISweConstants.ARCTIC_CIRCLE_LATITUDE;
 import static org.swisseph.api.ISweConstants.d8;
 
 /**
@@ -38,5 +41,7 @@ public interface ISweGeoLocation extends Serializable {
 
     double pressure();
 
-    boolean withinPolarCircle();
+    default boolean withinPolarCircle() {
+        return SMath.abs(latitude()) >= ARCTIC_CIRCLE_LATITUDE;
+    }
 }

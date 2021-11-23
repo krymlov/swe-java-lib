@@ -118,11 +118,6 @@ public class SweGeoLocation implements Cloneable, ISweGeoLocation {
     }
 
     @Override
-    public boolean withinPolarCircle() {
-        return SMath.abs(latitude()) >= ARCTIC_CIRCLE_LATITUDE;
-    }
-
-    @Override
     public String toString() {
         return new StringJoiner("/")
                 .add(toLON(geopos[0])).add(toLAT(geopos[1])).add(valueOf(geopos[2]))

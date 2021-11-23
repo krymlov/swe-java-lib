@@ -31,7 +31,7 @@ public class SweObjectsTest extends ASwissephTest {
 
     @Test
     void testSweVersion() {
-        Assertions.assertEquals(getSwephExp().swe_version(), "2.10.01");
+        Assertions.assertEquals(getSwephExp().swe_version(), "2.10.02");
         Assertions.assertEquals(getSwissEph().swe_version(), "2.01.00");
     }
 
@@ -68,7 +68,8 @@ public class SweObjectsTest extends ASwissephTest {
 
         final ISweJulianDate julianDate1 = new SweJulianDate(calendar);
         final ISweJulianDate julianDate2 = new SweJulianDate(calendar);
-        final ISweObjectsOptions objectsOptions = new SweObjectsOptions(ayanamsa, houseSystem, trueNode);
+        final ISweObjectsOptions objectsOptions = new SweObjectsOptions.Builder()
+            .ayanamsa(ayanamsa).houseSystem(houseSystem).trueNode(trueNode).build();
 
         final ISweObjects objects1 = new SweObjectsBuilder(getSwephExp(),
                 julianDate1, GEO_CHENNAI, objectsOptions).completeBuild();

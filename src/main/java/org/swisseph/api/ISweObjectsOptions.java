@@ -9,6 +9,7 @@ package org.swisseph.api;
 
 import java.io.Serializable;
 
+import static org.swisseph.api.ISweConstants.d0;
 import static swisseph.SweConst.*;
 
 /**
@@ -29,14 +30,17 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
             SEFLG_SPEED;        // to determine retrograde vs direct motion
 
     ISweObjectsOptions clone() throws CloneNotSupportedException;
+
     ISweHouseSystem houseSystem();
     ISweAyanamsa ayanamsa();
 
-    boolean trueNode();
-    int calcFlags();
+    default boolean trueNode() {
+        return false;
+    }
 
-    double initialAyanamsa();
-    double initialJulianDay();
+    default int calcFlags() {
+        return DEFAULT_SS_TRUEPOS_NONUT_SPEED_FLAGS;
+    }
 
     /**
      * This is a flag to swe_rise_trans(), by default rise/set of disc
@@ -44,5 +48,13 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
      */
     default int riseSetFlags() {
         return DEFAULT_SS_RISE_SET_FLAGS;
+    }
+
+    default double initialAyanamsa() {
+        return d0;
+    }
+
+    default double initialJulianDay() {
+        return d0;
     }
 }
