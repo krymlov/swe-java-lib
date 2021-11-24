@@ -193,7 +193,7 @@ public class SweObjects implements ISweObjects {
         return this;
     }
 
-    protected ISweObjects buildAscendant() {
+    public ISweObjects buildAscendant() {
         if (0 != houses[LG]) return this;
 
         int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.calcFlags() ^ SEFLG_SPEED,

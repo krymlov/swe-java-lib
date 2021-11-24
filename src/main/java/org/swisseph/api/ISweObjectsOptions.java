@@ -29,8 +29,6 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
             SEFLG_NONUT     |   // calculate the position of the planet without considering the nutation
             SEFLG_SPEED;        // to determine retrograde vs direct motion
 
-    ISweObjectsOptions clone() throws CloneNotSupportedException;
-
     ISweHouseSystem houseSystem();
     ISweAyanamsa ayanamsa();
 
@@ -57,4 +55,6 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
     default double initialJulianDay() {
         return d0;
     }
+
+    ISweObjectsOptions clone() throws CloneNotSupportedException;
 }

@@ -7,13 +7,10 @@
 package org.swisseph.app;
 
 import org.swisseph.api.ISweGeoLocation;
-import swisseph.SMath;
 
 import java.util.StringJoiner;
 
 import static java.lang.String.valueOf;
-import static org.swisseph.api.ISweConstants.ARCTIC_CIRCLE_LATITUDE;
-import static org.swisseph.api.ISweConstants.d0;
 import static org.swisseph.utils.IDegreeUtils.toLAT;
 import static org.swisseph.utils.IDegreeUtils.toLON;
 
@@ -21,8 +18,8 @@ import static org.swisseph.utils.IDegreeUtils.toLON;
  * @author Yura Krymlov
  * @version 1.1, 2019-12
  */
-public class SweGeoLocation implements Cloneable, ISweGeoLocation {
-    private static final long serialVersionUID = 2994093829689593444L;
+public class SweGeoLocation implements ISweGeoLocation {
+    private static final long serialVersionUID = 8178049414176988961L;
 
     /**
      * A double[3] containing the longitude, latitude and height of the observer.
@@ -45,13 +42,13 @@ public class SweGeoLocation implements Cloneable, ISweGeoLocation {
      * @param longitude   The longitude on earth, for which the calculation has to be
      *                    done. Eastern longitude and northern latitude is given by positive values,
      *                    western longitude and southern latitude by negative values.
-     * @param latitude    The latitude on earth, for which the calculation has to be
-     *                    done.
+     * @param latitude    The latitude on earth, for which the calculation has to be done.
      * @param altitude    The height above sea level in meters
      * @param temperature atmospheric temperature in degrees Celsius
+     * @param pressure    atmospheric pressure in mBar
      */
-    public SweGeoLocation(final double longitude, final double latitude,
-                          final double altitude, final double temperature, final double pressure) {
+    public SweGeoLocation(final double longitude, final double latitude, final double altitude,
+                          final double temperature, final double pressure) {
         this.temperature = temperature;
         this.geopos[0] = longitude;
         this.geopos[1] = latitude;
@@ -59,29 +56,8 @@ public class SweGeoLocation implements Cloneable, ISweGeoLocation {
         this.pressure = pressure;
     }
 
-    /**
-     * @param longitude   The longitude on earth, for which the calculation has to be
-     *                    done. Eastern longitude and northern latitude is given by positive values,
-     *                    western longitude and southern latitude by negative values.
-     * @param latitude    The latitude on earth, for which the calculation has to be
-     *                    done.
-     * @param altitude    The height above sea level in meters
-     * @param temperature atmospheric temperature in degrees Celsius
-     */
-    public SweGeoLocation(final double longitude, final double latitude, final double altitude, final double temperature) {
-        this(longitude, latitude, altitude, temperature, DEFAULT_ATMOS_PRESSURE);
-    }
-
     public SweGeoLocation(final double longitude, final double latitude, final double altitude) {
         this(longitude, latitude, altitude, DEFAULT_ATMOS_TEMPERATURE, DEFAULT_ATMOS_PRESSURE);
-    }
-
-    public SweGeoLocation(final double longitude, final double latitude) {
-        this(longitude, latitude, d0, DEFAULT_ATMOS_TEMPERATURE, DEFAULT_ATMOS_PRESSURE);
-    }
-
-    public SweGeoLocation(final double[] geopos) {
-        this(geopos[0], geopos[1], geopos[2], DEFAULT_ATMOS_TEMPERATURE, DEFAULT_ATMOS_PRESSURE);
     }
 
     /**
@@ -118,10 +94,49 @@ public class SweGeoLocation implements Cloneable, ISweGeoLocation {
     }
 
     @Override
+    public ISweGeoLocation clone() throws CloneNotSupportedException {
+        return (ISweGeoLocation) super.clone();
+    }
+
+    @Override
     public String toString() {
         return new StringJoiner("/")
                 .add(toLON(geopos[0])).add(toLAT(geopos[1])).add(valueOf(geopos[2]))
                 .add(valueOf(temperature)).add(valueOf(pressure)).toString();
     }
 
+    public static final class Builder {
+        private double temperature = DEFAULT_ATMOS_TEMPERATURE;
+        private double pressure = DEFAULT_ATMOS_PRESSURE;
+        private double longitude, latitude, altitude;
+
+        public Builder temperature(double temperature) {
+            this.temperature = temperature;
+            return this;
+        }
+
+        public Builder pressure(double pressure) {
+            this.pressure = pressure;
+            return this;
+        }
+
+        public Builder longitude(double longitude) {
+            this.longitude = longitude;
+            return this;
+        }
+
+        public Builder latitude(double latitude) {
+            this.latitude = latitude;
+            return this;
+        }
+
+        public Builder altitude(double altitude) {
+            this.altitude = altitude;
+            return this;
+        }
+
+        public ISweGeoLocation build() {
+            return new SweGeoLocation(longitude, latitude, altitude, temperature, pressure);
+        }
+    }
 }
