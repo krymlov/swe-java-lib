@@ -71,10 +71,10 @@ public class SweObjectsTest extends ASwissephTest {
         final ISweObjectsOptions objectsOptions = new SweObjectsOptions.Builder()
             .ayanamsa(ayanamsa).houseSystem(houseSystem).trueNode(trueNode).build();
 
-        final ISweObjects objects1 = new SweObjectsBuilder(getSwephExp(),
+        final ISweObjects objects1 = new SweObjects(getSwephExp(),
                 julianDate1, GEO_CHENNAI, objectsOptions).completeBuild();
 
-        final ISweObjects objects2 = new SweObjectsBuilder(getSwissEph(),
+        final ISweObjects objects2 = new SweObjects(getSwissEph(),
                 julianDate2, GEO_CHENNAI, objectsOptions).completeBuild();
 
         return new ISweObjects[]{objects1, objects2};
