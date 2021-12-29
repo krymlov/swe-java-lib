@@ -8,9 +8,9 @@ package org.swisseph.api;
 
 /**
  * @author Yura Krymlov
- * @version 1.1, 2019-08
+ * @version 1.2, 2021-12
  */
 public interface ISweSegment {
-    double begin();
-    double end();
+    double start();
+    double close();
 }

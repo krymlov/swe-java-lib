@@ -34,6 +34,14 @@ public interface IModuloUtils {
     }
 
     /**
+     * Reduces a given double value modulo 30.
+     * @return a value between 0 and 30.
+     */
+    static double fix30(final double d) {
+        return modulo(d30, d);
+    }
+
+    /**
      * Reduces mod given double value d modulo the double mod
      * @return value between 0 and mod.
      */

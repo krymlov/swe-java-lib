@@ -112,7 +112,7 @@ public class SweJulianDate implements ISweJulianDate {
         final int month = calendar.get(MONTH) + 1;
         final int day = calendar.get(DAY_OF_MONTH);
 
-        this.gregorianCalendar = gregorianCalendar(year, month, day);
+        this.gregorianCalendar = ISweJulianDate.gregorianCalendar(year, month, day);
         this.date = new int[] { year, month, day, calendar.get(HOUR_OF_DAY),
             calendar.get(MINUTE), calendar.get(SECOND), calendar.get(MILLISECOND)
         };

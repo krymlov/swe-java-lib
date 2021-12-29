@@ -1,8 +1,8 @@
 /*
-* Copyright (C) By the Author
-* Author    Yura Krymlov
-* Created   2019-07
-*/
+ * Copyright (C) By the Author
+ * Author    Yura Krymlov
+ * Created   2019-07
+ */
 
 package org.swisseph.utils;
 
@@ -17,16 +17,16 @@ import java.util.TimeZone;
 import static org.swisseph.api.ISweConstants.*;
 
 /**
- * @author  Yura Krymlov
+ * @author Yura Krymlov
  * @version 1.1, 2019-07
  */
 public interface IDateUtils {
     String F4Y_2M_2D = "%4d-%02d-%02d";
     String F2H_2M_2S = "%02d:%02d:%02d";
-    String F2H_2M    = "%02d:%02d";
+    String F2H_2M = "%02d:%02d";
 
-    String F2H_2M_2H_2M       = F2H_2M + " - " + F2H_2M;
-    String F4Y_2M_2D_2H_2M    = F4Y_2M_2D + STR_WS + F2H_2M;
+    String F2H_2M_2H_2M = F2H_2M + " - " + F2H_2M;
+    String F4Y_2M_2D_2H_2M = F4Y_2M_2D + STR_WS + F2H_2M;
     String F4Y_2M_2D_2H_2M_2S = F4Y_2M_2D + STR_WS + F2H_2M_2S;
     String F4Y_2M_2D_2H_2M_2S_MS = F4Y_2M_2D_2H_2M_2S + ".%02d";
 
@@ -58,90 +58,104 @@ public interface IDateUtils {
         return Long.parseLong(FDTE_FORMATER.format(datetime));
     }
 
+    static long convert(final ISweJulianDate julianDate) {
+        return convert(julianDate.date());
+    }
+
+    static long convert(final int[] datetime) {
+        if (null == datetime || datetime.length < 6) {
+            throw new IllegalArgumentException("date[] length < 6");
+        }
+
+        final StringBuilder builder = new StringBuilder(14);
+        formatYMD(builder, false, datetime[0], datetime[1], datetime[2]);
+        return Long.parseLong(formatHMS(builder, false, datetime[3], datetime[4], datetime[5]).toString());
+    }
+
     static StringBuilder format(final ISweJulianDate julianDate) {
         return format(julianDate, F4Y_2M_2D_2H_2M_2S_MS);
     }
-    
+
     static StringBuilder format6(final ISweJulianDate julianDate) {
         return format(julianDate, F4Y_2M_2D_2H_2M_2S);
     }
-    
+
     static StringBuilder format5(final ISweJulianDate julianDate) {
         return format(julianDate, F4Y_2M_2D_2H_2M);
     }
 
     static StringBuilder format(final ISweJulianDate julianDate, final String format) {
         final int[] datetime = julianDate.date();
-        
-        if ( null == datetime || datetime.length < 3 ) {
+
+        if (null == datetime || datetime.length < 3) {
             throw new IllegalArgumentException("Date/time part is not valid for formatting");
         }
-        
-        switch ( format ) {
+
+        switch (format) {
             case F4Y_2M_2D_2H_2M_2S_MS: {
                 final StringBuilder builder = new StringBuilder(26);
-                formatYMD(builder, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, datetime[3], datetime[4], datetime[5]).append('.')
-                    .append((int)((julianDate.seconds() - datetime[5]) * i100));
+                formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
+                return formatHMS(builder, true, datetime[3], datetime[4], datetime[5]).append('.')
+                        .append((int) ((julianDate.seconds() - datetime[5]) * i100));
             }
-            
+
             case F4Y_2M_2D_2H_2M_2S: {
                 final StringBuilder builder = new StringBuilder(24);
-                formatYMD(builder, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, datetime[3], datetime[4], datetime[5]);
+                formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
+                return formatHMS(builder, true, datetime[3], datetime[4], datetime[5]);
             }
-            
+
             case F4Y_2M_2D_2H_2M: {
                 final StringBuilder builder = new StringBuilder(20);
-                formatYMD(builder, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, datetime[3], datetime[4]);
+                formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
+                return formatHMS(builder, true, datetime[3], datetime[4]);
             }
-            
+
             case F4Y_2M_2D: {
                 final StringBuilder builder = new StringBuilder(12);
-                return formatYMD(builder, datetime[0], datetime[1], datetime[2]);
+                return formatYMD(builder, true, datetime[0], datetime[1], datetime[2]);
             }
 
             case F2H_2M_2S: {
                 final StringBuilder builder = new StringBuilder(12);
-                return formatHMS(builder, datetime[3], datetime[4], datetime[5]);
+                return formatHMS(builder, true, datetime[3], datetime[4], datetime[5]);
             }
-            
+
             case F2H_2M: {
                 final StringBuilder builder = new StringBuilder(8);
-                return formatHMS(builder, datetime[3], datetime[4]);
+                return formatHMS(builder, true, datetime[3], datetime[4]);
             }
         }
-        
+
         final StringBuilder builder = new StringBuilder(20);
-        formatYMD(builder, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-        return formatHMS(builder, datetime[3], datetime[4]);
+        formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
+        return formatHMS(builder, true, datetime[3], datetime[4]);
     }
-    
-    static StringBuilder formatYMD(StringBuilder builder, int... ymd) {
+
+    static StringBuilder formatYMD(StringBuilder builder, boolean separate, int... ymd) {
         builder.append(ymd[0]);
-        
+
         for (int i = 1; i < ymd.length; i++) {
-            builder.append(CH_DS);
-        
-            if ( ymd[i] < i10 ) builder.append(CH_ZR);
+            if (separate) builder.append(CH_DS);
+
+            if (ymd[i] < i10) builder.append(CH_ZR);
             builder.append(ymd[i]);
         }
-        
+
         return builder;
     }
-    
-    static StringBuilder formatHMS(StringBuilder builder, int... hms) {
-        if ( hms[0] < i10 ) builder.append(CH_ZR);
+
+    static StringBuilder formatHMS(StringBuilder builder, boolean separate, int... hms) {
+        if (hms[0] < i10) builder.append(CH_ZR);
         builder.append(hms[0]);
-        
+
         for (int i = 1; i < hms.length; i++) {
-            builder.append(CH_CN);
-        
-            if ( hms[i] < i10 ) builder.append(CH_ZR);
+            if (separate) builder.append(CH_CN);
+
+            if (hms[i] < i10) builder.append(CH_ZR);
             builder.append(hms[i]);
         }
-        
+
         return builder;
     }
 }

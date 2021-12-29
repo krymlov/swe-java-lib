@@ -42,7 +42,7 @@ public interface ISweJulianDate extends Serializable {
         return julDay >= JD_GC0 ? SE_GREG_CAL : SE_JUL_CAL;
     }
 
-    default boolean gregorianCalendar(int year, int month, int day) {
+    static boolean gregorianCalendar(int year, int month, int day) {
         if ( year > 1582 ) return true;
         if ( year < 1582 ) return false;
 
