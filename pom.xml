@@ -8,7 +8,7 @@
     <name>swe-java-lib</name>
 
     <groupId>swisseph</groupId>
-    <artifactId>swe-java-lib</artifactId>
+    <artifactId>swe</artifactId>
     <version>2.10.02</version>
 
     <properties>
