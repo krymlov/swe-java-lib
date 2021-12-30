@@ -15,16 +15,6 @@ import static org.swisseph.api.ISweConstants.*;
 import static swisseph.SwissData.ODEGREE_STRING;
 
 /**
- * Assuming degree (d) can be positive or negative
- * decimal degree (dd) = Math.signum(d) * (Math.abs(d) + (m / 60.0) + (s / 3600.0));
- * 
- * Converting back is:
- * 
- * d = (int)dd;
- * t1 = (dd - d) * 60;
- * m = (int)t1;
- * s = (t1 - m) * 60;
- * 
  * @author Yura Krymlov
  * @version 1.1, 2019-07
  */
@@ -345,27 +335,5 @@ public interface IDegreeUtils {
             return Double.isInfinite(d) ? d : 0.0D / 0.0;
         }
     }
-
-    /*
-    static void main(String[] args) {
-        // DD 49.758665 to DMS like 49°45'31"N
-        double dd = 49.758665;
-        int nn = toIDMSms(dd);
-        
-        System.out.println(dd);
-        System.out.println(nn);
-        
-        System.out.println(toDMS(dd));
-        System.out.println(toDMS(dd, true));
-        
-        System.out.println(toDMSms(dd));
-        System.out.println(toDMSms(dd, true));
-        
-        System.out.println(toDMSms(nn));
-        System.out.println(toDMSms(nn, true));
-        
-        System.out.println(toDDms(nn));
-        System.out.println(toDMSms(toDDms(nn)));
-    }*/
 
 }

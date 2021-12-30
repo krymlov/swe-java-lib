@@ -8211,8 +8211,7 @@ if (false) {
     @Override
     public ISweJulianDate swe_revjul(double jd, int gregflag) {
         final IDate date = SweDate.swe_revjul(jd, gregflag == SE_GREG_CAL);
-        return new SweJulianDate(jd, date.year, date.month, 
-            date.day, date.hour, gregflag == SE_GREG_CAL);
+        return new SweJulianDate(jd, date.year, date.month, date.day, date.hour);
     }
 
     @Override
@@ -8249,20 +8248,19 @@ if (false) {
         // dret[1] = Julian day number UT1
         
         return new SweJulianDate(dret[1], 
-            new int[] {year, month, day, hour, min, (int)sec}, 
-                time, SE_GREG_CAL == gregflag);
+            new int[] {year, month, day, hour, min, (int)sec}, time);
     }
 
     @Override
     public ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
         final SDate date = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);        
-        return new SweJulianDate(tjd_et, date.getDate(), date.getHour(), SE_GREG_CAL == gregflag);
+        return new SweJulianDate(tjd_et, date.getDate(), date.getHour());
     }
     
     @Override
     public ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
         final SDate date = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);        
-        return new SweJulianDate(tjd_ut, date.getDate(), date.getHour(), SE_GREG_CAL == gregflag);
+        return new SweJulianDate(tjd_ut, date.getDate(), date.getHour());
     }
 
     @Override
@@ -8270,9 +8268,7 @@ if (false) {
     int imin, double dsec, boolean utcToLocal, double timezone) {
         final SDate date = SweDate.getLocalTimeFromUTC(iyear, imonth,
             iday, ihour, imin, dsec, utcToLocal ? -timezone : +timezone);
-        SweJulianDate sweJulDate = new SweJulianDate(date.getDate(), date.getHour(), true);
-        sweJulDate.timeZone(timezone);
-        return sweJulDate;
+        return new SweJulianDate(date.getDate(), date.getHour(), timezone);
     }
 
   @Override

@@ -5,12 +5,17 @@
  */
 package org.swisseph;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.swisseph.api.ISweGeoLocation;
 import org.swisseph.app.SweGeoLocation;
 import swisseph.SwissEph;
+
+import static org.swisseph.api.ISweConstants.EPHE_PATH;
 
 /**
  * @author Yura Krymlov
@@ -20,8 +25,6 @@ import swisseph.SwissEph;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName.class)
 public abstract class ASwissephTest {
-    protected static final String EPHE_PATH = "ephe";
-
     protected static final ThreadLocal<ISwissEph> SWISS_EPHS = new ThreadLocal<>();
     protected static final ThreadLocal<ISwissEph> SWEPH_EXPS = new ThreadLocal<>();
 
@@ -60,17 +63,17 @@ public abstract class ASwissephTest {
     }
 
     public static void closeSwissEph() {
-        ISwissEph swissEph = SWISS_EPHS.get();
-        if (null == swissEph) return;
-        swissEph.swe_close();
-        SWISS_EPHS.remove();
+        try (ISwissEph swissEph = SWISS_EPHS.get()) {
+            if (null == swissEph) return;
+            SWISS_EPHS.remove();
+        }
     }
 
     public static void closeSwephExp() {
-        ISwissEph swissEph = SWEPH_EXPS.get();
-        if (null == swissEph) return;
-        swissEph.swe_close();
-        SWEPH_EXPS.remove();
+        try (ISwissEph swissEph = SWEPH_EXPS.get()) {
+            if (null == swissEph) return;
+            SWEPH_EXPS.remove();
+        }
     }
 
     @AfterEach

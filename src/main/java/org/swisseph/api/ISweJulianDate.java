@@ -12,8 +12,11 @@ import swisseph.SweConst;
 import java.io.Serializable;
 
 /**
+ * This is the wrapper class for date,time,tmz,julianDay,deltaT,universal time (decimal hours)
+ * The class instance should be created or initialized by corresponding {@link org.swisseph.ISwissEph} methods
+ *
  * @author Yura Krymlov
- * @version 1.0, 2020-05
+ * @version 1.1, 2021-12
  */
 public interface ISweJulianDate extends Serializable {
     boolean SE_JUL_CAL = false;
@@ -58,7 +61,13 @@ public interface ISweJulianDate extends Serializable {
         return gregorianCalendar() ? SweConst.SE_GREG_CAL : SweConst.SE_JUL_CAL;
     }
     
-    boolean gregorianCalendar();
+    default boolean gregorianCalendar() {
+        final int[] date = date();
+        if (null != date && date.length > 2) {
+            return gregorianCalendar(date[0], date[1], date[2]);
+        }
+        return sweGregorianCalendar(julianDay());
+    }
 
     /**
      * @return julian day number or NaN if not calculated yet
@@ -72,7 +81,6 @@ public interface ISweJulianDate extends Serializable {
     double deltaT();
     
     double timeZone();
-    ISweJulianDate timeZone(double timeZone);
     
     /**
      * @return time zone, julian day, delta T, universal time (decimal hours)<br>

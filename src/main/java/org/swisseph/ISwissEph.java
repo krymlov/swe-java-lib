@@ -21,13 +21,30 @@ import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.*;
 import static swisseph.SweConst.ERR;
-import static swisseph.SweConst.SE_GREG_CAL;
 
 /**
+ * {@link ISwissEph} is a wrapper interface to the Swiss Ephemeris API defined in {@link SwephExp}.
+ * It also adds default factory methods to create and initialize {@link ISweJulianDate}
+ * which is a wrapper for different date/time fields needed for datetime presentation.
+ * <br><br>
+ * This interface has two implementations: Native {@link SwephNative}, which is the default one
+ * and pure Java {@link swisseph.SwissEph}, which was created by:
+ * Thomas Mack (http://th-mack.de/international/download/index.html)
+ * <br><br>
+ * {@link ISwissEph} is the object that may hold resources (such as file handles) until it is closed.
+ * The close() method of an AutoCloseable object is called automatically when exiting a try-with-resources block.
+ *
  * @author Yura
- * @version 1.0, 2020-05
+ * @version 1.1, 2021-12
  */
-public interface ISwissEph extends Serializable {
+public interface ISwissEph extends Serializable, AutoCloseable {
+    /**
+     * @return SweConst.SE_GREG_CAL if julDay relates to Gregorian calendar date (>= October 15, 1582),
+     * else returns SweConst.SE_JUL_CAL if julDay relates to Julian calendar (< October 15, 1582)
+     */
+    static int getCalendarType(final double julDay) {
+        return julDay >= JD_GC0 ? SweConst.SE_GREG_CAL : SweConst.SE_JUL_CAL;
+    }
 
     /**
      * @return true if it is the native implementation
@@ -36,8 +53,12 @@ public interface ISwissEph extends Serializable {
         return true;
     }
 
-    static int getCalendarType(final double julDay) {
-        return julDay >= JD_GC0 ? SweConst.SE_GREG_CAL : SweConst.SE_JUL_CAL;
+    /**
+     * Closes this resource, relinquishing any underlying resources (close Swiss Ephemeris).
+     * This method is invoked automatically on objects managed by the try-with-resources statement.
+     */
+    default void close() {
+        swe_close();
     }
 
     default ISweJulianDate getJulianDate(final double julDay) {
@@ -48,8 +69,8 @@ public interface ISwissEph extends Serializable {
         return initJulianDate(new SweJulianDate(julDay, timeZone));
     }
 
-    default ISweJulianDate getJulianDate(final int[] date, final boolean gregorianCalendar, final double timeZone) {
-        return initJulianDate(new SweJulianDate(date, gregorianCalendar, timeZone));
+    default ISweJulianDate getJulianDate(final int[] date, final double timeZone) {
+        return initJulianDate(new SweJulianDate(date, timeZone));
     }
 
     default ISweJulianDate getJulianDate(final Calendar calendar) {
@@ -68,7 +89,7 @@ public interface ISwissEph extends Serializable {
                 calendar.get(MILLISECOND)
         };
 
-        return initJulianDate(new SweJulianDate(datetime, true, timeZone));
+        return initJulianDate(new SweJulianDate(datetime, timeZone));
     }
 
     /**
@@ -338,7 +359,7 @@ public interface ISwissEph extends Serializable {
         final int[] yearMonDay = new int[3];
 
         SwephExp.swe_revjul(jd, gregflag, yearMonDay, utime);
-        return new SweJulianDate(jd, yearMonDay, utime[0], SE_GREG_CAL == gregflag);
+        return new SweJulianDate(jd, yearMonDay, utime[0]);
     }
 
     default ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour, int min, double sec, int gregflag, StringBuilder serr) {
@@ -355,7 +376,7 @@ public interface ISwissEph extends Serializable {
         // dret[1] = Julian day number UT1
 
         return new SweJulianDate(dret[1], new int[]{year, month, day,
-                hour, min, (int) sec}, time, SE_GREG_CAL == gregflag);
+                hour, min, (int) sec}, time);
     }
 
     default ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
@@ -369,7 +390,7 @@ public interface ISwissEph extends Serializable {
         time += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
         time += (outDsec[0] / d3600);
 
-        return new SweJulianDate(tjd_et, outYearMonthDayHourMin, time, SE_GREG_CAL == gregflag);
+        return new SweJulianDate(tjd_et, outYearMonthDayHourMin, time);
     }
 
     default ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
@@ -383,7 +404,7 @@ public interface ISwissEph extends Serializable {
         time += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
         time += (outDsec[0] / d3600);
 
-        return new SweJulianDate(tjd_ut, outYearMonthDayHourMin, time, SE_GREG_CAL == gregflag);
+        return new SweJulianDate(tjd_ut, outYearMonthDayHourMin, time);
     }
 
     /**
@@ -411,9 +432,7 @@ public interface ISwissEph extends Serializable {
         utime += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
         utime += (outDsec[0] / d3600);
 
-        SweJulianDate sweJulDate = new SweJulianDate(outYearMonthDayHourMin, utime, true);
-        sweJulDate.timeZone(timezone);
-        return sweJulDate;
+        return new SweJulianDate(outYearMonthDayHourMin, utime, timezone);
     }
 
     /****************************
