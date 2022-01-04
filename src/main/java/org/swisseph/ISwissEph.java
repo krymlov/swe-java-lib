@@ -65,20 +65,20 @@ public interface ISwissEph extends Serializable, AutoCloseable {
         return initJulianDate(new SweJulianDate(julDay));
     }
 
-    default ISweJulianDate getJulianDate(final double julDay, final double timeZone) {
+    default ISweJulianDate getJulianDate(final double julDay, final float timeZone) {
         return initJulianDate(new SweJulianDate(julDay, timeZone));
     }
 
-    default ISweJulianDate getJulianDate(final int[] date, final double timeZone) {
+    default ISweJulianDate getJulianDate(final int[] date, final float timeZone) {
         return initJulianDate(new SweJulianDate(date, timeZone));
     }
 
     default ISweJulianDate getJulianDate(final Calendar calendar) {
         int millis = calendar.getTimeZone().getOffset(calendar.getTimeInMillis());
-        return getJulianDate(calendar, millis / d3600000);
+        return getJulianDate(calendar, (float)(millis / d3600000));
     }
 
-    default ISweJulianDate getJulianDate(final Calendar calendar, final double timeZone) {
+    default ISweJulianDate getJulianDate(final Calendar calendar, final float timeZone) {
         final int[] datetime = new int[]{
                 calendar.get(YEAR),
                 calendar.get(MONTH) + 1,
@@ -432,7 +432,7 @@ public interface ISwissEph extends Serializable, AutoCloseable {
         utime += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
         utime += (outDsec[0] / d3600);
 
-        return new SweJulianDate(outYearMonthDayHourMin, utime, timezone);
+        return new SweJulianDate(outYearMonthDayHourMin, utime, (float)timezone);
     }
 
     /****************************

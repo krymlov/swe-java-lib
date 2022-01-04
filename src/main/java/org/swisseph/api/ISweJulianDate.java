@@ -80,7 +80,7 @@ public interface ISweJulianDate extends Serializable {
      */
     double deltaT();
     
-    double timeZone();
+    float timeZone();
     
     /**
      * @return time zone, julian day, delta T, universal time (decimal hours)<br>

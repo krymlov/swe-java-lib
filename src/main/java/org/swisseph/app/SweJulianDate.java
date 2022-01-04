@@ -56,19 +56,19 @@ public class SweJulianDate implements ISweJulianDate {
         this.date = date;
     }
 
-    public SweJulianDate(int[] date, double utime, double timeZone) {
+    public SweJulianDate(int[] date, double utime, float timeZone) {
         this.values[IDXD_TIMEZONE] = timeZone;
         this.values[IDXD_UTIME] = utime;
         this.date = date;
     }
 
-    public SweJulianDate(double julDay, double timeZone) {
+    public SweJulianDate(double julDay, float timeZone) {
         this.values[IDXD_TIMEZONE] = timeZone;
         this.values[IDXD_JULDAY] = julDay;
         this.date = null;
     }
 
-    public SweJulianDate(int[] datetime, double timeZone) {
+    public SweJulianDate(int[] datetime, float timeZone) {
         this.values[IDXD_TIMEZONE] = timeZone;
         this.date = datetime;
     }
@@ -113,8 +113,8 @@ public class SweJulianDate implements ISweJulianDate {
     }
 
     @Override
-    public double timeZone() {
-        return values[IDXD_TIMEZONE];
+    public float timeZone() {
+        return (float)values[IDXD_TIMEZONE];
     }
 
     @Override

@@ -8268,7 +8268,7 @@ if (false) {
     int imin, double dsec, boolean utcToLocal, double timezone) {
         final SDate date = SweDate.getLocalTimeFromUTC(iyear, imonth,
             iday, ihour, imin, dsec, utcToLocal ? -timezone : +timezone);
-        return new SweJulianDate(date.getDate(), date.getHour(), timezone);
+        return new SweJulianDate(date.getDate(), date.getHour(), (float)timezone);
     }
 
   @Override
