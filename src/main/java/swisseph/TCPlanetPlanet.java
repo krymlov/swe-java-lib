@@ -32,12 +32,11 @@ import org.swisseph.ISwissEph;
  * This would calculate the last (UT-) date, when Mercury and Venus
  * had the same longitudinal position.
  */
-public class TCPlanetPlanet extends TransitCalculator implements java.io.Serializable {
-    private static final long serialVersionUID = 1049425296067734154L;
-
+public class TCPlanetPlanet extends TransitCalculator {
     //private int precalcCount = 50;
 
-    private int pl1, pl2;
+    private final int pl1;
+    private int pl2;
     private int idx = 0; // The index into the xx[] array in swe_calc() to use:
     private int tflags = 0; // The transit flags
     private int flags = 0; // The calculation flags for swe_calc()
@@ -48,7 +47,8 @@ public class TCPlanetPlanet extends TransitCalculator implements java.io.Seriali
     private boolean calcYoga = false;
     private double minSpeed1, maxSpeed1;
     private double minSpeed2, maxSpeed2;
-    private double minSpeed, maxSpeed;
+    private final double minSpeed;
+    private double maxSpeed;
 
     // The y = f(x) value to reach, speaking mathematically...
     private double offset = 0.;

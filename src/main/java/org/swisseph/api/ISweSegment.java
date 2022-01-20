@@ -6,11 +6,13 @@
 
 package org.swisseph.api;
 
+import java.io.Serializable;
+
 /**
  * @author Yura Krymlov
  * @version 1.2, 2021-12
  */
-public interface ISweSegment {
+public interface ISweSegment extends Serializable {
     double start();
     double close();
 }

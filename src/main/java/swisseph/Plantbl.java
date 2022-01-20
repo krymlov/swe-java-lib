@@ -68,16 +68,14 @@
 */
 package swisseph;
 
-class Plantbl
-		implements java.io.Serializable
-		{
-  short max_harmonic[]=new short[9];
-  short max_power_of_t;
-  byte[] arg_tbl;
-  double[] lon_tbl;
-  double[] lat_tbl;
-  double[] rad_tbl;
-  double distance;
+final class Plantbl {
+  final short max_harmonic[];
+  final short max_power_of_t;
+  final byte[] arg_tbl;
+  final double[] lon_tbl;
+  final double[] lat_tbl;
+  final double[] rad_tbl;
+  final double distance;
 
   Plantbl(short[] max_harmonic, short max_power_of_t, byte[] arg_tbl,
           double[] lon_tbl, double[] lat_tbl, double[] rad_tbl,

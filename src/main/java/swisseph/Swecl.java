@@ -86,7 +86,7 @@ package swisseph;
 * http://www.astro.ch/swisseph/sweph_g.htm</A>. By far most of the information 
 * there is directly valid for this port to Java as well.</B></I>
 */
-class Swecl implements java.io.Serializable {
+final class Swecl {
   final SwissEph  sw;
   final SwissLib  sl;
   final Swemmoon  sm;

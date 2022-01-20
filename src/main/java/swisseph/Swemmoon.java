@@ -74,9 +74,7 @@
 */
 package swisseph;
 
-class Swemmoon implements java.io.Serializable {
-  private static final long serialVersionUID = -3961868863567373908L;
-
+final class Swemmoon {
           /*
  * Expansions for the geocentric ecliptic longitude,
  * latitude, and distance of the Moon referred to the mean equinox

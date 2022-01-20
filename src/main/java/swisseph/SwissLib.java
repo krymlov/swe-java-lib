@@ -101,9 +101,7 @@ import java.util.StringTokenizer;
 * sidereal time) and swe_degnorm() (normalize a position to the range of
 * 0.0&nbsp;&lt;=&nbsp;x&nbsp;&lt;&nbsp;360.0) and others.
 */
-public class SwissLib implements java.io.Serializable {
-  private static final long serialVersionUID = 7877862627506029987L;
-
+final class SwissLib {
   static final double PREC_IAU_1976_CTIES	= 2.0;        /* J2000 +/- two centuries */
   static final double PREC_IAU_2000_CTIES	= 2.0;        /* J2000 +/- two centuries */
 /* we use P03 for whole ephemeris */
@@ -1033,46 +1031,46 @@ public class SwissLib implements java.io.Serializable {
      is the same except for the lower order terms.  */
 
   /* SEMOD_PREC_WILLIAMS_1994 */
-  private double pAcof_williams[] = new double[] {
+  private final double pAcof_williams[] = new double[] {
    -8.66e-10, -4.759e-8, 2.424e-7, 1.3095e-5, 1.7451e-4, -1.8055e-3,
    -0.235316, 0.076, 110.5407, 50287.70000 };
-  private double nodecof_williams[] = new double[] {
+  private final double nodecof_williams[] = new double[] {
     6.6402e-16, -2.69151e-15, -1.547021e-12, 7.521313e-12, 1.9e-10, 
     -3.54e-9, -1.8103e-7,  1.26e-7,  7.436169e-5,
     -0.04207794833,  3.052115282424};
-  private double inclcof_williams[] = new double[] {
+  private final double inclcof_williams[] = new double[] {
     1.2147e-16, 7.3759e-17, -8.26287e-14, 2.503410e-13, 2.4650839e-11, 
     -5.4000441e-11, 1.32115526e-9, -6.012e-7, -1.62442e-5,
     0.00227850649, 0.0 };
 
   /* SEMOD_PREC_SIMON_1994 */
   /* Precession coefficients from Simon et al: */
-  private double pAcof_simon[] = new double[] {
+  private final double pAcof_simon[] = new double[] {
     -8.66e-10, -4.759e-8, 2.424e-7, 1.3095e-5, 1.7451e-4, -1.8055e-3,
     -0.235316, 0.07732, 111.2022, 50288.200 };
-  private double nodecof_simon[] = new double[] {
+  private final double nodecof_simon[] = new double[] {
     6.6402e-16, -2.69151e-15, -1.547021e-12, 7.521313e-12, 1.9e-10, 
     -3.54e-9, -1.8103e-7, 2.579e-8, 7.4379679e-5,
     -0.0420782900, 3.0521126906};
-  private double inclcof_simon[] = new double[] {
+  private final double inclcof_simon[] = new double[] {
     1.2147e-16, 7.3759e-17, -8.26287e-14, 2.503410e-13, 2.4650839e-11, 
     -5.4000441e-11, 1.32115526e-9, -5.99908e-7, -1.624383e-5,
     0.002278492868, 0.0 };
 
   /* SEMOD_PREC_LASKAR_1986 */
   /* Precession coefficients taken from Laskar's paper: */
-  private double pAcof_laskar[] = new double[] {
+  private final double pAcof_laskar[] = new double[] {
     -8.66e-10, -4.759e-8, 2.424e-7, 1.3095e-5, 1.7451e-4, -1.8055e-3,
     -0.235316, 0.07732, 111.1971, 50290.966 };
   /* Node and inclination of the earth's orbit computed from
    * Laskar's data as done in Bretagnon and Francou's paper.
    * Units are radians.
    */
-  private double nodecof_laskar[] = new double[] {
+  private final double nodecof_laskar[] = new double[] {
     6.6402e-16, -2.69151e-15, -1.547021e-12, 7.521313e-12, 6.3190131e-10, 
     -3.48388152e-9, -1.813065896e-7, 2.75036225e-8, 7.4394531426e-5,
     -0.042078604317, 3.052112654975 };
-  private double inclcof_laskar[] = new double[] {
+  private final double inclcof_laskar[] = new double[] {
     1.2147e-16, 7.3759e-17, -8.26287e-14, 2.503410e-13, 2.4650839e-11, 
     -5.4000441e-11, 1.32115526e-9, -5.998737027e-7, -1.6242797091e-5,
     0.002278495537, 0.0 };

@@ -68,9 +68,7 @@
 */
 package swisseph;
 
-final class SarosData implements java.io.Serializable {
-    private static final long serialVersionUID = -5735769694804475600L;
-
+final class SarosData {
     final int series_no;
     final double tstart;
 

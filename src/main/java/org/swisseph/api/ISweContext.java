@@ -14,7 +14,7 @@ import java.io.Serializable;
  * @author Yura Krymlov
  * @version 1.0, 2020-01
  */
-public interface ISweContext extends Serializable {
+public interface ISweContext {
     /**
      * @return {@link ISwissEph}
      */

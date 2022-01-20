@@ -68,9 +68,7 @@
 */
 package swisseph;
 
-class SwephMosh implements java.io.Serializable {
-  private static final long serialVersionUID = -970061929152280341L;
-
+final class SwephMosh {
   final SwissLib sl;
   final SwissEph sw;
   final SwissData swed;

@@ -8,13 +8,15 @@ package org.swisseph.api;
 
 import org.swisseph.ISwissEph;
 
+import java.io.Serializable;
+
 import static swisseph.SweConst.*;
 
 /**
  * @author Yura Krymlov
  * @version 1.1, 2019-11
  */
-public interface ISweObjects extends ISweContext {
+public interface ISweObjects extends ISweContext, Serializable {
     String CALC_FAILED = "Calculation is failed probably due to nearness to the polar circle";
 
     int[] OBJECTS_TRUE_NODE = {

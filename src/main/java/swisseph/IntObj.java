@@ -78,9 +78,7 @@ package swisseph;
 * there is directly valid for this port to Java as well.</B></I>
 * @version 1.0.0a
 */
-public class IntObj
-		implements java.io.Serializable
-		{
+final class IntObj {
   /**
   * This is the integer value that has become wrapped up into a real object.
   */

@@ -77,9 +77,7 @@ package swisseph;
 * there is directly valid for this port to Java as well.</B></I>
 * @version 1.0.0a
 */
-class Houses
-		implements java.io.Serializable
-		{
+final class Houses {
   /**
   * The twelve house cusps from cusp[1] to cusp[12] plus many additional
   * points.

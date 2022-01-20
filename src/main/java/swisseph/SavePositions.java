@@ -70,9 +70,7 @@ package swisseph;
 
 import java.util.Arrays;
 
-class SavePositions implements java.io.Serializable {
-    private static final long serialVersionUID = 3027033439351669590L;
-
+final class SavePositions {
     int ipl;
     int iflgsave;
     double tsave = 0.;
@@ -84,7 +82,7 @@ class SavePositions implements java.io.Serializable {
      *    and equatorial cartesian coordinates (offset 18).
      * 6 doubles each for position and speed coordinates.
      */
-    double[] xsaves = new double[24];
+    final double[] xsaves = new double[24];
 
     void clearData() {
         Arrays.fill(xsaves, 0.);

@@ -108,9 +108,7 @@ package swisseph;
 * there is directly valid for this port to Java as well.</B></I>
 * @version 1.0.0a
 */
-class AyaInit
-		implements java.io.Serializable
-		{
+final class AyaInit {
   final double t0;
   final double ayan_t0;
 

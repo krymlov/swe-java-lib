@@ -54,13 +54,11 @@
 */
 package swisseph;
 
-public class Swenut2000a_npl
-		implements java.io.Serializable
-		{
+interface Swenut2000a_npl {
 /* //ifdef NUT_IAU_2000A */
   /* Planetary argument multipliers
    * L L' F D Om Me Ve E Ma Ju Sa Ur Ne pre */
-  static final short npl[] = {
+  short[] npl = {
   0, 0, 0, 0, 0, 0, 0, 8,-16, 4, 5, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, -8, 16, -4, -5, 0, 0, 2,
   0, 0, 0, 0, 0, 0, 0, 8,-16, 4, 5, 0, 0, 2,

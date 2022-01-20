@@ -31,10 +31,8 @@ import org.swisseph.ISwissEph;
  * This would calculate the (ET-) date, when the Saturn will
  * change from retrograde to direct movement or vice versa.
  */
-public class TCPlanet extends TransitCalculator implements java.io.Serializable {
-    private static final long serialVersionUID = -3867086398204783483L;
-
-    private int planet;
+public class TCPlanet extends TransitCalculator {
+    private final int planet;
     private int idx = 0; // The index into the xx[] array in swe_calc() to use:
     private int tflags = 0; // The transit flags
     private int flags = 0; // The calculation flags for swe_calc()

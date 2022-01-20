@@ -97,7 +97,7 @@ import static swisseph.SweConst.SE_TIDAL_DEFAULT;
 public class SweDate implements Serializable {
   private static final long serialVersionUID = 2615570409330395346L;
 
-  private static volatile SwissEph SW = null; // NO default
+  private static volatile transient SwissEph SW = null; // NO default
 
   public static final boolean SE_KEEP_DATE = true;
   public static final boolean SE_KEEP_JD = false;

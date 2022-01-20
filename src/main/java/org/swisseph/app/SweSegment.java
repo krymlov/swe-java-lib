@@ -16,6 +16,7 @@ import static org.swisseph.utils.IDegreeUtils.toDMSms;
  * @version 1.2, 2021-12
  */
 public class SweSegment implements ISweSegment {
+    private static final long serialVersionUID = 5886425968833629547L;
     public static final ISweSegment ZERO_SEGMENT = new SweSegment(d0, d0);
 
     protected final double start;

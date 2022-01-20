@@ -68,8 +68,7 @@
 */
 package swisseph;
 
-public class SwissData implements java.io.Serializable {
-
+final class SwissData {
   /**
   * The character to be used as the degree character. Only textmode
   * applications (and probably awt applications in Java 1.1 and below?)
@@ -77,10 +76,6 @@ public class SwissData implements java.io.Serializable {
   * swing components of Java 1.2 and above will use the unicode encoding
   * always!
   */
-    // Identical in most ISO-8859 sets
-    public static final String ODEGREE_CHAR = "°"; // Unicode degree character 176
-    public static final String ODEGREE_STRING = "°"; /* degree as string, utf8 encoding */
-
 
   public static final String[] ayanamsa_name = {
      "Fagan/Bradley",
@@ -176,8 +171,6 @@ public class SwissData implements java.io.Serializable {
     SwephData.SEI_NEPTUNE, SwephData.SEI_PLUTO, 0, 0, 0, 0, SwephData.SEI_EARTH,
     SwephData.SEI_CHIRON, SwephData.SEI_PHOLUS, SwephData.SEI_CERES,
     SwephData.SEI_PALLAS, SwephData.SEI_JUNO, SwephData.SEI_VESTA, };
-
-  private static final long serialVersionUID = -1799981620288707398L;
 
   //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////

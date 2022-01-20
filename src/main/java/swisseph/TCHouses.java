@@ -27,13 +27,12 @@ import org.swisseph.ISwissEph;
 * This would calculate the (UT-) date, when the ascendant is at 30 degree
 * longitude next time.
 */
-public class TCHouses extends TransitCalculator implements java.io.Serializable {
-    private static final long serialVersionUID = -4256728563577926029L;
-    
-  private int houseObject;
+public class TCHouses extends TransitCalculator {
+
+  private final int houseObject;
   private double geolon, geolat;
-  private int hsys;
-  private int idx = 0; // The index into the xx[] array in swe_calc() to use:
+  private final int hsys;
+  private final int idx = 0; // The index into the xx[] array in swe_calc() to use:
   private int tflags = 0; // The transit flags
   private  int flags = 0;  // The calculation flags for swe_calc()
   private  double min = 0;

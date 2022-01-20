@@ -72,8 +72,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 
-class FileData implements java.io.Serializable {
-  private static final long serialVersionUID = -8017157699677408928L;
+final class FileData {
 
   final byte SEI_FILE_NMAXPLAN=50;
 

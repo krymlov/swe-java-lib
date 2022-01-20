@@ -80,8 +80,7 @@ import java.net.URL;
 * read access to files, in this case the Swiss Ephemeris and JPL data
 * files.
 */
-public class FilePtr
-		implements java.io.Serializable {
+final class FilePtr {
   public static final String useragent = "swisseph-java-" + SwephData.SE_JAVA_VERSION;
 
   //Allocate a 1K buffer for line reading

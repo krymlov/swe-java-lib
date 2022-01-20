@@ -83,7 +83,7 @@ package swisseph;
 * there is directly valid for this port to Java as well.</B></I>
 * @version 1.0.0a
 */
-class SweHouse implements java.io.Serializable {
+final class SweHouse {
   static final double MILLIARCSEC=1.0 / 3600000.0;
 
   final SwissLib sl;

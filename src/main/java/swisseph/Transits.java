@@ -24,7 +24,7 @@ import java.util.Vector;
 
 import static java.lang.Double.NaN;
 import static java.lang.Double.POSITIVE_INFINITY;
-import static swisseph.SwissData.ODEGREE_STRING;
+import static swisseph.SweConst.ODEGREE_STRING;
 
 /**
 * Test program for planetary transits.
@@ -32,7 +32,7 @@ import static swisseph.SwissData.ODEGREE_STRING;
 * Invoke with parameter -h to get the help text.
 * @see swisseph.SwissEph
 */
-public class Transits implements java.io.Serializable {
+public class Transits {
 
   // Consecutive transit calculations need a minimum time difference
   static final double MIN_TIME_DIFF = 1./24./3600./2.;
@@ -544,7 +544,7 @@ public class Transits implements java.io.Serializable {
   private final SwissOut out;
   private final SwissErr err;
 
-  Locale[] locs = Locale.getAvailableLocales();
+  final Locale[] locs = Locale.getAvailableLocales();
   String locale = "en_US"; // Make en_US the default
 
   String Nlocale = null;   // Locale to localize numbers on input
@@ -571,7 +571,7 @@ public class Transits implements java.io.Serializable {
   NumberFormat nnof = null;
 
   double randomFactor = 0;
-  double tzOffset = 0;
+  final double tzOffset = 0;
   int secondsIdx = 0;
   int randomCount = 0;
 
@@ -3352,8 +3352,7 @@ err.println(pls1 + " / " + pls2);
   }
 
 
-static final class TransitValues implements java.io.Serializable {
-  private static final long serialVersionUID = 8760342507390748397L;
+static final class TransitValues {
 
   TransitCalculator tc = null;
   int tcIndex = 0; // Keep track of which tc is saved to jdET
@@ -3377,8 +3376,7 @@ static final class TransitValues implements java.io.Serializable {
 }
 
 
-static final class TransitOffsets implements java.io.Serializable {
-  private static final long serialVersionUID = 708705440072177032L;
+static final class TransitOffsets {
 
   int idxOffset = 0;           // The index into the xx[] array in swe_calc*()
                                // 0 to 5: lon / lat / dist / speed in lon /
@@ -3391,8 +3389,7 @@ static final class TransitOffsets implements java.io.Serializable {
 }
 
 
-  static final class ObjFormatter implements java.io.Serializable {
-    private static final long serialVersionUID = 8283299354324521302L;
+  static final class ObjFormatter {
 
     Object[] arr = null;
     String postfix = "";
@@ -3413,8 +3410,7 @@ static final class TransitOffsets implements java.io.Serializable {
   }
 
 
-  static final class TransitArguments implements java.io.Serializable {
-    private static final long serialVersionUID = -5286690431744244692L;
+  static final class TransitArguments {
 
     // CH-Zuerich:
     double top_lon = 8.55;
@@ -3508,15 +3504,14 @@ static final class TransitOffsets implements java.io.Serializable {
     SweDate sde2 = new SweDate();
     boolean rollover = false;
     double rolloverVal = 360.;
-    TransitValues v = new TransitValues();
+    final TransitValues v = new TransitValues();
     int idxDuplicates = 0;
     boolean withDuplicates = true;
 
     double jdET2 = 0.;
   }
 
-  static final class TransitResult implements java.io.Serializable {
-    private static final long serialVersionUID = 198468111608876327L;
+  static final class TransitResult {
 
     // The index in the array of all TransitCalculators returning the
     // nearest transit point:

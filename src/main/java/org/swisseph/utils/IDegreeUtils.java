@@ -12,7 +12,7 @@ import org.swisseph.api.ISweConstants;
 import java.math.BigDecimal;
 
 import static org.swisseph.api.ISweConstants.*;
-import static swisseph.SwissData.ODEGREE_STRING;
+import static swisseph.SweConst.ODEGREE_STRING;
 
 /**
  * @author Yura Krymlov

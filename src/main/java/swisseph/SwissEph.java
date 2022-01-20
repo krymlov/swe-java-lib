@@ -110,7 +110,6 @@ import static swisseph.SweConst.SE_GREG_CAL;
 * there is directly valid for this port to Java as well.</B></I>
 */
 public class SwissEph implements ISwissEph {
-    private static final long serialVersionUID = -7212831364223370468L;
 
   final SwissData swed;
   final SwephMosh smosh;
@@ -8174,7 +8173,7 @@ if (false) {
     /**
      * @version 2020-02
      */
-    static final class MeffEle implements java.io.Serializable {
+    static final class MeffEle {
         final double r;
         final double m;
 

@@ -8,8 +8,7 @@ import java.util.Random;
 * Interface for different calculation- and comparison-classes used for
 * transit calculations.
 */
-public abstract class TransitCalculator implements java.io.Serializable {
-    private static final long serialVersionUID = -7113406204240396993L;
+public abstract class TransitCalculator {
     protected static final Random RANDOM = new Random();
     
     protected final ISwissEph sw;
@@ -112,7 +111,7 @@ public abstract class TransitCalculator implements java.io.Serializable {
   protected boolean rollover = false; // We need a rollover of 360 degrees being
                                       // equal to 0 degrees for longitudinal
                                       // position transits only.
-  protected double rolloverVal = 360.; // if rollover, we roll over from 360 to 0
+  protected final double rolloverVal = 360.; // if rollover, we roll over from 360 to 0
                                        // as default. Other values than 0.0 for the
                                        // minimum values are not supported for now.
 

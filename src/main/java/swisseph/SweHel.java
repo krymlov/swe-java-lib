@@ -85,9 +85,7 @@ package swisseph;
 import java.util.Locale;
 
 
-public class SweHel implements java.io.Serializable {
-  private static final long serialVersionUID = 8155129561259248048L;
-
+final class SweHel {
   private final SwissEph sw;
   private final SwissLib sl;
   private final Swecl sc;
@@ -321,8 +319,8 @@ public class SweHel implements java.io.Serializable {
   /* avoids problems with star name string that may be overwritten by 
      swe_fixstar_mag() */
 // (C-)static variables for this method:
-double call_swe_fixstar_mag__dmag[] = new double[] {0};
-StringBuilder call_swe_fixstar_mag__star_save = new StringBuilder();
+final double call_swe_fixstar_mag__dmag[] = new double[] {0};
+final StringBuilder call_swe_fixstar_mag__star_save = new StringBuilder();
 
   int call_swe_fixstar_mag(StringBuilder star, double mag[], int mag_offset, StringBuilder serr) {
     int retval;
@@ -2563,7 +2561,7 @@ darr[30] = darr[26] + darr[27] + darr[28] + darr[29];
    * - superior and inferior conjunction (Mercury and Venus)
    * - conjunction and opposition (ipl >= Mars)
    */
-  private double tcon[] = new double[] {
+  private final double tcon[] = new double[] {
     0, 0, 
     2451550, 2451550,  /* Moon */
     2451604, 2451670,  /* Mercury */
@@ -2593,7 +2591,7 @@ darr[30] = darr[26] + darr[27] + darr[28] + darr[29];
         return SweConst.ERR;
       if (sw.swe_calc(tjdcon, SweConst.SE_SUN, epheflag|SweConst.SEFLG_SPEED, xs, serr) == SweConst.ERR)
         return SweConst.ERR;
-      ds = sl.swe_degnorm(x[0] - xs[0] - daspect);
+      ds = SwissLib.swe_degnorm(x[0] - xs[0] - daspect);
       if (ds > 180) ds -= 360;
       tjdcon -= ds / (x[3] - xs[3]);
     }

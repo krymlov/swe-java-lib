@@ -78,9 +78,11 @@ package swisseph;
 * there is directly valid for this port to Java as well.</B></I>
 * @version 1.0.0a
 */
-public interface SweConst
-		extends java.io.Serializable
-		{
+public interface SweConst {
+
+  // Identical in most ISO-8859 sets
+  String ODEGREE_CHAR = "°"; // Unicode degree character 176
+  String ODEGREE_STRING = "°"; /* degree as string, utf8 encoding */
 
 ////////////////////////////////////////////////////////////////////////////////
 //// sweodef.h: ////////////////////////////////////////////////////////////////

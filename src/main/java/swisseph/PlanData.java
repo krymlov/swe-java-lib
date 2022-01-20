@@ -68,9 +68,7 @@
 */
 package swisseph;
 
-class PlanData
-		implements java.io.Serializable
-		{
+final class PlanData {
   final double[] x =new double[6]; /* position and speed vectors equatorial J2000 */
   final double[] xreturn =new double[24]; /* return positions:
                          * xreturn+0    ecliptic polar coordinates

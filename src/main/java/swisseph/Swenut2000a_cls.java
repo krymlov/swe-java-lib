@@ -54,9 +54,7 @@
 */
 package swisseph;
 
-public class Swenut2000a_cls
-		implements java.io.Serializable
-		{
+interface Swenut2000a_cls {
   /* 0.1 microarcsecond to degrees */
   static final double O1MAS2DEG = 1 / 3600.0 / 10000000.0;
   /* Number of terms in the luni-solar nutation model */

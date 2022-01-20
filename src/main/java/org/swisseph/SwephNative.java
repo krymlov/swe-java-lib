@@ -14,7 +14,6 @@ import swisseph.SwephExp;
  * @version 1.0, 2020-05
  */
 public class SwephNative implements ISwissEph {
-    private static final long serialVersionUID = 7408975365041613166L;
 
     public static final String SWISSEPH_LIBRARY_NAME = "swe-2.10.02";
     protected static final SwephExp swephExp = new SwephExp(SWISSEPH_LIBRARY_NAME);

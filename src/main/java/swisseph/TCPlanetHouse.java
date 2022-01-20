@@ -35,22 +35,23 @@ import org.swisseph.ISwissEph;
  * This would calculate the last (UT-) date, when Mercury and Venus
  * had the same longitudinal position.
  */
-public class TCPlanetHouse extends TransitCalculator implements java.io.Serializable {
-    private static final long serialVersionUID = 2476970302924647426L;
-
+public class TCPlanetHouse extends TransitCalculator {
     // private int precalcCount = 100;
 
-    private int planet;
-    private int idx = 0; // The index into the xx[] array in swe_calc() to use; here only zero is used
+    private final int planet;
+    private final int idx = 0; // The index into the xx[] array in swe_calc() to use; here only zero is used
     private int transitFlags = 0; // The transit flags; here only SEFLG_TRANSIT_LONGITUDE is used
     private int planetFlags = 0; // The calculation flags for swe_calc()
     private int houseObject = 0;
     private int houseSystem = 0;
     private int houseFlags = 0; // The calculation flags for swe_houses(); 0 or SEFLG_SIDEREAL
-    private double houseGeolon, houseGeolat;
+    private final double houseGeolon;
+    private double houseGeolat;
     private double minSpeed1, maxSpeed1;
-    private double minSpeed2, maxSpeed2;
-    private double minSpeed, maxSpeed;
+    private final double minSpeed2;
+    private double maxSpeed2;
+    private final double minSpeed;
+    private double maxSpeed;
 
     // The y = f(x) value to reach, speaking mathematically...
     private double offset = 0.;

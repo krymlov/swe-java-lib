@@ -21,7 +21,7 @@ import java.util.TimeZone;
 * These methods are not available in the original Swiss
 * Ephemeris package.
 */
-public class Extlib implements java.io.Serializable {
+final class Extlib {
 
   /**
   * This class contains some additional method not contained
@@ -30,14 +30,6 @@ public class Extlib implements java.io.Serializable {
   * primarily.
   */
   private Extlib() { }
-
-  /**
-  * This method is for debugging purposes only.
-  * @param argv (unused parameter)
-  */
-  public static void main(String argv[]) {
-    new Extlib();
-  }
 
 //////////----------------------
 

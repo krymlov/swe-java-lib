@@ -9,11 +9,7 @@
 package swisseph;
 
 
-class Extensions implements java.io.Serializable {
-    /**
-     * Comment for <code>serialVersionUID</code>
-     */
-    private static final long serialVersionUID = 5426029461621526327L;
+final class Extensions {
 
   // getTransit() will return the current date and time, when the
   // transit ist occuring on that date. If you really want the next

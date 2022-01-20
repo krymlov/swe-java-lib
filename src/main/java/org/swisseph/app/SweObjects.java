@@ -17,6 +17,8 @@ import org.swisseph.api.ISweJulianDate;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
 
+import java.io.Serializable;
+
 import static java.lang.Double.isNaN;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.IDXD_DELTAT;
@@ -29,7 +31,7 @@ import static swisseph.SweConst.*;
  * @version 0.21a (adjusted by Yura Krymlov in 2019-10)
  */
 public class SweObjects implements ISweObjects {
-    private static final long serialVersionUID = -3522596422007816243L;
+    private static final long serialVersionUID = -6853364529953498713L;
 
     protected final boolean[] retrogrades = new boolean[objectsCount()];
     protected final double[] longitudes = new double[objectsCount()];

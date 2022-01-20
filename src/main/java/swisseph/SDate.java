@@ -68,6 +68,8 @@
 */
 package swisseph;
 
+import java.io.Serializable;
+
 import static org.swisseph.api.ISweConstants.d3600;
 import static org.swisseph.api.ISweConstants.d60;
 
@@ -78,7 +80,9 @@ import static org.swisseph.api.ISweConstants.d60;
 * @version 1.0.0a
 */
 
-final class SDate {
+final class SDate implements Serializable {
+  private static final long serialVersionUID = 8055618799629692138L;
+
   final int[] ymdhms = new int[6];
   final double hour, second;
 

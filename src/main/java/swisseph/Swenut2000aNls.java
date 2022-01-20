@@ -54,10 +54,8 @@
 */
 package swisseph;
 
-public class Swenut2000aNls
-		implements java.io.Serializable
-		{
-  static final int nls[] = {
+interface Swenut2000aNls {
+  int[] nls = {
   0, 0, 0, 0, 1,
   0, 0, 2, -2, 2,
   0, 0, 2, 0, 2,

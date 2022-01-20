@@ -72,10 +72,7 @@ package swisseph;
 * This class contains many constants for internal use only.
 * It does not need to be instantiated.
 */
-class SwephData
-		implements java.io.Serializable
-		{
-
+interface SwephData {
 
   static final String SE_VERSION = "2.01.00";
   static final String SE_JAVA_VERSION = "2.01.00_02";
@@ -3500,8 +3497,4 @@ static final double JPL_DE431_END   =  7930192.5;
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-  /**
-  * Just to inhibit instantiation of this class, which is never necessary.
-  */
-  private SwephData() { }
 }

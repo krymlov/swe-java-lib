@@ -81,9 +81,7 @@ package swisseph;
  * @version 1.0.0a
  * @see SwissEph#swe_set_sid_mode
  */
-class SidData implements java.io.Serializable {
-    private static final long serialVersionUID = 6386298359808289484L;
-
+final class SidData {
     int sid_mode = 0;
     double ayan_t0 = 0., t0 = 0.;
 

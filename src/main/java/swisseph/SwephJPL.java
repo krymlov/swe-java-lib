@@ -80,9 +80,7 @@
 package swisseph;
 
 
-class SwephJPL implements java.io.Serializable {
-  private static final long serialVersionUID = -6293880053650971210L;
-
+final class SwephJPL {
   static final int J_MERCURY =  0;
   static final int J_VENUS   =  1;
   static final int J_EARTH   =  2;
@@ -596,7 +594,8 @@ class SwephJPL implements java.io.Serializable {
    |            for nutations and librations.  angle unit is always radians.)
    */
   int irecsz_state;
-  int nrl_state, lpt_state[]=new int[3], ncoeffs_state;
+  int nrl_state, ncoeffs_state;
+  final int lpt_state[]=new int[3];
   private int state(double et, int[] list, boolean do_bary, double[] pv,
                     double[] pvsun, double[] nut, StringBuilder serr)
       throws SwissephException {
@@ -975,9 +974,7 @@ class SwephJPL implements java.io.Serializable {
     return new double[]{start, end};
   }
 
-  static final class JplSave implements java.io.Serializable {
-    private static final long serialVersionUID = -4651372800336643854L;
-
+  static final class JplSave {
     String jplfname = null;
     String jplfpath = null;
     FilePtr jplfptr = null;
@@ -985,7 +982,8 @@ class SwephJPL implements java.io.Serializable {
     final double eh_cval[] = new double[400];
     final double eh_ss[] = new double[3];
     double eh_au, eh_emrat;
-    int eh_denum, eh_ncon, eh_ipt[] = new int[39];
+    int eh_denum, eh_ncon;
+    final int eh_ipt[] = new int[39];
     String ch_cnam = "";
     final double pv[] = new double[78];
     final double pvsun[] = new double[6];

@@ -68,8 +68,7 @@
 */
 package swisseph;
 
-class Nut implements java.io.Serializable {
-    private static final long serialVersionUID = 7866452836246652800L;
+final class Nut {
 
     /* nutation */
     double tnut;

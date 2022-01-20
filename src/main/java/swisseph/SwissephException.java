@@ -1,8 +1,6 @@
 package swisseph;
 
-public class SwissephException extends RuntimeException
-		implements java.io.Serializable
-		{
+public class SwissephException extends RuntimeException {
   private double jdet=0;
   private int type=0;
   private int rc=0;

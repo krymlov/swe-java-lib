@@ -68,9 +68,7 @@
 */
 package swisseph;
 
-class TopoData implements java.io.Serializable {
-    private static final long serialVersionUID = 1066323170797652448L;
-
+final class TopoData {
     double geolon, geolat, geoalt, teval, tjd_ut;
     double[] xobs = new double[6];
 

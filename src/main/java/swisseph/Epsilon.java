@@ -68,9 +68,7 @@
 */
 package swisseph;
 
-class Epsilon
-		implements java.io.Serializable
-		{
+final class Epsilon {
   /* obliquity of ecliptic */
   double teps, eps, seps, ceps;         /* jd, eps, sin(eps), cos(eps) */
 
