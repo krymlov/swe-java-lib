@@ -81,7 +81,7 @@ package swisseph;
 public interface SweConst {
 
   // Identical in most ISO-8859 sets
-  String ODEGREE_CHAR = "°"; // Unicode degree character 176
+  char ODEGREE_CHAR = '°'; // Unicode degree character 176
   String ODEGREE_STRING = "°"; /* degree as string, utf8 encoding */
 
 ////////////////////////////////////////////////////////////////////////////////

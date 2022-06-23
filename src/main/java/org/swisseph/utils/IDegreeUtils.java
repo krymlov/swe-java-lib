@@ -12,7 +12,7 @@ import org.swisseph.api.ISweConstants;
 import java.math.BigDecimal;
 
 import static org.swisseph.api.ISweConstants.*;
-import static swisseph.SweConst.ODEGREE_STRING;
+import static swisseph.SweConst.ODEGREE_CHAR;
 
 /**
  * @author Yura Krymlov
@@ -83,7 +83,7 @@ public interface IDegreeUtils {
         builder.append(kdeg);
         
         if ( timeFormat ) builder.append(CH_CN);
-        else builder.append(ODEGREE_STRING);
+        else builder.append(ODEGREE_CHAR);
         
         if ( kmin < i10 ) builder.append(CH_ZR);
         builder.append(kmin);
@@ -113,7 +113,7 @@ public interface IDegreeUtils {
         if ( kdeg < i10 ) builder.append(CH_ZR);
         builder.append(kdeg);
 
-        if ( !timeFormat ) builder.append(ODEGREE_STRING);
+        if ( !timeFormat ) builder.append(ODEGREE_CHAR);
         if ( dms == 1 ) return builder;
 
         if ( timeFormat ) builder.append(CH_CN);
@@ -176,7 +176,7 @@ public interface IDegreeUtils {
         builder.append(kdeg);
         
         if ( timeFormat ) builder.append(CH_CN);
-        else builder.append(ODEGREE_STRING);
+        else builder.append(ODEGREE_CHAR);
         
         if ( kmin < i10 ) builder.append(CH_ZR);
         builder.append(kmin);
@@ -264,7 +264,7 @@ public interface IDegreeUtils {
         builder.append(deg);
         
         if ( timeFormat ) builder.append(CH_CN);
-        else builder.append(ODEGREE_STRING);
+        else builder.append(ODEGREE_CHAR);
 
         if ( min < i10 ) builder.append(CH_ZR);
         builder.append(min);
