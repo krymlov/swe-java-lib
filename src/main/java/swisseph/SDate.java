@@ -80,8 +80,7 @@ import static org.swisseph.api.ISweConstants.d60;
 * @version 1.0.0a
 */
 
-final class SDate implements Serializable {
-  private static final long serialVersionUID = 8055618799629692138L;
+final class SDate {
 
   final int[] ymdhms = new int[6];
   final double hour, second;

@@ -81,8 +81,7 @@ package swisseph;
  * 
  * @version 1.0.0b
  */
-public class DblObj implements java.io.Serializable {
-    private static final long serialVersionUID = 7514197496963065053L;
+public class DblObj {
     
     /**
      * This is the double value that has become wrapped up into a real object.

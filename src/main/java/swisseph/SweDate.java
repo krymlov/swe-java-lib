@@ -2342,8 +2342,7 @@ public class SweDate implements Serializable {
         return true;
     }
 
-    static final class IDate implements java.io.Serializable {
-        private static final long serialVersionUID = -149378359852767471L;
+    static final class IDate {
 
         int year, month, day;
         double hour;
