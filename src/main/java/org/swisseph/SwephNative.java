@@ -15,7 +15,7 @@ import swisseph.SwephExp;
  */
 public class SwephNative implements ISwissEph {
 
-    public static final String SWISSEPH_LIBRARY_NAME = "swe-2.10.02i";
+    public static final String SWISSEPH_LIBRARY_NAME = "swe-2.10.03";
     protected static final SwephExp swephExp = new SwephExp(SWISSEPH_LIBRARY_NAME);
 
     protected String ephe_path;

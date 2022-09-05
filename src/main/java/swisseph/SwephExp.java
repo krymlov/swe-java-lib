@@ -9,7 +9,7 @@ package swisseph;
  * <p>
  * The function calls are documented in the Programmer's documentation, which is online in HTML format
  * <p>
- * exported functions: https://www.astro.com/ftp/swisseph/src/swephexp.h
+ * exported functions: <a href="https://www.astro.com/ftp/swisseph/src/swephexp.h">...</a>
  *
  * @author Yura Krymlov
  * @version 2.10

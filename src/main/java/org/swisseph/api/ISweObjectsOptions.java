@@ -17,7 +17,7 @@ import static swisseph.SweConst.*;
  * @version 1.0, 2020-05
  */
 public interface ISweObjectsOptions extends Serializable, Cloneable {
-    int DEFAULT_SS_RISE_SET_FLAGS = SE_BIT_DISC_CENTER | SE_BIT_NO_REFRACTION;
+    int DEFAULT_SS_RISE_SET_FLAGS = SE_BIT_HINDU_RISING;
 
     /**
      * Special preset of flags for planets calculation
