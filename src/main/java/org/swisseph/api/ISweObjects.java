@@ -64,6 +64,11 @@ public interface ISweObjects extends ISweContext, Serializable {
     ISweObjects buildObject(final int objectId);
 
     /**
+     * Builds the {@link ISweObjects} instance with calculated Ascendant.
+     */
+    ISweObjects buildAscendant();
+
+    /**
      * Builds the {@link ISweObjects} instance with calculated Lunar Nodes.
      */
     ISweObjects buildLunarNodes();

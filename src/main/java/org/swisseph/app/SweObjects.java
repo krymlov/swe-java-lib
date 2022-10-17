@@ -17,15 +17,14 @@ import org.swisseph.api.ISweJulianDate;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
 
-import java.io.Serializable;
-
 import static java.lang.Double.isNaN;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.IDXD_DELTAT;
-import static swisseph.SweConst.*;
+import static swisseph.SweConst.ERR;
+import static swisseph.SweConst.SEFLG_SPEED;
 
 /**
- * http://www.th-mack.de/download/jyotish-0.21a-bin.zip
+ * <a href="http://www.th-mack.de/download/jyotish-0.21a-bin.zip">...</a>
  *
  * @author Thomas Mack (December 14, 2002)
  * @version 0.21a (adjusted by Yura Krymlov in 2019-10)
@@ -64,16 +63,26 @@ public class SweObjects implements ISweObjects {
 
     public SweObjects(ISwissEph swissEph, ISweJulianDate sweJulianDate,
                       ISweGeoLocation sweLocation, ISweObjectsOptions sweOptions) {
+        this(swissEph, sweJulianDate, sweLocation, sweOptions, true);
+    }
+
+    public SweObjects(ISwissEph swissEph, ISweJulianDate sweJulianDate, ISweGeoLocation sweLocation,
+                      ISweObjectsOptions sweOptions, boolean buildAscendant) {
         this.location = sweLocation;
         this.options = sweOptions;
 
-        // init swiss-ephemeris and julian date object
-        this.julianDate = initialization(swissEph).initJulianDate(sweJulianDate);
+        // init swiss-ephemeris
+        this.swissEph = initialization(swissEph);
+
+        // and julian date object
+        this.julianDate = initJulianDate(sweJulianDate);
 
         initJulianDateDeltaT();
 
         // pre-calc ascendant 
-        buildAscendant();
+        if (buildAscendant) {
+            buildAscendant();
+        }
     }
 
     @Override
@@ -150,6 +159,10 @@ public class SweObjects implements ISweObjects {
         return this.ayanamsa = swissEph.swe_get_ayanamsa_ut(julianDate.julianDay());
     }
 
+    protected ISweJulianDate initJulianDate(ISweJulianDate sweJulianDate) {
+        return this.swissEph.initJulianDate(sweJulianDate);
+    }
+
     protected void initJulianDateDeltaT() {
         julianDate.values()[IDXD_DELTAT] = swissEph.swe_deltat_ex
                 (julianDate.julianDay(), options.calcFlags(), null);
@@ -158,7 +171,7 @@ public class SweObjects implements ISweObjects {
     @Override
     public ISwissEph initialization(ISwissEph swissEph) {
         if (null == swissEph) throw new SweRuntimeException("ISwissEph is mandatory parameter");
-        return this.swissEph = initSwissEph(swissEph, location, options);
+        return initSwissEph(swissEph, location, options);
     }
 
     /**
@@ -195,6 +208,7 @@ public class SweObjects implements ISweObjects {
         return this;
     }
 
+    @Override
     public ISweObjects buildAscendant() {
         if (0 != houses[LG]) return this;
 
