@@ -7,20 +7,14 @@
 package org.swisseph.api;
 
 import java.io.Serializable;
-import java.util.Comparator;
 
 /**
  * @author Yura Krymlov
  * @version 1.1, 2019-11
  */
-public interface ISweEnum extends Comparator<ISweEnum>, Serializable {
+public interface ISweEnum extends Serializable {
     String NIL_CD = "NIL";
     int NIL_FID = 0;
-
-    @Override
-    default int compare(ISweEnum swe1, ISweEnum swe2) {
-        return Integer.compare(swe1.uid(), swe2.uid());
-    }
 
     /**
      * The fid - is a functional identifier
