@@ -17,9 +17,12 @@ import org.swisseph.api.ISweJulianDate;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
 
+import java.util.Arrays;
+
 import static java.lang.Double.isNaN;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.IDXD_DELTAT;
+import static org.swisseph.api.ISweObjects.calculatePlanetHouse;
 import static swisseph.SweConst.ERR;
 import static swisseph.SweConst.SEFLG_SPEED;
 
@@ -194,7 +197,8 @@ public class SweObjects implements ISweObjects {
     }
 
     protected ISweObjects buildObject(final int objId, final double tjd, final double[] dres, final StringBuilder serr) {
-        if (0 != houses[objId] || objId == KE) return this;
+        if (i0 != houses[objId]) return this;
+        if (objId == KE) return buildLunarNodes();
 
         int result = swissEph.swe_calc(tjd, getSupportedObjects()[objId], options.calcFlags(), dres, serr);
         if (result == ERR) throw new SweRuntimeException(serr.toString());
@@ -203,7 +207,11 @@ public class SweObjects implements ISweObjects {
         longitudes[objId] = dres[0];
         retrogrades[objId] = dres[3] < d0;
         signs[objId] = (int) (dres[0] / d30) + i1;
-        houses[objId] = (signs[objId] + i12 - signs[LG]) % i12 + i1;
+
+        if (i0 != signs[LG]) {
+            houses[objId] = calculatePlanetHouse(signs[LG], signs[objId]);
+            //houses[objId] = (signs[objId] + i12 - signs[LG]) % i12 + i1;
+        }
 
         return this;
     }
@@ -232,6 +240,8 @@ public class SweObjects implements ISweObjects {
 
     @Override
     public ISweObjects buildLunarNodes() {
+        if (i0 != houses[KE]) return this;
+
         final double[] dres = new double[6];
         final StringBuilder serr = new StringBuilder(0);
         final double tjd = julianDate.julianDay() + julianDate.deltaT();
@@ -243,23 +253,27 @@ public class SweObjects implements ISweObjects {
         longitudes[KE] = (longitudes[RA] + d180) % d360;
 
         signs[KE] = (int) (longitudes[KE] / d30) + i1;
-        houses[KE] = (signs[KE] + i12 - signs[LG]) % i12 + i1;
+        houses[KE] = calculatePlanetHouse(signs[LG], signs[KE]);
+        //(signs[KE] + i12 - signs[LG]) % i12 + i1;
 
         return this;
     }
 
     @Override
     public ISweObjects buildSunMoon() {
+        if (i0 != houses[CH]) return this;
+
         final double[] dres = new double[6];
         final StringBuilder serr = new StringBuilder(0);
         final double tjd = julianDate.julianDay() + julianDate.deltaT();
-        for (int objId = SY; objId <= CH; objId++) buildObject(objId, tjd, dres, serr);
+        buildObject(SY, tjd, dres, serr);
+        buildObject(CH, tjd, dres, serr);
         return this;
     }
 
     @Override
     public ISweObjects buildMarsKetu() {
-        if (0 != houses[KE]) return this;
+        if (i0 != houses[KE]) return this;
         final double[] dres = new double[6];
         final StringBuilder serr = new StringBuilder(0);
         final double tjd = julianDate.julianDay() + julianDate.deltaT();
@@ -268,7 +282,18 @@ public class SweObjects implements ISweObjects {
     }
 
     @Override
+    public ISweObjects buildJupiterSaturn() {
+        if (i0 != houses[SA]) return this;
+        final double[] dres = new double[6];
+        final StringBuilder serr = new StringBuilder(0);
+        final double tjd = julianDate.julianDay() + julianDate.deltaT();
+        for (int objId = GU; objId <= SA; objId++) buildObject(objId, tjd, dres, serr);
+        return this;
+    }
+
+    @Override
     public ISweObjects buildUranusPluto() {
+        if (i0 != houses[PL]) return this;
         final double[] dres = new double[6];
         final StringBuilder serr = new StringBuilder(0);
         final double tjd = julianDate.julianDay() + julianDate.deltaT();
@@ -290,11 +315,7 @@ public class SweObjects implements ISweObjects {
         if (null != this.sequence) this.sequence.sorted = false;
 
         this.ayanamsa = Double.NaN;
-
-        this.houses[LG] = i0;
-        this.houses[CH] = i0;
-        this.houses[KE] = i0;
-        this.houses[PL] = i0;
+        Arrays.fill(this.houses, i0);
 
         initialization(swissEph);
         completeBuild();

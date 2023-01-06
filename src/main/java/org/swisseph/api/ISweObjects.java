@@ -10,6 +10,8 @@ import org.swisseph.ISwissEph;
 
 import java.io.Serializable;
 
+import static org.swisseph.api.ISweConstants.i1;
+import static org.swisseph.api.ISweConstants.i12;
 import static swisseph.SweConst.*;
 
 /**
@@ -84,6 +86,11 @@ public interface ISweObjects extends ISweContext, Serializable {
     ISweObjects buildMarsKetu();
 
     /**
+     * Builds the {@link ISweObjects} instance with only calculated Jupiter and up to Saturn data.
+     */
+    ISweObjects buildJupiterSaturn();
+
+    /**
      * Builds the {@link ISweObjects} instance with only calculated Uranus and up to Pluto data.
      */
     ISweObjects buildUranusPluto();
@@ -151,5 +158,14 @@ public interface ISweObjects extends ISweContext, Serializable {
 
     default int objectsCount() {
         return OBJECTS_COUNT;
+    }
+
+    static int calculatePlanetHouse(final int ascendantSign, final int planetSign) {
+        int planetHouse = planetSign;
+        planetHouse += i12;
+        planetHouse -= ascendantSign;
+        planetHouse %= i12;
+        planetHouse += i1;
+        return planetHouse;
     }
 }
