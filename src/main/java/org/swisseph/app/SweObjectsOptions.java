@@ -22,14 +22,13 @@ import static swisseph.SweConst.SE_SIDM_USER;
 public class SweObjectsOptions implements ISweObjectsOptions {
     private static final long serialVersionUID = 461264153326654053L;
 
-    public static final ISweObjectsOptions LAHIRI_TRADITIONAL = new Builder().ayanamsa(getLahiri()).build();
-    public static final ISweObjectsOptions LAHIRI_CITRAPAKSA = new Builder().ayanamsa(getTrueSpica()).build();
+    public static final ISweObjectsOptions LAHIRI_AYANAMSA = new Builder().ayanamsa(getLahiri()).build();
+    public static final ISweObjectsOptions TRUECITRA_AYANAMSA = new Builder().ayanamsa(getTrueSpica()).build();
 
     protected final ISweHouseSystem houseSystem;
     protected final ISweAyanamsa ayanamsa;
     protected final boolean trueNode;
-    protected final int calcFlags;
-    protected final int riseSetFlags;
+    protected final int calcFlags, riseSetFlags, transitFlags;
     protected final double initialJulianDay, initialAyanamsa;
 
     /**
@@ -38,10 +37,11 @@ public class SweObjectsOptions implements ISweObjectsOptions {
      */
     protected SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode,
                                 int calcFlags, double initialJulianDay, double initialAyanamsa,
-                                int riseSetFlags) {
+                                int riseSetFlags, int transitFlags) {
         this.initialJulianDay = initialJulianDay;
         this.initialAyanamsa = initialAyanamsa;
         this.riseSetFlags = riseSetFlags;
+        this.transitFlags = transitFlags;
         this.houseSystem = houseSystem;
         this.calcFlags = calcFlags;
         this.trueNode = trueNode;
@@ -99,6 +99,11 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     }
 
     @Override
+    public int transitFlags() {
+        return transitFlags;
+    }
+
+    @Override
     public ISweObjectsOptions clone() throws CloneNotSupportedException {
         return (ISweObjectsOptions) super.clone();
     }
@@ -110,21 +115,27 @@ public class SweObjectsOptions implements ISweObjectsOptions {
                 .append(houseSystem()).append(CH_VS)
                 .append(calcFlags()).append(CH_VS)
                 .append(trueNode()).append(CH_VS)
-                .append(riseSetFlags())
+                .append(riseSetFlags()).append(CH_VS)
+                .append(transitFlags())
                 .toString();
     }
 
     public static final class Builder {
         private ISweHouseSystem houseSystem = SweHouseSystem.byDefault();
-        private int calcFlags = DEFAULT_SS_TRUEPOS_NONUT_SPEED_FLAGS;
         private ISweAyanamsa ayanamsa = SweAyanamsa.byDefault();
+
+        private int calcFlags = DEFAULT_SS_CALC_FLAGS;
         private int riseSetFlags = DEFAULT_SS_RISE_SET_FLAGS;
+        private int transitFlags = DEFAULT_SS_TRANSIT_FLAGS;
+
         private double initialJulianDay, initialAyanamsa;
+
         private boolean trueNode;
 
         public Builder options(ISweObjectsOptions options) {
             this.initialJulianDay = options.initialJulianDay();
             this.initialAyanamsa = options.initialAyanamsa();
+            this.transitFlags = options.transitFlags();
             this.riseSetFlags = options.riseSetFlags();
             this.houseSystem = options.houseSystem();
             this.calcFlags = options.calcFlags();
@@ -133,6 +144,9 @@ public class SweObjectsOptions implements ISweObjectsOptions {
             return this;
         }
 
+        /**
+         * Special preset of flags to swe_rise_trans
+         */
         public Builder riseSetFlags(int flags) {
             this.riseSetFlags = flags;
             return this;
@@ -149,8 +163,16 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         /**
          * Special preset of flags for planets calculation
          */
-        public Builder calculationFlags(int flags) {
+        public Builder calcFlags(int flags) {
             this.calcFlags = flags;
+            return this;
+        }
+
+        /**
+         * Special preset of flags for transit calculation
+         */
+        public Builder transitFlags(int flags) {
+            this.transitFlags = flags;
             return this;
         }
 
@@ -186,7 +208,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
 
         public ISweObjectsOptions build() {
             return new SweObjectsOptions(ayanamsa, houseSystem, trueNode, calcFlags,
-                    initialJulianDay, initialAyanamsa, riseSetFlags);
+                    initialJulianDay, initialAyanamsa, riseSetFlags, transitFlags);
         }
     }
 }

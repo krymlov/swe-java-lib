@@ -156,14 +156,14 @@ public class SweObjects implements ISweObjects {
         try {
             final double[] daya = new double[]{0};
             final StringBuilder serr = new StringBuilder(0);
-            final int result = swissEph.swe_get_ayanamsa_ex_ut(julianDate.julianDay(), options.mainFlags(), daya, serr);
+            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.ephemerisTime(), options.mainFlags(), daya, serr);
             if (result != ERR) return this.ayanamsa = daya[0];
         } catch (NotImplementedException nie) {
             // ignore
         }
 
         // calculates the ayanamsa for a given date.
-        return this.ayanamsa = swissEph.swe_get_ayanamsa_ut(julianDate.julianDay());
+        return this.ayanamsa = swissEph.swe_get_ayanamsa(julianDate.ephemerisTime());
     }
 
     protected ISweObjects buildObject(final int objId, final StringBuilder serr) {

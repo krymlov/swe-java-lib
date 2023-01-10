@@ -8,7 +8,6 @@ package org.swisseph;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.swisseph.utils.IModuloUtils;
-import swisseph.SwissEph;
 import swisseph.Transits;
 
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @author Yura Krymlov
  * @version 1.0, 2021-02
  */
-public class TransitsTest extends ASwissephTest {
+public class MiscTransitTest extends AbstractTest {
 
     @RepeatedTest(360)
     void testShaniSadeSati(RepetitionInfo info) {

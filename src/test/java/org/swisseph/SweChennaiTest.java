@@ -25,7 +25,7 @@ import static org.swisseph.utils.IModuloUtils.modulo;
  * @author Yura Krymlov
  * @version 1.0, 2021-02
  */
-public class SweObjectsTest extends ASwissephTest {
+public class SweChennaiTest extends AbstractTest {
     public static final double DELTA_MIN = 0.002;
     public static final double DELTA_MAX = 0.2;
 
