@@ -38,7 +38,7 @@ public interface ISweJulianDate extends Serializable {
 
     // ---------------------------------------------------------------------------
     
-    int IDXD_TIMEZONE = 0, IDXD_JULDAY = 1, IDXD_DELTAT = 2, IDXD_UTIME = 3;
+    int IDXD_TIMEZONE = 0, IDXD_JULDAY = 1, IDXD_DELTAT = 2, IDXD_UTIME = 3, IDXD_ETIME = 4;
     int IDXI_YEAR = 0, IDXI_MONTH = 1, IDXI_DAY = 2, IDXI_HOUR = 3, IDXI_MINUTE = 4, IDXI_SECONDS = 5;
     
     static boolean sweGregorianCalendar(final double julDay) {
@@ -79,11 +79,16 @@ public interface ISweJulianDate extends Serializable {
      * @return delta T or NaN if not calculated yet/valid
      */
     double deltaT();
+
+    /**
+     * @return The date as julian day in ET (Ephemeris Time) or NaN if not calculated yet
+     */
+    double ephemerisTime();
     
     float timeZone();
     
     /**
-     * @return time zone, julian day, delta T, universal time (decimal hours)<br>
+     * @return time zone, julian day, delta T, universal time (decimal hours), ephemeris time (ET)<br>
      * <b>Please pay attention, implementation can return a copy of the array</b>
      */
     double[] values();

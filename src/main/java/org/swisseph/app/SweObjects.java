@@ -22,9 +22,9 @@ import java.util.Arrays;
 import static java.lang.Double.isNaN;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.IDXD_DELTAT;
+import static org.swisseph.api.ISweJulianDate.IDXD_ETIME;
 import static org.swisseph.api.ISweObjects.calculatePlanetHouse;
-import static swisseph.SweConst.ERR;
-import static swisseph.SweConst.SEFLG_SPEED;
+import static swisseph.SweConst.*;
 
 /**
  * <a href="http://www.th-mack.de/download/jyotish-0.21a-bin.zip">...</a>
@@ -81,12 +81,224 @@ public class SweObjects implements ISweObjects {
         this.julianDate = initJulianDate(sweJulianDate);
 
         initJulianDateDeltaT();
+        initEphemerisTime();
 
         // pre-calc ascendant 
         if (buildAscendant) {
             buildAscendant();
         }
     }
+
+    @Override
+    public ISwissEph initialization(ISwissEph swissEph) {
+        if (null == swissEph) throw new SweRuntimeException("ISwissEph is mandatory parameter");
+        return ISweObjects.initSwissEph(swissEph, location, options);
+    }
+
+    protected ISweJulianDate initJulianDate(ISweJulianDate sweJulianDate) {
+        return this.swissEph.initJulianDate(sweJulianDate);
+    }
+
+    protected void initJulianDateDeltaT() {
+        julianDate.values()[IDXD_DELTAT] = swissEph.swe_deltat_ex
+                (julianDate.julianDay(), options.mainFlags(), null);
+    }
+
+    protected void initEphemerisTime() {
+        julianDate.values()[IDXD_ETIME] = julianDate.julianDay() + julianDate.deltaT() ;
+    }
+
+    @Override
+    public ISweObjects buildAscendant() {
+        if (0 != houses[LG]) return this;
+
+        int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.mainFlags(),
+                location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
+
+        if (result == ERR) throw new SweRuntimeException(CALC_FAILED);
+
+        houses[LG] = i1;
+        longitudes[LG] = ascmc[LG];
+        signs[LG] = (int) (ascmc[LG] / d30) + i1;
+
+        return this;
+    }
+
+    @Override
+    public double ayanamsa() {
+        // we need to calc ayanamsa on demand 
+        // because it is slow operation
+
+        if (!isNaN(ayanamsa)) return ayanamsa;
+
+        // To calculate true ayanamsha using swetest, one should just write:
+        // > swetest -b1.1.2000 -pb -sid27 -fPL (do NOT write -true)
+        // > For mean ayanamsha
+        // > swetest -b1.1.2000 -pb -sid27 -fPL -nonut
+
+        // > Maybe we should omit the statement about the confusions. However, confusion can arise if you use the ayanamsha
+        // functions with an unfortunate iflag. E.g., see the following values for True Chitra ayanamsha:
+        // > [dieter@as80 uds]$ swetest -b1.1.2000 -pb -sid27 -fPL -head
+        // > Ayanamsha 23°50' 9.8871
+        // > [dieter@as80 uds]$ swetest -b1.1.2000 -pb -sid27 -fPL -head -true
+        // > Ayanamsha 23°50'14.9061
+        // > [dieter@as80 uds]$ swetest -b1.1.2000 -pb -sid27 -fPL -head -noaberr
+        // > Ayanamsha 23°50'14.9008
+        // > [dieter@as80 uds]$ swetest -b1.1.2000 -pb -sid27 -fPL -head -nonut
+        // > Ayanamsha 23°50'23.8182
+        // > [dieter@as80 uds]$ swetest -b1.1.2000 -pb -sid27 -fPL -head -true -nonut
+        // > Ayanamsha 23°50'28.8371
+        // > [dieter@as80 uds]$ swetest -b1.1.2000 -pb -sid27 -fPL -head -noaberr -nonut
+        // > Ayanamsha 23°50'28.8318
+        // >
+        // > This is not documented. But I'm not sure we should do so because it may create confusion.
+
+        try {
+            final double[] daya = new double[]{0};
+            final StringBuilder serr = new StringBuilder(0);
+            final int result = swissEph.swe_get_ayanamsa_ex_ut(julianDate.julianDay(), options.mainFlags(), daya, serr);
+            if (result != ERR) return this.ayanamsa = daya[0];
+        } catch (NotImplementedException nie) {
+            // ignore
+        }
+
+        // calculates the ayanamsa for a given date.
+        return this.ayanamsa = swissEph.swe_get_ayanamsa_ut(julianDate.julianDay());
+    }
+
+    protected ISweObjects buildObject(final int objId, final StringBuilder serr) {
+        if (i0 != houses[objId]) return this;
+        if (objId == KE) return buildLunarNodes();
+
+        final double[] dres = new double[6];
+        final int result = swissEph.swe_calc(julianDate.ephemerisTime(),
+                getSupportedObjects()[objId], options.calcFlags(), dres, serr);
+
+        if (result == ERR) throw new SweRuntimeException(serr.toString());
+
+        latitudes[objId] = dres[1];
+        longitudes[objId] = dres[0];
+        retrogrades[objId] = dres[3] < d0;
+        signs[objId] = (int) (dres[0] / d30) + i1;
+
+        if (i0 != signs[LG]) {
+            houses[objId] = calculatePlanetHouse(signs[LG], signs[objId]);
+        }
+
+        return this;
+    }
+
+    @Override
+    public ISweObjects buildObject(final int objectId) {
+        return buildObject(objectId, new StringBuilder(0));
+    }
+
+    @Override
+    public ISweObjects buildLunarNodes() {
+        if (i0 != houses[KE]) return this;
+
+        buildObject(RA, new StringBuilder(0));
+
+        latitudes[KE] = latitudes[RA];
+        retrogrades[KE] = retrogrades[RA];
+        longitudes[KE] = (longitudes[RA] + d180) % d360;
+
+        signs[KE] = (int) (longitudes[KE] / d30) + i1;
+        houses[KE] = calculatePlanetHouse(signs[LG], signs[KE]);
+
+        return this;
+    }
+
+    @Override
+    public ISweObjects buildSunMoon() {
+        if (i0 != houses[CH]) return this;
+
+        final StringBuilder serr = new StringBuilder(0);
+        buildObject(SY, serr);
+        buildObject(CH, serr);
+        return this;
+    }
+
+    @Override
+    public ISweObjects buildMarsKetu() {
+        if (i0 != houses[KE]) return this;
+        final StringBuilder serr = new StringBuilder(0);
+        for (int objId = MA; objId < RA; objId++) buildObject(objId, serr);
+        return buildLunarNodes();
+    }
+
+    @Override
+    public ISweObjects buildJupiterSaturn() {
+        if (i0 != houses[SA]) return this;
+        final StringBuilder serr = new StringBuilder(0);
+        for (int objId = GU; objId <= SA; objId++) buildObject(objId, serr);
+        return this;
+    }
+
+    @Override
+    public ISweObjects buildUranusPluto() {
+        if (i0 != houses[PL]) return this;
+        final StringBuilder serr = new StringBuilder(0);
+        for (int objId = UR; objId < OBJECTS_COUNT; objId++) buildObject(objId,  serr);
+        return this;
+    }
+
+    @Override
+    public SweObjects completeBuild() {
+        if (i0 == houses[LG]) buildAscendant();
+        if (i0 == houses[CH]) buildSunMoon();
+        if (i0 == houses[KE]) buildMarsKetu();
+        if (i0 == houses[PL]) buildUranusPluto();
+
+        return this;
+    }
+
+    public SweObjects completeRebuild(ISwissEph swissEph) {
+        if (null != this.sequence) this.sequence.sorted = false;
+
+        this.ayanamsa = Double.NaN;
+        Arrays.fill(this.houses, i0);
+
+        this.swissEph = initialization(swissEph);
+
+        initJulianDateDeltaT();
+        initEphemerisTime();
+        completeBuild();
+
+        return this;
+    }
+
+    protected int[] getSupportedObjects() {
+        return options.trueNode() ? OBJECTS_TRUE_NODE : OBJECTS_MEAN_NODE;
+    }
+
+    @Override
+    public ISwissEph swissEph() {
+        return swissEph;
+    }
+
+    @Override
+    public ISweObjectsOptions sweOptions() {
+        return options;
+    }
+
+    @Override
+    public ISweJulianDate sweJulianDate() {
+        return julianDate;
+    }
+
+    @Override
+    public ISweGeoLocation sweLocation() {
+        return location;
+    }
+
+    @Override
+    public SweObjectsSequence sweSequence() {
+        if (null == sequence) sequence = new SweObjectsSequence(longitudes);
+        if (!sequence.sorted()) this.sequence.sort();
+        return this.sequence;
+    }
+
 
     @Override
     public boolean[] retrogrades() {
@@ -126,7 +338,8 @@ public class SweObjects implements ISweObjects {
      * <BLOCKQUOTE><CODE>
      * ascmc[0] = ascendant<BR>
      * ascmc[1] = mc<BR>
-     * ascmc[2] = armc<BR>
+     * ascmc[2] = sidereal time = armc (in angle units, not in time units) at the Greenwich meridian.
+     * To get local sidereal time, add geographic longitude to the result. <BR>
      * ascmc[3] = vertex<BR>
      * ascmc[4] = equatorial ascendant<BR>
      * ascmc[5] = co-ascendant (Walter Koch)<BR>
@@ -140,218 +353,4 @@ public class SweObjects implements ISweObjects {
     public double[] ascmc() {
         return ascmc;
     }
-
-    @Override
-    public double ayanamsa() {
-        // we need to calc ayanamsa on demand 
-        // because it is slow operation
-
-        if (!isNaN(ayanamsa)) return ayanamsa;
-
-        try {
-            final double[] daya = new double[]{0};
-            final StringBuilder serr = new StringBuilder(0);
-            final int result = swissEph.swe_get_ayanamsa_ex_ut(julianDate.julianDay(),
-                    options.calcFlags() ^ SEFLG_SPEED, daya, serr);
-            if (result != ERR) return this.ayanamsa = daya[0];
-        } catch (NotImplementedException nie) {
-            // ignore
-        }
-
-        // calculates the ayanamsa for a given date.
-        return this.ayanamsa = swissEph.swe_get_ayanamsa_ut(julianDate.julianDay());
-    }
-
-    protected ISweJulianDate initJulianDate(ISweJulianDate sweJulianDate) {
-        return this.swissEph.initJulianDate(sweJulianDate);
-    }
-
-    protected void initJulianDateDeltaT() {
-        julianDate.values()[IDXD_DELTAT] = swissEph.swe_deltat_ex
-                (julianDate.julianDay(), options.calcFlags(), null);
-    }
-
-    @Override
-    public ISwissEph initialization(ISwissEph swissEph) {
-        if (null == swissEph) throw new SweRuntimeException("ISwissEph is mandatory parameter");
-        return initSwissEph(swissEph, location, options);
-    }
-
-    /**
-     * Sets geographic position and altitude of observer and ayanamsha mode for sidereal planet calculations
-     */
-    public static ISwissEph initSwissEph(ISwissEph swissEph, ISweGeoLocation sweLocation, ISweObjectsOptions sweOptions) {
-        if (null == swissEph) return null;
-
-        if (null != sweLocation) {
-            swissEph.swe_set_topo(sweLocation.longitude(),
-                    sweLocation.latitude(), sweLocation.altitude());
-        }
-
-        if (null != sweOptions) {
-            swissEph.swe_set_sid_mode(sweOptions.ayanamsa().fid(),
-                    sweOptions.initialJulianDay(), sweOptions.initialAyanamsa());
-        }
-
-        return swissEph;
-    }
-
-    protected ISweObjects buildObject(final int objId, final double tjd, final double[] dres, final StringBuilder serr) {
-        if (i0 != houses[objId]) return this;
-        if (objId == KE) return buildLunarNodes();
-
-        int result = swissEph.swe_calc(tjd, getSupportedObjects()[objId], options.calcFlags(), dres, serr);
-        if (result == ERR) throw new SweRuntimeException(serr.toString());
-
-        latitudes[objId] = dres[1];
-        longitudes[objId] = dres[0];
-        retrogrades[objId] = dres[3] < d0;
-        signs[objId] = (int) (dres[0] / d30) + i1;
-
-        if (i0 != signs[LG]) {
-            houses[objId] = calculatePlanetHouse(signs[LG], signs[objId]);
-            //houses[objId] = (signs[objId] + i12 - signs[LG]) % i12 + i1;
-        }
-
-        return this;
-    }
-
-    @Override
-    public ISweObjects buildAscendant() {
-        if (0 != houses[LG]) return this;
-
-        int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.calcFlags() ^ SEFLG_SPEED,
-                location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
-
-        if (result == ERR) throw new SweRuntimeException(CALC_FAILED);
-
-        houses[LG] = i1;
-        longitudes[LG] = ascmc[LG];
-        signs[LG] = (int) (ascmc[LG] / d30) + i1;
-
-        return this;
-    }
-
-    @Override
-    public ISweObjects buildObject(final int objectId) {
-        return buildObject(objectId, (julianDate.julianDay() + julianDate.deltaT()),
-                new double[6], new StringBuilder(0));
-    }
-
-    @Override
-    public ISweObjects buildLunarNodes() {
-        if (i0 != houses[KE]) return this;
-
-        final double[] dres = new double[6];
-        final StringBuilder serr = new StringBuilder(0);
-        final double tjd = julianDate.julianDay() + julianDate.deltaT();
-
-        buildObject(RA, tjd, dres, serr);
-
-        latitudes[KE] = dres[i1];
-        retrogrades[KE] = retrogrades[RA];
-        longitudes[KE] = (longitudes[RA] + d180) % d360;
-
-        signs[KE] = (int) (longitudes[KE] / d30) + i1;
-        houses[KE] = calculatePlanetHouse(signs[LG], signs[KE]);
-        //(signs[KE] + i12 - signs[LG]) % i12 + i1;
-
-        return this;
-    }
-
-    @Override
-    public ISweObjects buildSunMoon() {
-        if (i0 != houses[CH]) return this;
-
-        final double[] dres = new double[6];
-        final StringBuilder serr = new StringBuilder(0);
-        final double tjd = julianDate.julianDay() + julianDate.deltaT();
-        buildObject(SY, tjd, dres, serr);
-        buildObject(CH, tjd, dres, serr);
-        return this;
-    }
-
-    @Override
-    public ISweObjects buildMarsKetu() {
-        if (i0 != houses[KE]) return this;
-        final double[] dres = new double[6];
-        final StringBuilder serr = new StringBuilder(0);
-        final double tjd = julianDate.julianDay() + julianDate.deltaT();
-        for (int objId = MA; objId < RA; objId++) buildObject(objId, tjd, dres, serr);
-        return buildLunarNodes();
-    }
-
-    @Override
-    public ISweObjects buildJupiterSaturn() {
-        if (i0 != houses[SA]) return this;
-        final double[] dres = new double[6];
-        final StringBuilder serr = new StringBuilder(0);
-        final double tjd = julianDate.julianDay() + julianDate.deltaT();
-        for (int objId = GU; objId <= SA; objId++) buildObject(objId, tjd, dres, serr);
-        return this;
-    }
-
-    @Override
-    public ISweObjects buildUranusPluto() {
-        if (i0 != houses[PL]) return this;
-        final double[] dres = new double[6];
-        final StringBuilder serr = new StringBuilder(0);
-        final double tjd = julianDate.julianDay() + julianDate.deltaT();
-        for (int objId = UR; objId < OBJECTS_COUNT; objId++) buildObject(objId, tjd, dres, serr);
-        return this;
-    }
-
-    @Override
-    public SweObjects completeBuild() {
-        if (i0 == houses[LG]) buildAscendant();
-        if (i0 == houses[CH]) buildSunMoon();
-        if (i0 == houses[KE]) buildMarsKetu();
-        if (i0 == houses[PL]) buildUranusPluto();
-
-        return this;
-    }
-
-    public SweObjects completeRebuild(ISwissEph swissEph) {
-        if (null != this.sequence) this.sequence.sorted = false;
-
-        this.ayanamsa = Double.NaN;
-        Arrays.fill(this.houses, i0);
-
-        initialization(swissEph);
-        completeBuild();
-
-        return this;
-    }
-
-    protected int[] getSupportedObjects() {
-        return options.trueNode() ? OBJECTS_TRUE_NODE : OBJECTS_MEAN_NODE;
-    }
-
-    @Override
-    public ISwissEph swissEph() {
-        return swissEph;
-    }
-
-    @Override
-    public ISweObjectsOptions sweOptions() {
-        return options;
-    }
-
-    @Override
-    public ISweJulianDate sweJulianDate() {
-        return julianDate;
-    }
-
-    @Override
-    public ISweGeoLocation sweLocation() {
-        return location;
-    }
-
-    @Override
-    public SweObjectsSequence sweSequence() {
-        if (null == sequence) sequence = new SweObjectsSequence(longitudes);
-        if (!sequence.sorted()) this.sequence.sort();
-        return this.sequence;
-    }
-
 }

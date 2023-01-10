@@ -19,12 +19,15 @@ import static swisseph.SweConst.*;
 public interface ISweObjectsOptions extends Serializable, Cloneable {
     int DEFAULT_SS_RISE_SET_FLAGS = SE_BIT_HINDU_RISING;
 
+    int DEFAULT_SS_FLAGS =
+            SEFLG_SIDEREAL  |   // sidereal zodiac
+            SEFLG_SWIEPH;       // fastest method, requires data files
+
     /**
      * Special preset of flags for planets calculation
      */
     int DEFAULT_SS_TRUEPOS_NONUT_SPEED_FLAGS =
-            SEFLG_SIDEREAL  |   // sidereal zodiac
-            SEFLG_SWIEPH    |   // fastest method, requires data files
+            DEFAULT_SS_FLAGS |
             SEFLG_TRUEPOS   |   // true position of the planet versus the apparent position
             SEFLG_NONUT     |   // calculate the position of the planet without considering the nutation
             SEFLG_SPEED;        // to determine retrograde vs direct motion
@@ -34,6 +37,10 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
 
     default boolean trueNode() {
         return false;
+    }
+
+    default int mainFlags() {
+        return DEFAULT_SS_FLAGS;
     }
 
     default int calcFlags() {

@@ -88,6 +88,7 @@ public interface ISweConstants {
     double d357 = 357.;
     double d360 = 360.;
     double d3600 = 3600.;
+    double d86400 = 86400.;
     double d360000 = 360000.;
     double d3600000 = 3600000.;
     

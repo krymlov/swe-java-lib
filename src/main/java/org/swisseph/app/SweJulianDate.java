@@ -29,9 +29,9 @@ public class SweJulianDate implements ISweJulianDate {
     private static final long serialVersionUID = 9001094323006485132L;
 
     /**
-     * time zone, julian day, delta T, universal time (decimal hours)
+     * time zone, julian day, delta T, universal time (decimal hours), ephemeris time (et)
      */
-    protected final double[] values = new double[]{d0, NaN, NaN, NaN};
+    protected final double[] values = new double[]{d0, NaN, NaN, NaN, NaN};
 
     /**
      * yyyy, mm, dd;
@@ -125,6 +125,11 @@ public class SweJulianDate implements ISweJulianDate {
     @Override
     public double deltaT() {
         return values[IDXD_DELTAT];
+    }
+
+    @Override
+    public double ephemerisTime() {
+        return values[IDXD_ETIME];
     }
 
     @Override
