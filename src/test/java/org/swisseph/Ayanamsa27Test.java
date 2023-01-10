@@ -61,14 +61,14 @@ import static swisseph.SweConst.SEFLG_TRUEPOS;
  */
 @Execution(ExecutionMode.SAME_THREAD)
 public class Ayanamsa27Test extends AbstractTest {
-    final int[] date = new int[]{1947, 8, 15, 10, 30, 0};
+    final int[] date1947 = new int[]{1947, 8, 15, 10, 30, 0};
 
     @Test
     void testObjects_WITHOUT_SEFLG_TRUEPOS() {
         ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
                 .options(TRUECITRA_AYANAMSA).calcFlags(DEFAULT_SS_CALC_FLAGS ^ SEFLG_TRUEPOS).build();
 
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild(); // - SEFLG_TRUEPOS
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
@@ -90,7 +90,7 @@ public class Ayanamsa27Test extends AbstractTest {
 
     @Test
     void testObjects_WITH_SEFLG_TRUEPOS() {
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
                 GEO_LUCKNOW, TRUECITRA_AYANAMSA).completeBuild(); // - SEFLG_TRUEPOS
 
         // Sun

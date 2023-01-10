@@ -34,6 +34,9 @@ public abstract class AbstractTest {
     protected static final ISweGeoLocation GEO_LUCKNOW = new SweGeoLocation(
             81.83, 25.95, 123);
 
+    protected static final ISweGeoLocation GEO_GREENWICH = new SweGeoLocation(
+            0., 51.50, 40);
+
 
     protected static ISwissEph newSwissEph() {
         return new SwissEph(EPHE_PATH);

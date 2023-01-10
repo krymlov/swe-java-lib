@@ -27,16 +27,21 @@ public class SweObjectsOptions implements ISweObjectsOptions {
 
     protected final ISweHouseSystem houseSystem;
     protected final ISweAyanamsa ayanamsa;
+
     protected final boolean trueNode;
-    protected final int calcFlags, riseSetFlags, transitFlags;
-    protected final double initialJulianDay, initialAyanamsa;
+
+    protected final double initialJulianDay;
+    protected final double initialAyanamsa;
+
+    protected final int mainFlags, calcFlags;
+    protected final int riseSetFlags, transitFlags;
 
     /**
      * @param initialJulianDay - initial julian day (reference date)
      * @param initialAyanamsa  - initial ayanamsa (at reference date)
      */
     protected SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode,
-                                int calcFlags, double initialJulianDay, double initialAyanamsa,
+                                int mainFlags, int calcFlags, double initialJulianDay, double initialAyanamsa,
                                 int riseSetFlags, int transitFlags) {
         this.initialJulianDay = initialJulianDay;
         this.initialAyanamsa = initialAyanamsa;
@@ -44,6 +49,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         this.transitFlags = transitFlags;
         this.houseSystem = houseSystem;
         this.calcFlags = calcFlags;
+        this.mainFlags = mainFlags;
         this.trueNode = trueNode;
         this.ayanamsa = ayanamsa;
     }
@@ -80,6 +86,14 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     @Override
     public double initialAyanamsa() {
         return initialAyanamsa;
+    }
+
+    /**
+     * Special preset of flags for ascendant, ayanamsa calculation
+     */
+    @Override
+    public int mainFlags() {
+        return mainFlags;
     }
 
     /**
@@ -124,6 +138,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         private ISweHouseSystem houseSystem = SweHouseSystem.byDefault();
         private ISweAyanamsa ayanamsa = SweAyanamsa.byDefault();
 
+        private int mainFlags = DEFAULT_SS_MAIN_FLAGS;
         private int calcFlags = DEFAULT_SS_CALC_FLAGS;
         private int riseSetFlags = DEFAULT_SS_RISE_SET_FLAGS;
         private int transitFlags = DEFAULT_SS_TRANSIT_FLAGS;
@@ -139,6 +154,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
             this.riseSetFlags = options.riseSetFlags();
             this.houseSystem = options.houseSystem();
             this.calcFlags = options.calcFlags();
+            this.mainFlags = options.mainFlags();
             this.trueNode = options.trueNode();
             this.ayanamsa = options.ayanamsa();
             return this;
@@ -157,6 +173,14 @@ public class SweObjectsOptions implements ISweObjectsOptions {
          */
         public Builder trueNode(boolean trueNode) {
             this.trueNode = trueNode;
+            return this;
+        }
+
+        /**
+         * Special preset of flags for ascendant, ayanamsa calculation
+         */
+        public Builder mainFlags(int flags) {
+            this.mainFlags = flags;
             return this;
         }
 
@@ -207,8 +231,8 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         }
 
         public ISweObjectsOptions build() {
-            return new SweObjectsOptions(ayanamsa, houseSystem, trueNode, calcFlags,
-                    initialJulianDay, initialAyanamsa, riseSetFlags, transitFlags);
+            return new SweObjectsOptions(ayanamsa, houseSystem, trueNode, mainFlags,
+                    calcFlags, initialJulianDay, initialAyanamsa, riseSetFlags, transitFlags);
         }
     }
 }
