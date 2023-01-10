@@ -6,18 +6,23 @@
 
 package org.swisseph;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.swisseph.api.ISweObjects;
+import org.swisseph.api.ISweObjectsOptions;
 import org.swisseph.app.SweJulianDate;
 import org.swisseph.app.SweObjects;
+import org.swisseph.app.SweObjectsOptions;
 
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweObjects.LG;
+import static org.swisseph.api.ISweObjects.SY;
+import static org.swisseph.api.ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS;
 import static org.swisseph.app.SweObjectsOptions.LAHIRI_AYANAMSA;
 import static org.swisseph.app.SweObjectsOptions.TRUECITRA_AYANAMSA;
 import static org.swisseph.utils.IDegreeUtils.toDMSms;
+import static swisseph.SweConst.SEFLG_TRUEPOS;
 
 /**
  * <pre>
@@ -63,49 +68,30 @@ import static org.swisseph.utils.IDegreeUtils.toDMSms;
  * @author Yura Krymlov
  * @version 1.0, 2023-01
  */
-public class SweLucknowTest extends AbstractTest {
-    private SweObjects truecitraAyanamsaObjects;
-    private SweObjects lahiriAyanamsaObjects;
-
-    @BeforeAll
-    void beforeAll() {
-        truecitraAyanamsaObjects = new SweObjects(newSwephExp(),
-                new SweJulianDate(new int[]{1947, 8, 15, 10, 30, 0}, 0f), GEO_LUCKNOW, TRUECITRA_AYANAMSA);
-
-        lahiriAyanamsaObjects = new SweObjects(newSwephExp(),
-                new SweJulianDate(new int[]{1947, 8, 15, 10, 30, 0}, 0f), GEO_LUCKNOW, LAHIRI_AYANAMSA);
-    }
-
-    @AfterAll
-    void afterAll() {
-        lahiriAyanamsaObjects.swissEph().close();
-        truecitraAyanamsaObjects.swissEph().close();
-    }
+public class Ayanamsa27Test extends AbstractTest {
 
     @Test
-    void testJD() {
-        Assertions.assertEquals(2432412.9375, lahiriAyanamsaObjects.sweJulianDate().julianDay());
-        Assertions.assertEquals(2432412.9375, truecitraAyanamsaObjects.sweJulianDate().julianDay());
-    }
+    void testObjects() {
+        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
+                .options(TRUECITRA_AYANAMSA).calcFlags(DEFAULT_SS_CALC_FLAGS ^ SEFLG_TRUEPOS).build();
 
-    @Test
-    void testDeltaT() {
-        Assertions.assertEquals(28.108929, lahiriAyanamsaObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(28.108929, truecitraAyanamsaObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-    }
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(new int[]
+                {1947, 8, 15, 10, 30, 0}, 0f), GEO_LUCKNOW, sweObjectsOptions).completeBuild();
 
-    @Test
-    void testAscendant() {
-        Assertions.assertEquals(256.3768059, lahiriAyanamsaObjects.longitudes()[LG], DELTA_D0000001);
-        Assertions.assertEquals(256.3946710, truecitraAyanamsaObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
+        Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
+        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().ephemerisTime(), DELTA_D0000001);
 
-        Assertions.assertEquals("256°22'36.50\"", toDMSms(lahiriAyanamsaObjects.longitudes()[LG]).toString());
-        Assertions.assertEquals("256°23'40.81\"", toDMSms(truecitraAyanamsaObjects.longitudes()[LG]).toString());
-    }
+        // Ayanamsa
+        Assertions.assertEquals("23°06'14.39\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
 
-    @Test
-    void testAyanamsa() {
-        System.out.println(toDMSms(lahiriAyanamsaObjects.ayanamsa()));
-        System.out.println(toDMSms(truecitraAyanamsaObjects.ayanamsa()));
+        // Lagna
+        Assertions.assertEquals(256.3946710, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'40.81\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+
+        // Sun
+        Assertions.assertEquals(118.6475653, sweObjects.longitudes()[SY], DELTA_D0000001);
+        Assertions.assertEquals("118°38'51.23\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 }
