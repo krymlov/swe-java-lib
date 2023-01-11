@@ -8,8 +8,6 @@ package org.swisseph;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
 import org.swisseph.app.SweJulianDate;
@@ -26,7 +24,7 @@ import static swisseph.SweConst.SEFLG_TRUEPOS;
 
 /**
  * <pre>
- * swetest -b15.08.1947 -ut10:30 -p0 -fPl -sid27 -house81.83,25.95,P
+ * swetest -b15.08.1947 -ut10:30 -fPl -sid27 -house81.83,25.95,P
  *  date (dmy) 15.8.1947 greg.   10:30:00 UT                version 2.10.03
  *  UT:  2432412.937500000     delta t: 28.108929 sec
  *  TT:  2432412.937825335   ayanamsa =   23° 6'14.3990 (True Citra)
@@ -75,16 +73,16 @@ public class Ayanamsa27Test extends AbstractTest {
         Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().ephemerisTime(), DELTA_D0000001);
 
         // Ayanamsa
-        Assertions.assertEquals("23°06'14.39\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());
         Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
 
         // Lagna
         Assertions.assertEquals(256.3946710, sweObjects.longitudes()[LG], DELTA_D0000001);
-        Assertions.assertEquals("256°23'40.81\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+        Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
         Assertions.assertEquals(118.6475653, sweObjects.longitudes()[SY], DELTA_D0000001);
-        Assertions.assertEquals("118°38'51.23\"", toDMSms(sweObjects.longitudes()[SY]).toString());
+        Assertions.assertEquals("118°38'51.24\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 
     @Test

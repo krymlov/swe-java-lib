@@ -168,9 +168,9 @@ public interface IDegreeUtils {
         
         arg -= kmin; arg *= d60;
         final int ksec = (int)arg;
-        
+
         arg -= ksec; arg *= d100;
-        final int kmls = (int)arg;
+        final int kmls = (int) Math.round(arg);
         
         if ( kdeg < i10 ) builder.append(CH_ZR);
         builder.append(kdeg);
@@ -218,7 +218,7 @@ public interface IDegreeUtils {
         final int ksec = (int)arg;
         
         arg -= ksec; arg *= d100;
-        final int kmls = (int)arg;
+        final int kmls = (int) Math.round(arg);
 
         builder.append(kdeg);
 
