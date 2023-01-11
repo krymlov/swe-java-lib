@@ -21,7 +21,7 @@ import static org.swisseph.api.ISweConstants.EPHE_PATH;
  * @author Yura Krymlov
  * @version 1.0, 2021-02
  */
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName.class)
 public abstract class AbstractTest {

@@ -68,7 +68,6 @@ import static swisseph.SweConst.SEFLG_TRUEPOS;
  * @author Yura Krymlov
  * @version 1.0, 2023-01
  */
-@Execution(ExecutionMode.SAME_THREAD)
 public class Ayanamsa01Test extends AbstractTest {
     final int[] date1947 = new int[]{1947, 8, 15, 10, 30, 0};
 
@@ -107,10 +106,11 @@ public class Ayanamsa01Test extends AbstractTest {
     @Test
     void testObjects_WITH_SEFLG_TRUEPOS() {
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
-                GEO_LUCKNOW, LAHIRI_AYANAMSA).completeBuild(); // - SEFLG_TRUEPOS
+                GEO_LUCKNOW, LAHIRI_AYANAMSA).completeBuild();
 
         // Sun
         Assertions.assertEquals(118.6353224, sweObjects.longitudes()[SY], DELTA_D0000001);
         Assertions.assertEquals("118°38'07.16\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
+    
 }

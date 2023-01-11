@@ -54,7 +54,6 @@ import static swisseph.SweConst.SEFLG_NONUT;
  * @author Yura Krymlov
  * @version 1.0, 2023-01
  */
-@Execution(ExecutionMode.SAME_THREAD)
 public class MiscAyanamsaTest extends AbstractTest {
     final int[] date2000 = new int[]{2000, 1, 1, 0, 0, 0};
 
