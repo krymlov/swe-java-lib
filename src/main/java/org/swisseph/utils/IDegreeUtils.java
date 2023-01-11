@@ -175,7 +175,10 @@ public interface IDegreeUtils {
 
         ddeg -= isec;
         ddeg *= d100;
-        final int imls = (int) Math.round(ddeg);
+
+        final int imls;
+        if (ddeg > 99.) imls = (int) ddeg;
+        else imls = (int) Math.round(ddeg);
 
         if (ideg < i10) builder.append(CH_ZR);
         builder.append(ideg);
@@ -226,7 +229,10 @@ public interface IDegreeUtils {
 
         ddeg -= isec;
         ddeg *= d100;
-        final int imls = (int) Math.round(ddeg);
+
+        final int imls;
+        if (ddeg > 99.) imls = (int) ddeg;
+        else imls = (int) Math.round(ddeg);
 
         builder.append(ideg);
 
@@ -321,6 +327,8 @@ public interface IDegreeUtils {
         ddeg += imin / d60;
         ddeg += isec / d3600;
         ddeg += imls / d360000;
+
+        ddeg += d1d3600000;
 
         return ng ? -ddeg : ddeg;
     }
