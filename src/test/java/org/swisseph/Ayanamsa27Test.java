@@ -90,8 +90,13 @@ public class Ayanamsa27Test extends AbstractTest {
 
     @Test
     void testObjects_WITH_SEFLG_TRUEPOS() {
+        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder().options(TRUECITRA_AYANAMSA).build();
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
-                GEO_LUCKNOW, TRUECITRA_AYANAMSA).completeBuild();
+                GEO_LUCKNOW, sweObjectsOptions).completeBuild();
+
+        // Lagna
+        Assertions.assertEquals(256.3946710, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
         Assertions.assertEquals(118.6504369, sweObjects.longitudes()[SY], DELTA_D0000001);

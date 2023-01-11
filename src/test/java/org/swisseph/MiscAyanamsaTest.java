@@ -8,16 +8,18 @@ package org.swisseph;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
 import org.swisseph.app.SweJulianDate;
 import org.swisseph.app.SweObjects;
 import org.swisseph.app.SweObjectsOptions;
 
+import static org.swisseph.api.ISweConstants.DELTA_D0000001;
+import static org.swisseph.api.ISweObjects.LG;
+import static org.swisseph.api.ISweObjects.SY;
 import static org.swisseph.api.ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS;
 import static org.swisseph.app.SweObjectsOptions.LAHIRI_AYANAMSA;
+import static org.swisseph.app.SweObjectsOptions.TRUECITRA_AYANAMSA;
 import static org.swisseph.utils.IDegreeUtils.toDMSms;
 import static swisseph.SweConst.SEFLG_NONUT;
 
@@ -35,7 +37,7 @@ import static swisseph.SweConst.SEFLG_NONUT;
  *      date (dmy) 1.1.2000 greg. 0:00:00 TT version 2.10.01a
  *      Ayanamsha 01.01.2000 23°51'11.5325
  * </pre>
- *
+ * <p>
  * // ------------------------------------------------------------------
  *
  * <pre>
@@ -56,6 +58,7 @@ import static swisseph.SweConst.SEFLG_NONUT;
  */
 public class MiscAyanamsaTest extends AbstractTest {
     final int[] date2000 = new int[]{2000, 1, 1, 0, 0, 0};
+    final int[] date1947 = new int[]{1947, 8, 15, 10, 30, 0};
 
     @Test
     /**
@@ -64,7 +67,7 @@ public class MiscAyanamsaTest extends AbstractTest {
      *      date (dmy) 1.1.2000 greg. 0:00:00 TT version 2.10.01a
      *      Ayanamsha 01.01.2000 23°51'25.4635
      */
-    void testMeanAyanamsha() {
+    void test2000MeanAyanamsha() {
         ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
                 .options(LAHIRI_AYANAMSA).mainFlags(DEFAULT_SS_CALC_FLAGS | SEFLG_NONUT).build();
 
@@ -83,12 +86,51 @@ public class MiscAyanamsaTest extends AbstractTest {
      *      date (dmy) 1.1.2000 greg. 0:00:00 TT version 2.10.01a
      *      Ayanamsha 01.01.2000 23°51'11.5325
      */
-    void testTrueAyanamsha() {
+    void test2000TrueAyanamsha() {
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date2000, 0f),
                 GEO_GREENWICH, LAHIRI_AYANAMSA).completeBuild();
 
         // Ayanamsa
         Assertions.assertEquals("23°51'11.53\"", toDMSms(sweObjects.ayanamsa()).toString());
         Assertions.assertEquals(23.853203493056615, sweObjects.ayanamsa());
+    }
+
+    @Test
+    void test1947MeanAyanamsha() {
+        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
+                .options(TRUECITRA_AYANAMSA).mainFlags(DEFAULT_SS_CALC_FLAGS | SEFLG_NONUT).build();
+
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+                GEO_LUCKNOW, sweObjectsOptions).completeBuild();
+
+        // Ayanamsa
+        Assertions.assertEquals("23°06'37.30\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals(23.110361977858815, sweObjects.ayanamsa());
+
+        // Lagna
+        Assertions.assertEquals(256.392357441707, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'32.49\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+
+        // Sun
+        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY], DELTA_D0000001);
+        Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
+    }
+
+    @Test
+    void test1947TrueAyanamsha() {
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+                GEO_LUCKNOW, TRUECITRA_AYANAMSA).completeBuild();
+
+        // Ayanamsa
+        Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
+
+        // Lagna
+        Assertions.assertEquals(256.3946709789843, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+
+        // Sun
+        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY], DELTA_D0000001);
+        Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 }
