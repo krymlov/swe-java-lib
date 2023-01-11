@@ -109,22 +109,6 @@ public class SweObjects implements ISweObjects {
     }
 
     @Override
-    public ISweObjects buildAscendant() {
-        if (0 != houses[LG]) return this;
-
-        int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.mainFlags(),
-                location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
-
-        if (result == ERR) throw new SweRuntimeException(CALC_FAILED);
-
-        houses[LG] = i1;
-        longitudes[LG] = ascmc[LG];
-        signs[LG] = (int) (ascmc[LG] / d30) + i1;
-
-        return this;
-    }
-
-    @Override
     public double ayanamsa() {
         // we need to calc ayanamsa on demand 
         // because it is slow operation
@@ -164,6 +148,22 @@ public class SweObjects implements ISweObjects {
 
         // calculates the ayanamsa for a given date.
         return this.ayanamsa = swissEph.swe_get_ayanamsa(julianDate.ephemerisTime());
+    }
+
+    @Override
+    public ISweObjects buildAscendant() {
+        if (0 != houses[LG]) return this;
+
+        int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.houseFlags(),
+                location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
+
+        if (result == ERR) throw new SweRuntimeException(CALC_FAILED);
+
+        houses[LG] = i1;
+        longitudes[LG] = ascmc[LG];
+        signs[LG] = (int) (ascmc[LG] / d30) + i1;
+
+        return this;
     }
 
     protected ISweObjects buildObject(final int objId, final StringBuilder serr) {

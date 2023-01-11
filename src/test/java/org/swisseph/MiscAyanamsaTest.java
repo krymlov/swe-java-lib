@@ -17,11 +17,12 @@ import org.swisseph.app.SweObjectsOptions;
 import static org.swisseph.api.ISweConstants.DELTA_D0000001;
 import static org.swisseph.api.ISweObjects.LG;
 import static org.swisseph.api.ISweObjects.SY;
-import static org.swisseph.api.ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS;
+import static org.swisseph.api.ISweObjectsOptions.*;
 import static org.swisseph.app.SweObjectsOptions.LAHIRI_AYANAMSA;
 import static org.swisseph.app.SweObjectsOptions.TRUECITRA_AYANAMSA;
 import static org.swisseph.utils.IDegreeUtils.toDMSms;
 import static swisseph.SweConst.SEFLG_NONUT;
+import static swisseph.SweConst.SEFLG_TRUEPOS;
 
 /**
  * <pre>
@@ -69,7 +70,7 @@ public class MiscAyanamsaTest extends AbstractTest {
      */
     void test2000MeanAyanamsha() {
         ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
-                .options(LAHIRI_AYANAMSA).mainFlags(DEFAULT_SS_CALC_FLAGS | SEFLG_NONUT).build();
+                .options(LAHIRI_AYANAMSA).mainFlags(DEFAULT_SS_MAIN_FLAGS | SEFLG_NONUT).build();
 
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date2000, 0f),
                 GEO_GREENWICH, sweObjectsOptions).completeBuild();
@@ -97,23 +98,26 @@ public class MiscAyanamsaTest extends AbstractTest {
 
     @Test
     void test1947MeanAyanamsha() {
-        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
-                .options(TRUECITRA_AYANAMSA).mainFlags(DEFAULT_SS_CALC_FLAGS | SEFLG_NONUT).build();
+        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder().options(TRUECITRA_AYANAMSA)
+                .mainFlags(DEFAULT_SS_MAIN_FLAGS | SEFLG_NONUT)
+                .houseFlags(DEFAULT_SS_HOUSE_FLAGS | SEFLG_NONUT)
+                .calcFlags((DEFAULT_SS_CALC_FLAGS | SEFLG_NONUT) ^ SEFLG_TRUEPOS)
+                .build();
 
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild();
 
         // Ayanamsa
-        Assertions.assertEquals("23°06'37.30\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.110361977858815, sweObjects.ayanamsa());
+        Assertions.assertEquals("23°06'27.40\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals(23.10761141107119, sweObjects.ayanamsa());
 
         // Lagna
-        Assertions.assertEquals(256.392357441707, sweObjects.longitudes()[LG], DELTA_D0000001);
-        Assertions.assertEquals("256°23'32.49\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+        Assertions.assertEquals(256.3951080, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'42.39\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
-        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY], DELTA_D0000001);
-        Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
+        Assertions.assertEquals(118.6475653, sweObjects.longitudes()[SY], DELTA_D0000001);
+        Assertions.assertEquals("118°38'51.24\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 
     @Test
@@ -133,4 +137,5 @@ public class MiscAyanamsaTest extends AbstractTest {
         Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY], DELTA_D0000001);
         Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
+
 }

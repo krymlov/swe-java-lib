@@ -33,7 +33,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     protected final double initialJulianDay;
     protected final double initialAyanamsa;
 
-    protected final int mainFlags, calcFlags;
+    protected final int mainFlags, houseFlags, calcFlags;
     protected final int riseSetFlags, transitFlags;
 
     /**
@@ -41,13 +41,15 @@ public class SweObjectsOptions implements ISweObjectsOptions {
      * @param initialAyanamsa  - initial ayanamsa (at reference date)
      */
     protected SweObjectsOptions(ISweAyanamsa ayanamsa, ISweHouseSystem houseSystem, boolean trueNode,
-                                int mainFlags, int calcFlags, double initialJulianDay, double initialAyanamsa,
+                                int mainFlags, int houseFlags, int calcFlags,
+                                double initialJulianDay, double initialAyanamsa,
                                 int riseSetFlags, int transitFlags) {
         this.initialJulianDay = initialJulianDay;
         this.initialAyanamsa = initialAyanamsa;
         this.riseSetFlags = riseSetFlags;
         this.transitFlags = transitFlags;
         this.houseSystem = houseSystem;
+        this.houseFlags = houseFlags;
         this.calcFlags = calcFlags;
         this.mainFlags = mainFlags;
         this.trueNode = trueNode;
@@ -89,7 +91,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     }
 
     /**
-     * Special preset of flags for ascendant, ayanamsa calculation
+     * Special preset of flags like for ayanamsa calculation
      */
     @Override
     public int mainFlags() {
@@ -97,7 +99,14 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     }
 
     /**
-     * Special preset of flags for planets calculation
+     * Special preset of flags like for ascendant calculation (swe_houses* api)
+     */
+    public int houseFlags() {
+        return houseFlags;
+    }
+
+    /**
+     * Special preset of flags like for planets calculation (swe_calc* api)
      */
     @Override
     public int calcFlags() {
@@ -127,6 +136,8 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         return new StringBuilder(64)
                 .append(ayanamsa()).append(CH_VS)
                 .append(houseSystem()).append(CH_VS)
+                .append(mainFlags()).append(CH_VS)
+                .append(houseFlags()).append(CH_VS)
                 .append(calcFlags()).append(CH_VS)
                 .append(trueNode()).append(CH_VS)
                 .append(riseSetFlags()).append(CH_VS)
@@ -139,6 +150,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         private ISweAyanamsa ayanamsa = SweAyanamsa.byDefault();
 
         private int mainFlags = DEFAULT_SS_MAIN_FLAGS;
+        private int houseFlags = DEFAULT_SS_HOUSE_FLAGS;
         private int calcFlags = DEFAULT_SS_CALC_FLAGS;
         private int riseSetFlags = DEFAULT_SS_RISE_SET_FLAGS;
         private int transitFlags = DEFAULT_SS_TRANSIT_FLAGS;
@@ -153,6 +165,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
             this.transitFlags = options.transitFlags();
             this.riseSetFlags = options.riseSetFlags();
             this.houseSystem = options.houseSystem();
+            this.houseFlags = options.houseFlags();
             this.calcFlags = options.calcFlags();
             this.mainFlags = options.mainFlags();
             this.trueNode = options.trueNode();
@@ -177,10 +190,18 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         }
 
         /**
-         * Special preset of flags for ascendant, ayanamsa calculation
+         * Special preset of flags like for ayanamsa calculation
          */
         public Builder mainFlags(int flags) {
             this.mainFlags = flags;
+            return this;
+        }
+
+        /**
+         * Special preset of flags like for ascendant calculation
+         */
+        public Builder houseFlags(int flags) {
+            this.houseFlags = flags;
             return this;
         }
 
@@ -231,8 +252,10 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         }
 
         public ISweObjectsOptions build() {
-            return new SweObjectsOptions(ayanamsa, houseSystem, trueNode, mainFlags,
-                    calcFlags, initialJulianDay, initialAyanamsa, riseSetFlags, transitFlags);
+            return new SweObjectsOptions(ayanamsa, houseSystem, trueNode,
+                    mainFlags, houseFlags, calcFlags,
+                    initialJulianDay, initialAyanamsa,
+                    riseSetFlags, transitFlags);
         }
     }
 }
