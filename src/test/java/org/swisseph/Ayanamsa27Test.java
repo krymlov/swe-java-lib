@@ -19,7 +19,7 @@ import static org.swisseph.api.ISweObjects.LG;
 import static org.swisseph.api.ISweObjects.SY;
 import static org.swisseph.api.ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS;
 import static org.swisseph.app.SweObjectsOptions.TRUECITRA_AYANAMSA;
-import static org.swisseph.utils.IDegreeUtils.toDMSms;
+import static org.swisseph.utils.IDegreeUtils.*;
 import static swisseph.SweConst.SEFLG_TRUEPOS;
 
 /**
@@ -73,8 +73,11 @@ public class Ayanamsa27Test extends AbstractTest {
         Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().ephemerisTime(), DELTA_D0000001);
 
         // Ayanamsa
-        Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());
         Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
+        Assertions.assertEquals(23061440, toIDMSms(sweObjects.ayanamsa()));
+        Assertions.assertEquals("23°06'14.40\"", toDMSms(23061440).toString());
+        Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals("23°06'14.40\"", toDMSms(toDDms(23061440)).toString());
 
         // Lagna
         Assertions.assertEquals(256.3946710, sweObjects.longitudes()[LG], DELTA_D0000001);

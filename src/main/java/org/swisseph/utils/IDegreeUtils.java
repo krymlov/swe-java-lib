@@ -1,13 +1,11 @@
 /*
-* Copyright (C) By the Author
-* Author    Yura Krymlov
-* Created   2019-07
-*/
+ * Copyright (C) By the Author
+ * Author    Yura Krymlov
+ * Created   2019-07
+ */
 
 package org.swisseph.utils;
 
-
-import org.swisseph.api.ISweConstants;
 
 import java.math.BigDecimal;
 
@@ -23,303 +21,308 @@ public interface IDegreeUtils {
     /**
      * The method is intended to convert latitude DD 49.758665 to DMS like 49°45'31"N
      */
-    static StringBuilder toLAT(final double degree) {
-        return toDMS(Math.abs(degree)).append(degree >= 0 ? LAT_NORTH : LAT_SOUTH);
+    static StringBuilder toLAT(final double ddeg) {
+        return toDMS(Math.abs(ddeg)).append(ddeg >= 0 ? LAT_NORTH : LAT_SOUTH);
     }
-    
+
     /**
      * The method is intended to convert longitude DD 27.199346 to DMS like 27°11'58"E
      */
-    static StringBuilder toLON(final double degree) {
-        return toDMS(Math.abs(degree)).append(degree >= 0 ? LONG_EAST : LONG_WEST);
+    static StringBuilder toLON(final double ddeg) {
+        return toDMS(Math.abs(ddeg)).append(ddeg >= 0 ? LONG_EAST : LONG_WEST);
     }
-    
+
     /**
      * The method is intended to convert latitude DD 49.758665 to DMS like 49°45'31.00"N
      */
-    static StringBuilder toLATms(final double degree) {
-        return toDMSms(Math.abs(degree)).append(degree >= 0 ? LAT_NORTH : LAT_SOUTH);
+    static StringBuilder toLATms(final double ddeg) {
+        return toDMSms(Math.abs(ddeg)).append(ddeg >= 0 ? LAT_NORTH : LAT_SOUTH);
     }
-    
+
     /**
      * The method is intended to convert longitude DD 27.199346 to DMS like 27°11'58.00"E
      */
-    static StringBuilder toLONms(final double degree) {
-        return toDMSms(Math.abs(degree)).append(degree >= 0 ? LONG_EAST : LONG_WEST);
+    static StringBuilder toLONms(final double ddeg) {
+        return toDMSms(Math.abs(ddeg)).append(ddeg >= 0 ? LONG_EAST : LONG_WEST);
     }
 
     /**
      * The method is intended to convert double like 49.75764 to DMS like 49°45'28"
      */
-    static StringBuilder toDMS(final double degree) {
-        return toDMS(degree, false);
+    static StringBuilder toDMS(final double ddeg) {
+        return toDMS(ddeg, false);
     }
-    
+
     /**
      * The method is intended to convert double like 49.75764 to DMS like 49°45'28"
-     *  
-     * @param arg to convert (it will be rounded to a second)
+     *
+     * @param ddeg       to convert (it will be rounded to a second)
      * @param timeFormat if true then 49:45:28
      * @return string like 49°45'28" or 49:45:28
      */
-    static StringBuilder toDMS(double arg, boolean timeFormat) {
+    static StringBuilder toDMS(double ddeg, boolean timeFormat) {
         final StringBuilder builder = new StringBuilder(9);
-        
-        if ( arg < 0 ) {
-            arg = -arg;
+
+        if (ddeg < 0) {
+            ddeg = -ddeg;
             builder.append(CH_DS);
         }
 
-        arg += ISweConstants.d05d3600;
-        final int kdeg = (int)arg;
-        
-        arg -= kdeg; arg *= d60;
-        final int kmin = (int)arg;
-        
-        arg -= kmin; arg *= d60;
-        final int ksec = (int)arg;
-        
-        if ( kdeg < i10 ) builder.append(CH_ZR);
-        builder.append(kdeg);
-        
-        if ( timeFormat ) builder.append(CH_CN);
+        ddeg += d05d3600;
+        final int ideg = (int) ddeg;
+
+        ddeg -= ideg;
+        ddeg *= d60;
+        final int imin = (int) ddeg;
+
+        ddeg -= imin;
+        ddeg *= d60;
+        final int isec = (int) ddeg;
+
+        if (ideg < i10) builder.append(CH_ZR);
+        builder.append(ideg);
+
+        if (timeFormat) builder.append(CH_CN);
         else builder.append(ODEGREE_CHAR);
-        
-        if ( kmin < i10 ) builder.append(CH_ZR);
-        builder.append(kmin);
-        
-        if ( timeFormat ) builder.append(CH_CN);
+
+        if (imin < i10) builder.append(CH_ZR);
+        builder.append(imin);
+
+        if (timeFormat) builder.append(CH_CN);
         else builder.append(CH_SQ);
 
-        if ( ksec < i10 ) builder.append(CH_ZR);
-        builder.append(ksec);
+        if (isec < i10) builder.append(CH_ZR);
+        builder.append(isec);
 
-        if ( !timeFormat ) builder.append(CH_DQ);
-        
+        if (!timeFormat) builder.append(CH_DQ);
+
         return builder;
     }
 
-    static StringBuilder toDMS(double arg, int dms, boolean timeFormat) {
+    static StringBuilder toDMS(double ddeg, int dms, boolean timeFormat) {
         final StringBuilder builder = new StringBuilder(9);
 
-        if ( arg < 0 ) {
-            arg = -arg;
+        if (ddeg < 0) {
+            ddeg = -ddeg;
             builder.append(CH_DS);
         }
 
-        arg += ISweConstants.d05d3600;
-        final int kdeg = (int)arg;
+        ddeg += d05d3600;
+        final int ideg = (int) ddeg;
 
-        if ( kdeg < i10 ) builder.append(CH_ZR);
-        builder.append(kdeg);
+        if (ideg < i10) builder.append(CH_ZR);
+        builder.append(ideg);
 
-        if ( !timeFormat ) builder.append(ODEGREE_CHAR);
-        if ( dms == 1 ) return builder;
+        if (!timeFormat) builder.append(ODEGREE_CHAR);
+        if (dms == 1) return builder;
 
-        if ( timeFormat ) builder.append(CH_CN);
+        if (timeFormat) builder.append(CH_CN);
 
-        arg -= kdeg; arg *= d60;
-        final int kmin = (int)arg;
+        ddeg -= ideg;
+        ddeg *= d60;
+        final int imin = (int) ddeg;
 
-        if ( kmin < i10 ) builder.append(CH_ZR);
-        builder.append(kmin);
+        if (imin < i10) builder.append(CH_ZR);
+        builder.append(imin);
 
-        if ( !timeFormat ) builder.append(CH_SQ);
-        if ( dms == 2 ) return builder;
+        if (!timeFormat) builder.append(CH_SQ);
+        if (dms == 2) return builder;
 
-        arg -= kmin; arg *= d60;
-        final int ksec = (int)arg;
+        ddeg -= imin;
+        ddeg *= d60;
+        final int isec = (int) ddeg;
 
-        if ( timeFormat ) builder.append(CH_CN);
+        if (timeFormat) builder.append(CH_CN);
 
-        if ( ksec < i10 ) builder.append(CH_ZR);
-        builder.append(ksec);
+        if (isec < i10) builder.append(CH_ZR);
+        builder.append(isec);
 
-        if ( !timeFormat ) builder.append(CH_DQ);
+        if (!timeFormat) builder.append(CH_DQ);
         return builder;
     }
-    
+
     /**
      * The method is intended to convert double like 49.75764 to DMS like 49°45'27.50"
      */
-    static StringBuilder toDMSms(final double degree) {
-        return toDMSms(degree, false);
+    static StringBuilder toDMSms(final double ddeg) {
+        return toDMSms(ddeg, false);
     }
-    
+
     /**
      * The method is intended to convert double like 49.75764 to DMS like 49°45'27.50"
-     *  
-     * @param arg to convert
+     *
+     * @param ddeg       to convert
      * @param timeFormat if true then 49:45:27.50
      * @return string like 49°45'27.50" or 49:45:27.50
      */
-    static StringBuilder toDMSms(double arg, boolean timeFormat) {
+    static StringBuilder toDMSms(double ddeg, boolean timeFormat) {
         final StringBuilder builder = new StringBuilder(12);
-        
-        if ( arg < 0 ) {
-            arg = -arg;
+
+        if (ddeg < 0) {
+            ddeg = -ddeg;
             builder.append(CH_DS);
         }
-                
-        final int kdeg = (int)arg;
-        
-        arg -= kdeg; arg *= d60;
-        final int kmin = (int)arg;
-        
-        arg -= kmin; arg *= d60;
-        final int ksec = (int)arg;
 
-        arg -= ksec; arg *= d100;
-        final int kmls = (int) Math.round(arg);
-        
-        if ( kdeg < i10 ) builder.append(CH_ZR);
-        builder.append(kdeg);
-        
-        if ( timeFormat ) builder.append(CH_CN);
+        final int ideg = (int) ddeg;
+
+        ddeg -= ideg;
+        ddeg *= d60;
+        final int imin = (int) ddeg;
+
+        ddeg -= imin;
+        ddeg *= d60;
+        final int isec = (int) ddeg;
+
+        ddeg -= isec;
+        ddeg *= d100;
+        final int imls = (int) Math.round(ddeg);
+
+        if (ideg < i10) builder.append(CH_ZR);
+        builder.append(ideg);
+
+        if (timeFormat) builder.append(CH_CN);
         else builder.append(ODEGREE_CHAR);
-        
-        if ( kmin < i10 ) builder.append(CH_ZR);
-        builder.append(kmin);
-        
-        if ( timeFormat ) builder.append(CH_CN);
+
+        if (imin < i10) builder.append(CH_ZR);
+        builder.append(imin);
+
+        if (timeFormat) builder.append(CH_CN);
         else builder.append(CH_SQ);
 
-        if ( ksec < i10 ) builder.append(CH_ZR);
-        builder.append(ksec).append(CH_DT);
-        
-        if ( kmls < i10 ) builder.append(CH_ZR);
-        builder.append(kmls);
+        if (isec < i10) builder.append(CH_ZR);
+        builder.append(isec).append(CH_DT);
 
-        if ( !timeFormat ) builder.append(CH_DQ);
+        if (imls < i10) builder.append(CH_ZR);
+        builder.append(imls);
+
+        if (!timeFormat) builder.append(CH_DQ);
 
         return builder;
     }
 
     /**
-     * The method is intended to convert decimal degree like 49.75764 to integer degree like 49452750 
-     *  
-     * @param arg degree to convert
+     * The method is intended to convert decimal degree like 49.75764 to integer degree like 49452750
+     *
+     * @param ddeg degree to convert
      * @return integer degree like 49452750
      */
-    static int toIDMSms(double arg) {
+    static int toIDMSms(double ddeg) {
         final StringBuilder builder = new StringBuilder(12);
-        
-        if ( arg < 0 ) {
-            arg = -arg;
+
+        if (ddeg < 0) {
+            ddeg = -ddeg;
             builder.append(CH_DS);
         }
-                
-        final int kdeg = (int)arg;
-        
-        arg -= kdeg; arg *= d60;
-        final int kmin = (int)arg;
-        
-        arg -= kmin; arg *= d60;
-        final int ksec = (int)arg;
-        
-        arg -= ksec; arg *= d100;
-        final int kmls = (int) Math.round(arg);
 
-        builder.append(kdeg);
+        final int ideg = (int) ddeg;
 
-        if ( kmin < i10 ) builder.append(CH_ZR);
-        builder.append(kmin);
+        ddeg -= ideg;
+        ddeg *= d60;
+        final int imin = (int) ddeg;
 
-        if ( ksec < i10 ) builder.append(CH_ZR);
-        builder.append(ksec);
-        
-        if ( kmls < i10 ) builder.append(CH_ZR);
-        return Integer.parseInt(builder.append(kmls).toString());
+        ddeg -= imin;
+        ddeg *= d60;
+        final int isec = (int) ddeg;
+
+        ddeg -= isec;
+        ddeg *= d100;
+        final int imls = (int) Math.round(ddeg);
+
+        builder.append(ideg);
+
+        if (imin < i10) builder.append(CH_ZR);
+        builder.append(imin);
+
+        if (isec < i10) builder.append(CH_ZR);
+        builder.append(isec);
+
+        if (imls < i10) builder.append(CH_ZR);
+        return Integer.parseInt(builder.append(imls).toString());
     }
-    
+
     /**
-     * The method is intended to convert integer degree like 49452750 to DMS string like 49°45'27.50"
+     * The method is intended to convert integer ideg like 49452750 to DMS string like 49°45'27.50"
      */
-    static StringBuilder toDMSms(final int degree) {
-        return toDMSms(degree, false);
+    static StringBuilder toDMSms(final int ideg) {
+        return toDMSms(ideg, false);
     }
-    
+
     /**
-     * The method is intended to convert integer degree like 49452750 to DMS string like 49°45'27.50" 
-     *  
-     * @param degree to convert
+     * The method is intended to convert integer ideg like 49452750 to DMS string like 49°45'27.50"
+     *
+     * @param ideg       to convert
      * @param timeFormat if true then 49:45:27.50
      * @return string like 49°45'27.50" or 49:45:27.50
      */
-    static StringBuilder toDMSms(int degree, boolean timeFormat) {
+    static StringBuilder toDMSms(int ideg, boolean timeFormat) {
         final StringBuilder builder = new StringBuilder(16);
-        
-        if ( degree < 0 ) {
-            degree = -degree;
+
+        if (ideg < 0) {
+            ideg = -ideg;
             builder.append(CH_DS);
         }
 
-        int deg = degree / i100;
-        final int mls = degree % i100;
-        final int sec = deg % i100;
-        final int min = (deg /= i100) % i100;
-        
+        int deg = ideg / i100;
+        final int imls = ideg % i100;
+        final int isec = deg % i100;
+        final int imin = (deg /= i100) % i100;
+
         deg /= i100;
-        if ( deg < i10 ) builder.append(CH_ZR);
+        if (deg < i10) builder.append(CH_ZR);
         builder.append(deg);
-        
-        if ( timeFormat ) builder.append(CH_CN);
+
+        if (timeFormat) builder.append(CH_CN);
         else builder.append(ODEGREE_CHAR);
 
-        if ( min < i10 ) builder.append(CH_ZR);
-        builder.append(min);
-        
-        if ( timeFormat ) builder.append(CH_CN);
+        if (imin < i10) builder.append(CH_ZR);
+        builder.append(imin);
+
+        if (timeFormat) builder.append(CH_CN);
         else builder.append(CH_SQ);
 
-        if ( sec < i10 ) builder.append(CH_ZR);
-        builder.append(sec).append(CH_DT);
-        
-        if ( mls < i10 ) builder.append(CH_ZR);
-        builder.append(mls);
+        if (isec < i10) builder.append(CH_ZR);
+        builder.append(isec).append(CH_DT);
 
-        if ( !timeFormat ) builder.append(CH_DQ);
+        if (imls < i10) builder.append(CH_ZR);
+        builder.append(imls);
+
+        if (!timeFormat) builder.append(CH_DQ);
 
         return builder;
     }
 
     /**
      * <pre>
-     * The method is intended to convert integer like 49452750 to decimal degree like 49.75764 
-     *  
+     * The method is intended to convert integer like 49452750 to decimal ideg like 49.75764
+     *
      * Decimal Degrees = degrees + (minutes/60.) + (seconds/3600.)
      * 49°45'27.50" -> 49.75764
      * </pre>
-     * 
-     * @param degree to convert
-     * @return decimal degree like 49.75764
+     *
+     * @param ideg to convert
+     * @return decimal ideg like 49.75764
      */
-    static double toDDms(int degree) {
+    static double toDDms(int ideg) {
         boolean ng = false;
 
-        if ( degree < 0 ) {
-            degree = -degree;
+        if (ideg < 0) {
+            ideg = -ideg;
             ng = true;
         }
-        
-        if ( i0 == degree ) return 0d;
-        
-        int arg = degree / i100;
-        final int sec = (arg % i100);
-        final int mls = (degree % i100);
-        final int min = (arg /= i100) % i100;
-        double dd = (arg / i100); // it is correct
 
-        dd += min/d60;
-        dd += sec/d3600;
-        dd += mls/d360000;
-        dd += d005d3600;
-        
-        // 360000 == (3600 * 1000) / 10 
-        // (it is because millis in NN format 
-        // means NNN = NN * 10 should be
-        
-        return ng ? -dd : dd;
+        if (i0 == ideg) return 0d;
+
+        int arg = ideg / i100;
+        final int isec = (arg % i100);
+        final int imls = (ideg % i100);
+        final int imin = (arg /= i100) % i100;
+        double ddeg = (arg / i100); // it is correct
+
+        ddeg += imin / d60;
+        ddeg += isec / d3600;
+        ddeg += imls / d360000;
+
+        return ng ? -ddeg : ddeg;
     }
 
     static double round(double d, int scale) {
