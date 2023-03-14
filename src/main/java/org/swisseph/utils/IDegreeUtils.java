@@ -177,7 +177,7 @@ public interface IDegreeUtils {
         ddeg *= d100;
 
         final int imls;
-        if (ddeg > 99.) imls = (int) ddeg;
+        if (ddeg > d99) imls = (int) ddeg;
         else imls = (int) Math.round(ddeg);
 
         if (ideg < i10) builder.append(CH_ZR);
@@ -231,7 +231,7 @@ public interface IDegreeUtils {
         ddeg *= d100;
 
         final int imls;
-        if (ddeg > 99.) imls = (int) ddeg;
+        if (ddeg > d99) imls = (int) ddeg;
         else imls = (int) Math.round(ddeg);
 
         builder.append(ideg);

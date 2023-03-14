@@ -16,6 +16,7 @@ import swisseph.SwephExp;
 import java.util.Calendar;
 
 import static java.lang.Double.isNaN;
+import static java.lang.Math.round;
 import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.*;
@@ -361,49 +362,65 @@ public interface ISwissEph extends AutoCloseable {
         return new SweJulianDate(jd, yearMonDay, utime[0]);
     }
 
-    default ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour, int min, double sec, int gregflag, StringBuilder serr) {
+    default ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour, int min, double dsec, int gregflag, StringBuilder serr) {
         final double[] dret = new double[2];
 
-        int res = SwephExp.swe_utc_to_jd(year, month, day, hour, min, sec, gregflag, dret, serr);
+        int res = SwephExp.swe_utc_to_jd(year, month, day, hour, min, dsec, gregflag, dret, serr);
         if (res == ERR) return null;
 
-        double time = hour;
-        time += (min / d60);
-        time += (sec / d3600);
+        double utime = hour;
+        utime += (min / d60);
+        utime += (dsec / d3600);
 
         // dret[0] = Julian day number TT (ET)
         // dret[1] = Julian day number UT1
 
+        int seconds = (int) dsec;
+        double millis = (dsec - seconds) * d1000;
+        if (millis < d999) millis = round(millis);
+
         return new SweJulianDate(dret[1], new int[]{year, month, day,
-                hour, min, (int) sec}, time);
+                hour, min, seconds, (int)millis}, utime);
     }
 
     default ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
-        final int[] outYearMonthDayHourMin = new int[6];
+        final int[] outYearMonthDayHourMin = new int[7];
         final double[] outDsec = new double[1];
 
         SwephExp.swe_jdet_to_utc(tjd_et, gregflag, outYearMonthDayHourMin, outDsec);
-        outYearMonthDayHourMin[IDXI_SECONDS] = (int) outDsec[0];
 
-        double time = outYearMonthDayHourMin[IDXI_HOUR];
-        time += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
-        time += (outDsec[0] / d3600);
+        double utime = outYearMonthDayHourMin[IDXI_HOUR];
+        utime += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
+        utime += (outDsec[0] / d3600);
 
-        return new SweJulianDate(tjd_et, outYearMonthDayHourMin, time);
+        final int seconds = (int) outDsec[0];
+        outYearMonthDayHourMin[IDXI_SECONDS] = seconds;
+        outDsec[0] -= seconds; outDsec[0] *= d1000;
+
+        if (outDsec[0] > d999) outYearMonthDayHourMin[IDXI_MILLIS] = (int) outDsec[0];
+        else outYearMonthDayHourMin[IDXI_MILLIS] = (int) round(outDsec[0]);
+
+        return new SweJulianDate(tjd_et, outYearMonthDayHourMin, utime);
     }
 
     default ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
-        final int[] outYearMonthDayHourMin = new int[6];
+        final int[] outYearMonthDayHourMin = new int[7];
         final double[] outDsec = new double[1];
 
         SwephExp.swe_jdut1_to_utc(tjd_ut, gregflag, outYearMonthDayHourMin, outDsec);
-        outYearMonthDayHourMin[IDXI_SECONDS] = (int) outDsec[0];
 
-        double time = outYearMonthDayHourMin[IDXI_HOUR];
-        time += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
-        time += (outDsec[0] / d3600);
+        double utime = outYearMonthDayHourMin[IDXI_HOUR];
+        utime += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
+        utime += (outDsec[0] / d3600);
 
-        return new SweJulianDate(tjd_ut, outYearMonthDayHourMin, time);
+        final int seconds = (int) outDsec[0];
+        outYearMonthDayHourMin[IDXI_SECONDS] = seconds;
+        outDsec[0] -= seconds; outDsec[0] *= d1000;
+
+        if (outDsec[0] > d999) outYearMonthDayHourMin[IDXI_MILLIS] = (int) outDsec[0];
+        else outYearMonthDayHourMin[IDXI_MILLIS] = (int) round(outDsec[0]);
+
+        return new SweJulianDate(tjd_ut, outYearMonthDayHourMin, utime);
     }
 
     /**
@@ -416,8 +433,9 @@ public interface ISwissEph extends AutoCloseable {
      * For conversion from utc to local time, use -timezone.
      */
     default ISweJulianDate swe_utc_time_zone(int iyear, int imonth, int iday,
-                                             int ihour, int imin, double dsec, boolean utcToLocal, double timezone) {
-        final int[] outYearMonthDayHourMin = new int[6];
+                                             int ihour, int imin, double dsec,
+                                             boolean utcToLocal, double timezone) {
+        final int[] outYearMonthDayHourMin = new int[7];
         final double[] outDsec = new double[1];
 
         // For conversion from local time to utc, use +timezone
@@ -426,10 +444,16 @@ public interface ISwissEph extends AutoCloseable {
         SwephExp.swe_utc_time_zone(iyear, imonth, iday, ihour, imin, dsec,
                 utcToLocal ? -timezone : +timezone, outYearMonthDayHourMin, outDsec);
 
-        outYearMonthDayHourMin[IDXI_SECONDS] = (int) outDsec[0];
         double utime = outYearMonthDayHourMin[IDXI_HOUR];
         utime += (outYearMonthDayHourMin[IDXI_MINUTE] / d60);
         utime += (outDsec[0] / d3600);
+
+        final int seconds = (int) outDsec[0];
+        outYearMonthDayHourMin[IDXI_SECONDS] = seconds;
+        outDsec[0] -= seconds; outDsec[0] *= d1000;
+
+        if (outDsec[0] > d999) outYearMonthDayHourMin[IDXI_MILLIS] = (int) outDsec[0];
+        else outYearMonthDayHourMin[IDXI_MILLIS] = (int) round(outDsec[0]);
 
         return new SweJulianDate(outYearMonthDayHourMin, utime, (float)timezone);
     }

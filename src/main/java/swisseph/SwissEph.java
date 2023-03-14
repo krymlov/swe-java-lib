@@ -95,8 +95,9 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
-import static org.swisseph.api.ISweConstants.d3600;
-import static org.swisseph.api.ISweConstants.d60;
+import static java.lang.Math.round;
+import static org.swisseph.api.ISweConstants.*;
+import static org.swisseph.api.ISweConstants.d999;
 import static swisseph.SweConst.SE_GREG_CAL;
 
 /**
@@ -8234,20 +8235,24 @@ if (false) {
     }
 
     @Override
-    public ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour, 
-    int min, double sec, int gregflag, StringBuilder serr) {
+    public ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour,
+                                        int min, double dsec, int gregflag, StringBuilder serr) {
         final double[] dret = SweDate.getJDfromUTC(year, month, 
-            day, hour, min, sec, gregflag == SE_GREG_CAL, false);
+            day, hour, min, dsec, gregflag == SE_GREG_CAL, false);
         
         double time = hour;
         time += (min / d60);
-        time += (sec / d3600);
+        time += (dsec / d3600);
 
         // dret[0] = Julian day number TT (ET)
         // dret[1] = Julian day number UT1
+
+      int seconds = (int) dsec;
+      double millis = (dsec - seconds) * d1000;
+      if (millis < d999) millis = round(millis);
         
-        return new SweJulianDate(dret[1], 
-            new int[] {year, month, day, hour, min, (int)sec}, time);
+        return new SweJulianDate(dret[1], new int[] {year, month, day,
+                hour, min, seconds, (int)millis}, time);
     }
 
     @Override

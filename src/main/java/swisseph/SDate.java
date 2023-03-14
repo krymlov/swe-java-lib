@@ -68,67 +68,73 @@
 */
 package swisseph;
 
-import java.io.Serializable;
-
-import static org.swisseph.api.ISweConstants.d3600;
-import static org.swisseph.api.ISweConstants.d60;
+import static java.lang.Math.round;
+import static org.swisseph.api.ISweConstants.*;
 
 /**
-* This class keeps date and time values in just one place.<p>
-* Use it for UTC time conversions.
-* @author Thomas Mack / mack@ifis.cs.tu-bs.de
-* @version 1.0.0a
-*/
+ * This class keeps date and time values in just one place.<p>
+ * Use it for UTC time conversions.
+ *
+ * @author Thomas Mack / mack@ifis.cs.tu-bs.de
+ * @version 1.0.0a
+ */
 
-final class SDate {
+public final class SDate {
+    final int[] ymdhms = new int[7];
+    final double hour, second;
 
-  final int[] ymdhms = new int[6];
-  final double hour, second;
+    public SDate(int year, int month, int day, double hour) {
+        this.hour = hour;
 
-  public SDate(int year, int month, int day, double hour) {
-    this.hour = hour;
-      
-    this.ymdhms[0] = year;
-    this.ymdhms[1] = month;
-    this.ymdhms[2] = day;
-    this.ymdhms[3] = (int)hour;
-    
-    double dtmp = hour;
-    dtmp -= (int)hour;
-    dtmp *= 60.;
-    
-    this.ymdhms[4] = (int) dtmp;
-    this.second = (dtmp - this.ymdhms[4]) * 60.0;
-    this.ymdhms[5] = (int) this.second;
-  }
-  
-  public SDate(int year, int month, int day, int hour, int minute, double second) {
-      this.ymdhms[0] = year;
-      this.ymdhms[1] = month;
-      this.ymdhms[2] = day;
-      
-    this.ymdhms[3] = hour;
-    this.ymdhms[4] = minute;
-    
-    this.second = second;
-    this.ymdhms[5] = (int)second;
-    
-    double time = ymdhms[3];
-    time += (ymdhms[4]/d60);
-    time += (second/d3600);
+        this.ymdhms[0] = year;
+        this.ymdhms[1] = month;
+        this.ymdhms[2] = day;
+        this.ymdhms[3] = (int) hour;
 
-    this.hour = time;
-  }
+        double dtmp = hour;
+        dtmp -= (int) hour;
+        dtmp *= d60;
 
-  public double getSecond() {
-    return second;
-  }
-  
-  public double getHour() {
-    return hour;
-  }
-  
-  public int[] getDate() {
-    return ymdhms;
-  }
+        this.ymdhms[4] = (int) dtmp;
+        this.second = (dtmp - this.ymdhms[4]) * d60;
+        this.ymdhms[5] = (int) this.second;
+
+        final double millis = (second - (int) second) * d1000;
+        if (millis > d999) this.ymdhms[6] = (int) millis;
+        else this.ymdhms[6] = (int) round(millis);
+    }
+
+    public SDate(int year, int month, int day, int hour, int minute, double dsec) {
+        this.ymdhms[0] = year;
+        this.ymdhms[1] = month;
+        this.ymdhms[2] = day;
+
+        this.ymdhms[3] = hour;
+        this.ymdhms[4] = minute;
+
+        this.second = dsec;
+        this.ymdhms[5] = (int) dsec;
+
+        final double millis = (dsec - (int) dsec) * d1000;
+        if (millis > d999) this.ymdhms[6] = (int) millis;
+        else this.ymdhms[6] = (int) round(millis);
+
+        double time = ymdhms[3];
+        time += (ymdhms[4] / d60);
+        time += (dsec / d3600);
+
+        this.hour = time;
+    }
+
+    public double getSecond() {
+        return second;
+    }
+
+    public double getHour() {
+        return hour;
+    }
+
+    public int[] getDate() {
+        return ymdhms;
+    }
 }

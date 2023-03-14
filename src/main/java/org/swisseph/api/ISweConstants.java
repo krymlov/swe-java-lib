@@ -59,6 +59,7 @@ public interface ISweConstants {
     double d81 = 81.;
     double d90 = 90.;
     double d95 = 95.;
+    double d99 = 99.;
     double d100 = 100.;
     double d108 = 108.;
     double d118 = 118.;
@@ -87,6 +88,8 @@ public interface ISweConstants {
     double d345 = 345.;
     double d357 = 357.;
     double d360 = 360.;
+    double d999 = 999.;
+    double d1000 = 1000.;
     double d3600 = 3600.;
     double d86400 = 86400.;
     double d360000 = 360000.;

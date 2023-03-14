@@ -35,7 +35,7 @@ public class SweJulianDate implements ISweJulianDate {
 
     /**
      * yyyy, mm, dd;
-     * optionally hh, mm, ss in local time
+     * optionally hh, mm, ss, ms in local time
      */
     protected final int[] date;
 
@@ -171,7 +171,9 @@ public class SweJulianDate implements ISweJulianDate {
         final double utime = values[IDXD_UTIME];
 
         if (!Double.isNaN(utime)) return useconds();
-        else if (date.length > IDXI_SECONDS) {
+        else if (date.length > IDXI_MILLIS) {
+            return date[IDXI_SECONDS] + date[IDXI_MILLIS]/d1000;
+        } else if (date.length > IDXI_SECONDS) {
             return date[IDXI_SECONDS];
         } else return d0;
     }
