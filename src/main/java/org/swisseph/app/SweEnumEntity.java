@@ -10,7 +10,7 @@ import org.swisseph.api.ISweEnumEntity;
 
 import static org.swisseph.api.ISweConstants.CH_VS;
 import static org.swisseph.api.ISweConstants.STR_EY;
-import static org.swisseph.utils.IDegreeUtils.toDMS;
+import static org.swisseph.utils.IDegreeUtils.toDMSms;
 
 /**
  * @author Yura Krymlov
@@ -54,7 +54,7 @@ public class SweEnumEntity<E extends ISweEnum> implements ISweEnumEntity<E> {
     }
 
     protected String printLongitude() {
-        return toDMS(longitude).toString();
+        return toDMSms(longitude).toString();
     }
 
     protected String printJulianDay() {

@@ -12,9 +12,9 @@ import swisseph.SweDate;
 
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Objects;
 
-import static java.lang.Double.NaN;
-import static java.lang.Double.doubleToLongBits;
+import static java.lang.Double.*;
 import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
 
@@ -114,7 +114,7 @@ public class SweJulianDate implements ISweJulianDate {
 
     @Override
     public float timeZone() {
-        return (float)values[IDXD_TIMEZONE];
+        return (float) values[IDXD_TIMEZONE];
     }
 
     @Override
@@ -153,87 +153,50 @@ public class SweJulianDate implements ISweJulianDate {
     }
 
     @Override
+    public double utime() {
+        return values[IDXD_UTIME];
+    }
+
+    @Override
     public int hours() {
-        if (date.length > IDXI_HOUR) {
-            return date[IDXI_HOUR];
-        } else return i0;
+        return date.length > IDXI_HOUR ? date[IDXI_HOUR] : i0;
     }
 
     @Override
     public int minutes() {
-        if (date.length > IDXI_MINUTE) {
-            return date[IDXI_MINUTE];
-        } else return i0;
+        return date.length > IDXI_MINUTE ? date[IDXI_MINUTE] : i0;
     }
 
     @Override
-    public double seconds() {
-        final double utime = values[IDXD_UTIME];
+    public int seconds() {
+        return date.length > IDXI_SECONDS ? date[IDXI_SECONDS] : i0;
+    }
 
-        if (!Double.isNaN(utime)) return useconds();
-        else if (date.length > IDXI_MILLIS) {
-            return date[IDXI_SECONDS] + date[IDXI_MILLIS]/d1000;
+    public int millis() {
+        return date.length > IDXI_MILLIS ? date[IDXI_MILLIS] : i0;
+    }
+
+    @Override
+    public double dseconds() {
+        if (date.length > IDXI_MILLIS) {
+            return date[IDXI_SECONDS] + (date[IDXI_MILLIS] / d1000);
+        } else if (!isNaN(values[IDXD_UTIME])) {
+            return useconds();
         } else if (date.length > IDXI_SECONDS) {
             return date[IDXI_SECONDS];
         } else return d0;
     }
 
     @Override
-    public int uhours() {
-        final double utime = values[IDXD_UTIME];
-        if (Double.isNaN(utime)) return i0;
-        return (int) utime;
-    }
-
-    @Override
-    public int uminutes() {
-        double utime = values[IDXD_UTIME];
-        if (Double.isNaN(utime)) return i0;
-        final int hour = (int) utime;
-        utime -= hour;
-        utime *= d60;
-        return (int) utime;
-    }
-
-    @Override
-    public double useconds() {
-        double utime = values[IDXD_UTIME];
-        if (Double.isNaN(utime)) return d0;
-        final int hour = (int) utime;
-        utime -= hour;
-        utime *= d60;
-        final int min = (int) utime;
-        utime -= min;
-        utime *= d60;
-        return utime;
-    }
-
-    @Override
-    public double utime() {
-        return values[IDXD_UTIME];
+    public boolean equals(Object another) {
+        if (this == another) return true;
+        if (another == null || getClass() != another.getClass()) return false;
+        return compare(((SweJulianDate) another).julianDay(), julianDay()) == 0;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits(values[IDXD_JULDAY]);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-
-        final double julDay = this.values[IDXD_JULDAY];
-        if (Double.isNaN(julDay)) return false;
-        if (!(obj instanceof ISweJulianDate)) return false;
-
-        final ISweJulianDate other = (ISweJulianDate) obj;
-        return doubleToLongBits(julDay) == doubleToLongBits(other.julianDay());
+        return Objects.hash(julianDay());
     }
 
     @Override

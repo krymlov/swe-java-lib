@@ -11,6 +11,9 @@ import swisseph.SweConst;
 
 import java.io.Serializable;
 
+import static java.lang.Double.isNaN;
+import static org.swisseph.api.ISweConstants.d60;
+
 /**
  * This is the wrapper class for date,time,tmz,julianDay,deltaT,universal time (decimal hours)
  * The class instance should be created or initialized by corresponding {@link org.swisseph.ISwissEph} methods
@@ -88,13 +91,13 @@ public interface ISweJulianDate extends Serializable {
     float timeZone();
     
     /**
-     * @return time zone, julian day, delta T, universal time (decimal hours), ephemeris time (ET)<br>
+     * @return time zone, julian day, delta T, universal time (decimal hours in UT), ephemeris time (ET)<br>
      * <b>Please pay attention, implementation can return a copy of the array</b>
      */
     double[] values();
     
     /**
-     * @return date as year, month, day and optionally hour, minutes, seconds in local time<br>
+     * @return date as year, month, day and optionally hour, minutes, seconds, millis AS local time (according to time zone)<br>
      * <b>Please pay attention, implementation can return a copy of the array</b>
      */
     int[] date();
@@ -102,13 +105,66 @@ public interface ISweJulianDate extends Serializable {
     int year();
     int month();
     int day();
-    
+
+    /**
+     * @return zoned hours
+     */
     int hours();
+
+    /**
+     * @return zoned minutes
+     */
     int minutes();
-    double seconds();
-    
+
+    /**
+     * @return zoned seconds
+     */
+    int seconds();
+
+    /**
+     * @return zoned millis
+     */
+    int millis();
+
+    /**
+     * @return universal time (decimal hours in UT)
+     */
     double utime();
-    int uhours();
-    int uminutes();
-    double useconds();
+
+    /**
+     * @return seconds + millis (if any)
+     */
+    double dseconds();
+
+    /**
+     * @return hours in UT
+     */
+    default int uhours() {
+        final double utime = utime();
+        return !isNaN(utime) ? (int) utime : 0;
+    }
+
+    /**
+     * @return minutes in UT
+     */
+    default int uminutes() {
+        double utime = utime();
+        if (isNaN(utime)) return 0;
+        utime -= (int) utime;
+        utime *= d60;
+        return (int) utime;
+    }
+
+    /**
+     * @return seconds in UT
+     */
+    default double useconds() {
+        double utime = utime();
+        if (isNaN(utime)) return dseconds();
+        utime -= (int) utime;
+        utime *= d60;
+        utime -= (int) utime;
+        utime *= d60;
+        return utime;
+    }
 }

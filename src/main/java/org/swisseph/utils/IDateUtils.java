@@ -28,7 +28,7 @@ public interface IDateUtils {
     String F2H_2M_2H_2M = F2H_2M + " - " + F2H_2M;
     String F4Y_2M_2D_2H_2M = F4Y_2M_2D + STR_WS + F2H_2M;
     String F4Y_2M_2D_2H_2M_2S = F4Y_2M_2D + STR_WS + F2H_2M_2S;
-    String F4Y_2M_2D_2H_2M_2S_MS = F4Y_2M_2D_2H_2M_2S + ".%02d";
+    String F4Y_2M_2D_2H_2M_2S_MS = F4Y_2M_2D_2H_2M_2S + ".%03d";
 
     TimeZone FDTE_UTC_TMZ = TimeZone.getTimeZone(UTC);
     FastDateFormat FDTE_FORMATER = FastDateFormat
@@ -95,8 +95,8 @@ public interface IDateUtils {
             case F4Y_2M_2D_2H_2M_2S_MS: {
                 final StringBuilder builder = new StringBuilder(26);
                 formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, true, datetime[3], datetime[4], datetime[5]).append('.')
-                        .append((int) ((julianDate.seconds() - datetime[5]) * i100));
+                formatHMS(builder, true, datetime[3], datetime[4], datetime[5]);
+                return formatMillis(builder, true, datetime);
             }
 
             case F4Y_2M_2D_2H_2M_2S: {
@@ -157,5 +157,14 @@ public interface IDateUtils {
         }
 
         return builder;
+    }
+
+    static StringBuilder formatMillis(StringBuilder builder, boolean separate, int[] datetime) {
+        if (datetime.length < 7) return builder;
+        if (separate) builder.append('.');
+        final int millis = datetime[6];
+        if (millis < i10) builder.append("00");
+        else if (millis < i100) builder.append(CH_ZR);
+        return builder.append(millis);
     }
 }

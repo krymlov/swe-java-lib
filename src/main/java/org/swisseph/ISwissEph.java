@@ -121,30 +121,23 @@ public interface ISwissEph extends AutoCloseable {
             throw new SweRuntimeException("Valid local date/time is expected");
         }
 
-        final int year = julianDate.year();
-        final int month = julianDate.month();
-        final int dayOfMonth = julianDate.day();
-        final int hourOfDay = julianDate.hours();
-        final int minutes = julianDate.minutes();
-        final double seconds = julianDate.seconds();
-        final double timeZone = julianDate.timeZone();
-        final int calendarType = julianDate.sweCalendarType();
-
+        double timeZone = julianDate.timeZone();
         ISweJulianDate utcjdt = julianDate;
         double utime = julianDate.utime();
 
         if (timeZone != d0) { // For conversion from local time to UTC
-            utcjdt = swe_utc_time_zone(year, month, dayOfMonth,
-                    hourOfDay, minutes, seconds, false, timeZone);
+            utcjdt = swe_utc_time_zone(julianDate.year(), julianDate.month(), julianDate.day(),
+                    julianDate.hours(), julianDate.minutes(), julianDate.dseconds(), false, timeZone);
             utime = utcjdt.utime();
         } else if (isNaN(utime)) {
-            utime = hourOfDay;
-            utime += (minutes / d60);
-            utime += (seconds / d3600);
+            utime = julianDate.hours();
+            utime += (julianDate.minutes() / d60);
+            utime += (julianDate.seconds() / d3600);
+            utime += (julianDate.millis() / d3600000);
         }
 
-        final double julday = swe_julday(utcjdt.year(),
-                utcjdt.month(), utcjdt.day(), utime, calendarType);
+        final double julday = swe_julday(utcjdt.year(), utcjdt.month(),
+                utcjdt.day(), utime, julianDate.sweCalendarType());
 
         julianDate.values()[IDXD_JULDAY] = julday;
         julianDate.values()[IDXD_UTIME] = utime;
@@ -169,7 +162,7 @@ public interface ISwissEph extends AutoCloseable {
 
         // For conversion from UTC to local time even if tmz == 0...
         final ISweJulianDate tmzjdt = swe_utc_time_zone(utcjdt.year(), utcjdt.month(), utcjdt.day(),
-                utcjdt.uhours(), utcjdt.uminutes(), utcjdt.useconds(), true, julianDate.timeZone());
+                utcjdt.uhours(), utcjdt.uminutes(), utcjdt.dseconds(), true, julianDate.timeZone());
 
         return new SweJulianDate(julianDate, tmzjdt.date(), utcjdt.utime());
     }
