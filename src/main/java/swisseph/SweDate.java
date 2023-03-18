@@ -68,15 +68,13 @@
 */
 package swisseph;
 
-import org.swisseph.api.ISweJulianDate;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 import java.util.TimeZone;
 
-import static java.lang.Double.doubleToLongBits;
 import static swisseph.SweConst.SE_TIDAL_DEFAULT;
 
 /**
@@ -184,16 +182,20 @@ public class SweDate implements Serializable {
   * and current time at GMT.
   */
   public SweDate() {
-    Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    setFields(cal.get(Calendar.YEAR),
-          cal.get(Calendar.MONTH) + 1,
-          cal.get(Calendar.DAY_OF_MONTH),
-          cal.get(Calendar.HOUR_OF_DAY) +
-                cal.get(Calendar.MINUTE)/60. +
-                cal.get(Calendar.SECOND)/3600. +
-                cal.get(Calendar.MILLISECOND)/3600000.,
-          SE_GREG_CAL);
+    this(Calendar.getInstance(TimeZone.getTimeZone("GMT")));
   }
+
+  protected SweDate(Calendar cal) {
+    setFields(cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH) + 1,
+            cal.get(Calendar.DAY_OF_MONTH),
+            cal.get(Calendar.HOUR_OF_DAY) +
+                    cal.get(Calendar.MINUTE)/60. +
+                    cal.get(Calendar.SECOND)/3600. +
+                    cal.get(Calendar.MILLISECOND)/3600000.,
+            SE_GREG_CAL);
+  }
+
   /**
   * This constructs a new SweDate with the given Julian Day number.
   * The calendar system will be Gregorian after October 15, 1582 or
@@ -2317,33 +2319,20 @@ public class SweDate implements Serializable {
   public LocalDateTime getLocalDateTime() {
     return getLocalDateTime(this);
   }
-  
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits(julDay);
-        result = prime * result + (int)(temp ^ (temp >>> 32));
-        return result;
-    }
-    
-    @Override
-    public boolean equals(Object obj) {
-        if ( this == obj ) return true;
-        if ( obj == null ) return false;
-        
-        if ( Double.isNaN(julDay) ) return false;
-        if ( !(obj instanceof ISweJulianDate) ) return false;
-        
-        final ISweJulianDate other = (ISweJulianDate)obj;
-        if ( doubleToLongBits(julDay) != doubleToLongBits(other.julianDay()) ) return false;
-        
-        return true;
-    }
 
-    static final class IDate {
+  @Override
+  public boolean equals(Object another) {
+    if (this == another) return true;
+    if (!(another instanceof SweDate)) return false;
+    return Double.compare(((SweDate) another).julDay, julDay) == 0;
+  }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(julDay);
+  }
+
+  static final class IDate {
         int year, month, day;
         double hour;
     }

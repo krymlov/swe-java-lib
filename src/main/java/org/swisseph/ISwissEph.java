@@ -162,7 +162,7 @@ public interface ISwissEph extends AutoCloseable {
 
         // For conversion from UTC to local time even if tmz == 0...
         final ISweJulianDate tmzjdt = swe_utc_time_zone(utcjdt.year(), utcjdt.month(), utcjdt.day(),
-                utcjdt.uhours(), utcjdt.uminutes(), utcjdt.dseconds(), true, julianDate.timeZone());
+                utcjdt.uhours(), utcjdt.uminutes(), utcjdt.useconds(), true, julianDate.timeZone());
 
         return new SweJulianDate(julianDate, tmzjdt.date(), utcjdt.utime());
     }

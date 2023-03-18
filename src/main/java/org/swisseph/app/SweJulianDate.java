@@ -19,14 +19,11 @@ import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
 
 /**
- * This is the wrapper class for date,time,tmz,julianDay,deltaT,universal time (decimal hours)
- * The class instance should be created or initialized by corresponding {@link org.swisseph.ISwissEph} methods
- *
  * @author Yura Krymlov
- * @version 1.1, 2021-12
+ * @version 1.2, 2023-03
  */
 public class SweJulianDate implements ISweJulianDate {
-    private static final long serialVersionUID = 9001094323006485132L;
+    private static final long serialVersionUID = -1805221056986936494L;
 
     /**
      * time zone, julian day, delta T, universal time (decimal hours), ephemeris time (et)
@@ -34,8 +31,8 @@ public class SweJulianDate implements ISweJulianDate {
     protected final double[] values = new double[]{d0, NaN, NaN, NaN, NaN};
 
     /**
-     * yyyy, mm, dd;
-     * optionally hh, mm, ss, ms in local time
+     * zoned date/time!<br>
+     * date: yyyy, mm, dd + time: hh, mm, ss, millis
      */
     protected final int[] date;
 
@@ -153,11 +150,6 @@ public class SweJulianDate implements ISweJulianDate {
     }
 
     @Override
-    public double utime() {
-        return values[IDXD_UTIME];
-    }
-
-    @Override
     public int hours() {
         return date.length > IDXI_HOUR ? date[IDXI_HOUR] : i0;
     }
@@ -185,6 +177,11 @@ public class SweJulianDate implements ISweJulianDate {
         } else if (date.length > IDXI_SECONDS) {
             return date[IDXI_SECONDS];
         } else return d0;
+    }
+
+    @Override
+    public double utime() {
+        return values[IDXD_UTIME];
     }
 
     @Override
