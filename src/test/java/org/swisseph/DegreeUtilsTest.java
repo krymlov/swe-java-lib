@@ -28,7 +28,7 @@ public class DegreeUtilsTest extends AbstractTest {
         final int start = 0;
         final int end = 1;
 
-        for (double ddeg = start; ddeg < end; ddeg += d1d3600000) {
+        for (double ddeg = start; ddeg < end; ddeg += d1d3600E03) {
             final int ideg = IDegreeUtils.toIDMSms(ddeg);
 
             Assertions.assertEquals(IDegreeUtils.toDMSms(ddeg).toString(),

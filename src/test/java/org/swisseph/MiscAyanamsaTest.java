@@ -58,8 +58,8 @@ import static swisseph.SweConst.SEFLG_TRUEPOS;
  * @version 1.0, 2023-01
  */
 public class MiscAyanamsaTest extends AbstractTest {
-    final int[] date2000 = new int[]{2000, 1, 1, 0, 0, 0};
-    final int[] date1947 = new int[]{1947, 8, 15, 10, 30, 0};
+    final int[] date2000 = new int[]{2000, 1, 1, 0, 0};
+    final int[] date1947 = new int[]{1947, 8, 15, 10, 30};
 
     @Test
     /**
@@ -72,7 +72,7 @@ public class MiscAyanamsaTest extends AbstractTest {
         ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
                 .options(LAHIRI_AYANAMSA).mainFlags(DEFAULT_SS_MAIN_FLAGS | SEFLG_NONUT).build();
 
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date2000, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date2000, 0f, 0d),
                 GEO_GREENWICH, sweObjectsOptions).completeBuild();
 
         // Ayanamsa
@@ -88,7 +88,7 @@ public class MiscAyanamsaTest extends AbstractTest {
      *      Ayanamsha 01.01.2000 23°51'11.5325
      */
     void test2000TrueAyanamsha() {
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date2000, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date2000, 0f, 0d),
                 GEO_GREENWICH, LAHIRI_AYANAMSA).completeBuild();
 
         // Ayanamsa
@@ -104,7 +104,7 @@ public class MiscAyanamsaTest extends AbstractTest {
                 .calcFlags((DEFAULT_SS_CALC_FLAGS | SEFLG_NONUT) ^ SEFLG_TRUEPOS)
                 .build();
 
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild();
 
         // Ayanamsa
@@ -122,7 +122,7 @@ public class MiscAyanamsaTest extends AbstractTest {
 
     @Test
     void test1947TrueAyanamsha() {
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
                 GEO_LUCKNOW, TRUECITRA_AYANAMSA).completeBuild();
 
         // Ayanamsa

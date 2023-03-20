@@ -328,7 +328,7 @@ public interface IDegreeUtils {
         ddeg += isec / d3600;
         ddeg += imls / d360000;
 
-        ddeg += d1d3600000;
+        ddeg += d1d3600E03;
 
         return ng ? -ddeg : ddeg;
     }

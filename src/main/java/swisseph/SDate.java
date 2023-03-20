@@ -68,9 +68,6 @@
 */
 package swisseph;
 
-import static java.lang.Math.round;
-import static org.swisseph.api.ISweConstants.*;
-
 /**
  * This class keeps date and time values in just one place.<p>
  * Use it for UTC time conversions.
@@ -80,61 +77,40 @@ import static org.swisseph.api.ISweConstants.*;
  */
 
 public final class SDate {
-    final int[] ymdhms = new int[7];
-    final double hour, second;
+    private final double second;
+    private final int[] ymdhm = new int[5];
+    final double hour;
 
     public SDate(int year, int month, int day, double hour) {
         this.hour = hour;
 
-        this.ymdhms[0] = year;
-        this.ymdhms[1] = month;
-        this.ymdhms[2] = day;
-        this.ymdhms[3] = (int) hour;
+        this.ymdhm[0] = year;
+        this.ymdhm[1] = month;
+        this.ymdhm[2] = day;
+        this.ymdhm[3] = (int) hour;
 
-        double dtmp = hour;
-        dtmp -= (int) hour;
-        dtmp *= d60;
-
-        this.ymdhms[4] = (int) dtmp;
-        this.second = (dtmp - this.ymdhms[4]) * d60;
-        this.ymdhms[5] = (int) this.second;
-
-        final double millis = (second - (int) second) * d1000;
-        if (millis > d999) this.ymdhms[6] = (int) millis;
-        else this.ymdhms[6] = (int) round(millis);
+        double d = hour;
+        d -= this.ymdhm[3];
+        d *= 60.;
+        this.ymdhm[4] = (int) d;
+        this.second = (d - this.ymdhm[4]) * 60.0;
     }
 
-    public SDate(int year, int month, int day, int hour, int minute, double dsec) {
-        this.ymdhms[0] = year;
-        this.ymdhms[1] = month;
-        this.ymdhms[2] = day;
-
-        this.ymdhms[3] = hour;
-        this.ymdhms[4] = minute;
-
-        this.second = dsec;
-        this.ymdhms[5] = (int) dsec;
-
-        final double millis = (dsec - (int) dsec) * d1000;
-        if (millis > d999) this.ymdhms[6] = (int) millis;
-        else this.ymdhms[6] = (int) round(millis);
-
-        double time = ymdhms[3];
-        time += (ymdhms[4] / d60);
-        time += (dsec / d3600);
-
-        this.hour = time;
+    public SDate(int year, int month, int day, int hour, int minute, double second) {
+        this.ymdhm[0] = year;
+        this.ymdhm[1] = month;
+        this.ymdhm[2] = day;
+        this.ymdhm[3] = hour;
+        this.ymdhm[4] = minute;
+        this.second = second;
+        this.hour = Double.NaN;
     }
 
-    public double getSecond() {
+    public int[] date() {
+        return ymdhm;
+    }
+
+    public double second() {
         return second;
-    }
-
-    public double getHour() {
-        return hour;
-    }
-
-    public int[] getDate() {
-        return ymdhms;
     }
 }

@@ -140,14 +140,14 @@ public class SweObjects implements ISweObjects {
         try {
             final double[] daya = new double[]{0};
             final StringBuilder serr = new StringBuilder(0);
-            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.ephemerisTime(), options.mainFlags(), daya, serr);
+            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.epheTime(), options.mainFlags(), daya, serr);
             if (result != ERR) return this.ayanamsa = daya[0];
         } catch (NotImplementedException nie) {
             // ignore
         }
 
         // calculates the ayanamsa for a given date.
-        return this.ayanamsa = swissEph.swe_get_ayanamsa(julianDate.ephemerisTime());
+        return this.ayanamsa = swissEph.swe_get_ayanamsa(julianDate.epheTime());
     }
 
     @Override
@@ -171,7 +171,7 @@ public class SweObjects implements ISweObjects {
         if (objId == KE) return buildLunarNodes();
 
         final double[] dres = new double[6];
-        final int result = swissEph.swe_calc(julianDate.ephemerisTime(),
+        final int result = swissEph.swe_calc(julianDate.epheTime(),
                 getSupportedObjects()[objId], options.calcFlags(), dres, serr);
 
         if (result == ERR) throw new SweRuntimeException(serr.toString());

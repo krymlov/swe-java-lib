@@ -27,7 +27,7 @@ import static swisseph.SweConst.*;
  * @version 1.0, 2023-01
  */
 public class JagannathaHoraTest extends AbstractTest {
-    final int[] date1947 = new int[]{1947, 8, 15, 10, 30, 0};
+    final int[] date1947 = new int[]{1947, 8, 15, 10, 30};
 
     @Test
     void test1947TruePosMeanAyanamsha() {
@@ -37,7 +37,7 @@ public class JagannathaHoraTest extends AbstractTest {
                 .calcFlags(DEFAULT_SS_CALC_FLAGS)
                 .build();
 
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild();
 
         // Ayanamsa

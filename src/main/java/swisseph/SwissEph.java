@@ -95,9 +95,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
-import static java.lang.Math.round;
-import static org.swisseph.api.ISweConstants.*;
-import static org.swisseph.api.ISweConstants.d999;
+import static org.swisseph.api.ISweJulianDate.UT_TMZ;
 import static swisseph.SweConst.SE_GREG_CAL;
 
 /**
@@ -8235,44 +8233,45 @@ if (false) {
     }
 
     @Override
-    public ISweJulianDate swe_utc_to_jd(int year, int month, int day, int hour,
-                                        int min, double dsec, int gregflag, StringBuilder serr) {
+    public ISweJulianDate swe_utc_to_jd(int year, int month, int day,
+                                        int hour, int min, double dsec,
+                                        int gregflag, StringBuilder serr) {
         final double[] dret = SweDate.getJDfromUTC(year, month, 
             day, hour, min, dsec, gregflag == SE_GREG_CAL, false);
-        
-        double time = hour;
-        time += (min / d60);
-        time += (dsec / d3600);
 
         // dret[0] = Julian day number TT (ET)
         // dret[1] = Julian day number UT1
 
-      int seconds = (int) dsec;
-      double millis = (dsec - seconds) * d1000;
-      if (millis < d999) millis = round(millis);
-        
-        return new SweJulianDate(dret[1], new int[] {year, month, day,
-                hour, min, seconds, (int)millis}, time);
+        final int[] outYmdHm = new int[]{year, month, day, hour, min};
+        return new SweJulianDate(dret[1], outYmdHm, ISwissEph.getDecimalHours(outYmdHm, dsec));
     }
 
     @Override
     public ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
-        final SDate date = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);        
-        return new SweJulianDate(tjd_et, date.getDate(), date.getHour());
+        final SDate outsd = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);
+        return new SweJulianDate(tjd_et, outsd.date(), outsd.hour);
     }
     
     @Override
     public ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
-        final SDate date = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);        
-        return new SweJulianDate(tjd_ut, date.getDate(), date.getHour());
+        final SDate outsd = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);
+        return new SweJulianDate(tjd_ut, outsd.date(), outsd.hour);
     }
 
     @Override
-    public ISweJulianDate swe_utc_time_zone(int iyear, int imonth, int iday, int ihour, 
-    int imin, double dsec, boolean utcToLocal, double timezone) {
-        final SDate date = SweDate.getLocalTimeFromUTC(iyear, imonth,
-            iday, ihour, imin, dsec, utcToLocal ? -timezone : +timezone);
-        return new SweJulianDate(date.getDate(), date.getHour(), (float)timezone);
+    public ISweJulianDate swe_utc_time_zone(int iyear, int imonth, int iday,
+                                            int ihour, int imin, double dsec,
+                                            boolean utcToLocal, double timezone) {
+      final SDate outsd = SweDate.getLocalTimeFromUTC(iyear, imonth,
+              iday, ihour, imin, dsec, utcToLocal ? -timezone : +timezone);
+
+      if (utcToLocal) { // UTC to Local time
+        return new SweJulianDate(outsd.date(), ISwissEph.getDecimalHours(new int[]{iyear, imonth, iday, ihour, imin}, dsec),
+                (float) timezone, ISwissEph.getDecimalHours(outsd.date(), outsd.second()));
+      } else { // Local to UTC time
+        final double utime = ISwissEph.getDecimalHours(outsd.date(), outsd.second());
+        return new SweJulianDate(outsd.date(), utime, UT_TMZ, utime);
+      }
     }
 
   @Override

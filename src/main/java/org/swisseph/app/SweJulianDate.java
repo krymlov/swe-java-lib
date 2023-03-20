@@ -14,7 +14,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Objects;
 
-import static java.lang.Double.*;
+import static java.lang.Double.NaN;
+import static java.lang.Double.compare;
 import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
 
@@ -23,40 +24,21 @@ import static org.swisseph.api.ISweConstants.*;
  * @version 1.2, 2023-03
  */
 public class SweJulianDate implements ISweJulianDate {
-    private static final long serialVersionUID = -1805221056986936494L;
+    private static final long serialVersionUID = 4570855450497987964L;
 
     /**
-     * time zone, julian day, delta T, universal time (decimal hours), ephemeris time (et)
+     * time zone, julian day, delta-T, universal time (UT), ephemeris time (ET), local time (LT)
      */
-    protected final double[] values = new double[]{d0, NaN, NaN, NaN, NaN};
+    protected final double[] values = new double[]{d0, NaN, NaN, NaN, NaN, NaN};
 
     /**
-     * zoned date/time!<br>
-     * date: yyyy, mm, dd + time: hh, mm, ss, millis
+     * local date: yyyy, mm, dd
      */
     protected final int[] date;
 
 
-    protected SweJulianDate(int[] datetime) {
-        this.date = datetime;
-    }
-
-    public SweJulianDate(double julDay, int year, int month, int day, double utime) {
-        this.date = new int[]{year, month, day};
-        this.values[IDXD_JULDAY] = julDay;
-        this.values[IDXD_UTIME] = utime;
-    }
-
-    public SweJulianDate(double julDay, int[] date, double utime) {
-        this.values[IDXD_JULDAY] = julDay;
-        this.values[IDXD_UTIME] = utime;
-        this.date = date;
-    }
-
-    public SweJulianDate(int[] date, double utime, float timeZone) {
-        this.values[IDXD_TIMEZONE] = timeZone;
-        this.values[IDXD_UTIME] = utime;
-        this.date = date;
+    public SweJulianDate(final double julDay) {
+        this(julDay, UT_TMZ);
     }
 
     public SweJulianDate(double julDay, float timeZone) {
@@ -65,43 +47,40 @@ public class SweJulianDate implements ISweJulianDate {
         this.date = null;
     }
 
-    public SweJulianDate(int[] datetime, float timeZone) {
-        this.values[IDXD_TIMEZONE] = timeZone;
-        this.date = datetime;
+    public SweJulianDate(final SweDate sweDate) {
+        this(sweDate.getJulDay(), sweDate.getYear(), sweDate.getMonth(), sweDate.getDay(), sweDate.getHour());
     }
 
-    public SweJulianDate(ISweJulianDate julDate, int[] date, double utime) {
-        this.values[IDXD_TIMEZONE] = julDate.timeZone();
-        this.values[IDXD_JULDAY] = julDate.julianDay();
-        this.values[IDXD_DELTAT] = julDate.deltaT();
+    public SweJulianDate(double julDay, int year, int month, int day, double utime) {
+        this(julDay, new int[]{year, month, day}, utime);
+    }
+
+    public SweJulianDate(double julDay, int[] date, double utime) {
+        this(date, utime, UT_TMZ, utime);
+        this.values[IDXD_JULDAY] = julDay;
+    }
+
+    public SweJulianDate(int[] date, double utime, float timeZone, double localTime) {
+        this.values[IDXD_TIMEZONE] = timeZone;
+        this.values[IDXD_LTIME] = localTime;
         this.values[IDXD_UTIME] = utime;
         this.date = date;
     }
 
-    public SweJulianDate(final SweDate sweDate) {
-        this.values[IDXD_JULDAY] = sweDate.getJulDay();
-        this.values[IDXD_DELTAT] = sweDate.getDeltaT();
-        this.values[IDXD_UTIME] = sweDate.getHour();
-        this.date = new int[]{sweDate.getYear(),
-                sweDate.getMonth(), sweDate.getDay()};
-    }
-
-    public SweJulianDate(final double julDay) {
-        this.values[IDXD_JULDAY] = julDay;
-        this.date = null;
+    public SweJulianDate(int[] date, float timeZone, double localTime) {
+        this.values[IDXD_TIMEZONE] = timeZone;
+        this.values[IDXD_LTIME] = localTime;
+        this.date = date;
     }
 
     public SweJulianDate(final Calendar calendar) {
-        final int year = calendar.get(YEAR);
-        final int month = calendar.get(MONTH) + 1;
-        final int day = calendar.get(DAY_OF_MONTH);
-
-        this.date = new int[]{year, month, day, calendar.get(HOUR_OF_DAY),
-                calendar.get(MINUTE), calendar.get(SECOND), calendar.get(MILLISECOND)
-        };
-
-        this.values[IDXD_TIMEZONE] = calendar.getTimeZone()
-                .getOffset(calendar.getTimeInMillis()) / d3600000;
+        this.date = new int[]{calendar.get(YEAR), calendar.get(MONTH) + 1, calendar.get(DAY_OF_MONTH), calendar.get(HOUR_OF_DAY), calendar.get(MINUTE)};
+        this.values[IDXD_TIMEZONE] = (float) (calendar.getTimeZone().getOffset(calendar.getTimeInMillis()) / d3600E03);
+        this.values[IDXD_LTIME] =
+                calendar.get(Calendar.HOUR_OF_DAY) +
+                calendar.get(Calendar.MINUTE)/d60 +
+                calendar.get(Calendar.SECOND)/d3600 +
+                calendar.get(Calendar.MILLISECOND)/d3600E03;
     }
 
     @Override
@@ -125,8 +104,23 @@ public class SweJulianDate implements ISweJulianDate {
     }
 
     @Override
-    public double ephemerisTime() {
+    public double utime() {
+        return values[IDXD_UTIME];
+    }
+
+    @Override
+    public double epheTime() {
         return values[IDXD_ETIME];
+    }
+
+    @Override
+    public double localTime() {
+        return values[IDXD_LTIME];
+    }
+
+    @Override
+    public void localTime(final double ltime) {
+        values[IDXD_LTIME] = ltime;
     }
 
     @Override
@@ -149,40 +143,24 @@ public class SweJulianDate implements ISweJulianDate {
         return date;
     }
 
-    @Override
-    public int hours() {
-        return date.length > IDXI_HOUR ? date[IDXI_HOUR] : i0;
-    }
-
-    @Override
-    public int minutes() {
-        return date.length > IDXI_MINUTE ? date[IDXI_MINUTE] : i0;
-    }
-
-    @Override
-    public int seconds() {
-        return date.length > IDXI_SECONDS ? date[IDXI_SECONDS] : i0;
-    }
-
-    public int millis() {
-        return date.length > IDXI_MILLIS ? date[IDXI_MILLIS] : i0;
-    }
-
+    /*
     @Override
     public double dseconds() {
-        if (date.length > IDXI_MILLIS) {
-            return date[IDXI_SECONDS] + (date[IDXI_MILLIS] / d1000);
+        if (date.length > IDXI_NANOS) {
+            double dsec = date[IDXI_SECONDS];
+            dsec += (date[IDXI_MILLIS] / d1000);
+            dsec += (date[IDXI_NANOS] / d1000E9);
+            return dsec;
+        } else if (date.length > IDXI_MILLIS) {
+            double dsec = date[IDXI_SECONDS];
+            dsec += (date[IDXI_MILLIS] / d1000);
+            return dsec;
         } else if (!isNaN(values[IDXD_UTIME])) {
             return useconds();
         } else if (date.length > IDXI_SECONDS) {
             return date[IDXI_SECONDS];
         } else return d0;
-    }
-
-    @Override
-    public double utime() {
-        return values[IDXD_UTIME];
-    }
+    }*/
 
     @Override
     public boolean equals(Object another) {

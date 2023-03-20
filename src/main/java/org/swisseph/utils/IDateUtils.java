@@ -59,7 +59,8 @@ public interface IDateUtils {
     }
 
     static long convert(final ISweJulianDate julianDate) {
-        return convert(julianDate.date());
+        return convert(new int[] {julianDate.year(), julianDate.month(), julianDate.day(),
+                julianDate.hours(), julianDate.minutes(), (int)julianDate.seconds()});
     }
 
     static long convert(final int[] datetime) {
@@ -93,22 +94,34 @@ public interface IDateUtils {
 
         switch (format) {
             case F4Y_2M_2D_2H_2M_2S_MS: {
-                final StringBuilder builder = new StringBuilder(26);
+                final StringBuilder builder = new StringBuilder(22);
                 formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                formatHMS(builder, true, datetime[3], datetime[4], datetime[5]);
-                return formatMillis(builder, true, datetime);
+                formatHMS(builder, true,
+                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
+                        datetime.length > 4 ? datetime[4] : julianDate.minutes());
+                builder.append(CH_CN);
+
+                double seconds = julianDate.seconds();
+                if (seconds < d10) builder.append('0');
+                builder.append(((int) (julianDate.seconds() * i100)) / d100);
+                return builder;
             }
 
             case F4Y_2M_2D_2H_2M_2S: {
                 final StringBuilder builder = new StringBuilder(24);
                 formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, true, datetime[3], datetime[4], datetime[5]);
+                return formatHMS(builder, true,
+                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
+                        datetime.length > 4 ? datetime[4] : julianDate.minutes(),
+                        datetime.length > 5 ? datetime[5] : (int)julianDate.seconds());
             }
 
             case F4Y_2M_2D_2H_2M: {
                 final StringBuilder builder = new StringBuilder(20);
                 formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, true, datetime[3], datetime[4]);
+                return formatHMS(builder, true,
+                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
+                        datetime.length > 4 ? datetime[4] : julianDate.minutes());
             }
 
             case F4Y_2M_2D: {
@@ -118,12 +131,17 @@ public interface IDateUtils {
 
             case F2H_2M_2S: {
                 final StringBuilder builder = new StringBuilder(12);
-                return formatHMS(builder, true, datetime[3], datetime[4], datetime[5]);
+                return formatHMS(builder, true,
+                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
+                        datetime.length > 4 ? datetime[4] : julianDate.minutes(),
+                        datetime.length > 5 ? datetime[5] : (int)julianDate.seconds());
             }
 
             case F2H_2M: {
                 final StringBuilder builder = new StringBuilder(8);
-                return formatHMS(builder, true, datetime[3], datetime[4]);
+                return formatHMS(builder, true,
+                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
+                        datetime.length > 4 ? datetime[4] : julianDate.minutes());
             }
         }
 
@@ -159,12 +177,4 @@ public interface IDateUtils {
         return builder;
     }
 
-    static StringBuilder formatMillis(StringBuilder builder, boolean separate, int[] datetime) {
-        if (datetime.length < 7) return builder;
-        if (separate) builder.append('.');
-        final int millis = datetime[6];
-        if (millis < i10) builder.append("00");
-        else if (millis < i100) builder.append(CH_ZR);
-        return builder.append(millis);
-    }
 }

@@ -66,19 +66,19 @@ import static swisseph.SweConst.SEFLG_TRUEPOS;
  * @version 1.0, 2023-01
  */
 public class Ayanamsa01Test extends AbstractTest {
-    final int[] date1947 = new int[]{1947, 8, 15, 10, 30, 0};
+    final int[] date1947 = new int[]{1947, 8, 15, 10, 30};
 
     @Test
     void testObjects_WITHOUT_SEFLG_TRUEPOS() {
         ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
                 .options(LAHIRI_AYANAMSA).calcFlags(DEFAULT_SS_CALC_FLAGS ^ SEFLG_TRUEPOS).build();
 
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild(); // - SEFLG_TRUEPOS
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
         Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().ephemerisTime(), DELTA_D0000001);
+        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         // Ayanamsa
         Assertions.assertEquals("23°07'18.71\"", toDMSms(sweObjects.ayanamsa()).toString());
@@ -135,12 +135,12 @@ public class Ayanamsa01Test extends AbstractTest {
 
     @Test
     void testObjects_WITH_SEFLG_TRUEPOS() {
-        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f),
+        ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
                 GEO_LUCKNOW, LAHIRI_AYANAMSA).completeBuild(); // + SEFLG_TRUEPOS
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
         Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().ephemerisTime(), DELTA_D0000001);
+        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         // Ayanamsa
         Assertions.assertEquals("23°07'18.71\"", toDMSms(sweObjects.ayanamsa()).toString());

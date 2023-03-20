@@ -2144,7 +2144,7 @@ public class SweDate implements Serializable {
     int i;
     int second_60 = 0;
     int iyear, imonth, iday, ihour, imin, iyear2, imonth2, iday2, nleap, ndat, tabsiz_nleap;
-    double dsec, d, tjd, tjd_et_1972, tjd_ut, dret[] = new double[10];
+    double dsec, d, tjd, tjd_et_1972, tjd_ut, dret[];
     /*
      * if tjd_et is before 1 jan 1972 UTC, return UT1
      */
