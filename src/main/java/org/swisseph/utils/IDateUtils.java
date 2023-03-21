@@ -7,7 +7,6 @@
 package org.swisseph.utils;
 
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.swisseph.api.ISweConstants;
 import org.swisseph.api.ISweJulianDate;
 
 import java.text.ParseException;
@@ -28,11 +27,9 @@ public interface IDateUtils {
     String F2H_2M_2H_2M = F2H_2M + " - " + F2H_2M;
     String F4Y_2M_2D_2H_2M = F4Y_2M_2D + STR_WS + F2H_2M;
     String F4Y_2M_2D_2H_2M_2S = F4Y_2M_2D + STR_WS + F2H_2M_2S;
-    String F4Y_2M_2D_2H_2M_2S_MS = F4Y_2M_2D_2H_2M_2S + ".%03d";
+    String F4Y_2M_2D_2H_2M_2S_MS = F4Y_2M_2D_2H_2M_2S + ".%02d";
 
-    TimeZone FDTE_UTC_TMZ = TimeZone.getTimeZone(UTC);
-    FastDateFormat FDTE_FORMATER = FastDateFormat
-            .getInstance(ISweConstants.FDTE_PATTERN, FDTE_UTC_TMZ);
+    FastDateFormat FDTE_FORMATER = FastDateFormat.getInstance(FDTE_PATTERN, TimeZone.getTimeZone(UTC));
 
     /**
      * The method is intended to convert datetime as String object
@@ -59,8 +56,8 @@ public interface IDateUtils {
     }
 
     static long convert(final ISweJulianDate julianDate) {
-        return convert(new int[] {julianDate.year(), julianDate.month(), julianDate.day(),
-                julianDate.hours(), julianDate.minutes(), (int)julianDate.seconds()});
+        return convert(new int[]{julianDate.year(), julianDate.month(), julianDate.day(),
+                julianDate.hours(), julianDate.minutes(), (int) julianDate.dseconds()});
     }
 
     static long convert(final int[] datetime) {
@@ -73,81 +70,66 @@ public interface IDateUtils {
         return Long.parseLong(formatHMS(builder, false, datetime[3], datetime[4], datetime[5]).toString());
     }
 
-    static StringBuilder format(final ISweJulianDate julianDate) {
-        return format(julianDate, F4Y_2M_2D_2H_2M_2S_MS);
+    static StringBuilder format5(final ISweJulianDate julianDate) {
+        return format(julianDate, F4Y_2M_2D_2H_2M);
     }
 
     static StringBuilder format6(final ISweJulianDate julianDate) {
         return format(julianDate, F4Y_2M_2D_2H_2M_2S);
     }
 
-    static StringBuilder format5(final ISweJulianDate julianDate) {
-        return format(julianDate, F4Y_2M_2D_2H_2M);
+    static StringBuilder format7(final ISweJulianDate julianDate) {
+        return format(julianDate, F4Y_2M_2D_2H_2M_2S_MS);
     }
 
     static StringBuilder format(final ISweJulianDate julianDate, final String format) {
-        final int[] datetime = julianDate.date();
-
-        if (null == datetime || datetime.length < 3) {
-            throw new IllegalArgumentException("Date/time part is not valid for formatting");
+        if (null == julianDate.date() || julianDate.date().length < 3) {
+            throw new IllegalArgumentException("date[] length < 3");
         }
 
         switch (format) {
             case F4Y_2M_2D_2H_2M_2S_MS: {
-                final StringBuilder builder = new StringBuilder(22);
-                formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                formatHMS(builder, true,
-                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
-                        datetime.length > 4 ? datetime[4] : julianDate.minutes());
+                final double seconds = julianDate.dseconds();
+                final StringBuilder builder = new StringBuilder(25);
+                formatYMD(builder, true, julianDate.year(), julianDate.month(), julianDate.day()).append(STR_WS);
+                formatHMS(builder, true, julianDate.hours(), julianDate.minutes());
                 builder.append(CH_CN);
 
-                double seconds = julianDate.seconds();
                 if (seconds < d10) builder.append('0');
-                builder.append(((int) (julianDate.seconds() * i100)) / d100);
-                return builder;
+                return builder.append(((int) (julianDate.dseconds() * i100)) / d100);
             }
 
             case F4Y_2M_2D_2H_2M_2S: {
-                final StringBuilder builder = new StringBuilder(24);
-                formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, true,
-                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
-                        datetime.length > 4 ? datetime[4] : julianDate.minutes(),
-                        datetime.length > 5 ? datetime[5] : (int)julianDate.seconds());
+                final StringBuilder builder = new StringBuilder(19);
+                formatYMD(builder, true, julianDate.year(), julianDate.month(), julianDate.day()).append(STR_WS);
+                return formatHMS(builder, true, julianDate.hours(), julianDate.minutes(), (int) julianDate.dseconds());
             }
 
             case F4Y_2M_2D_2H_2M: {
-                final StringBuilder builder = new StringBuilder(20);
-                formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-                return formatHMS(builder, true,
-                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
-                        datetime.length > 4 ? datetime[4] : julianDate.minutes());
+                final StringBuilder builder = new StringBuilder(16);
+                formatYMD(builder, true, julianDate.year(), julianDate.month(), julianDate.day()).append(STR_WS);
+                return formatHMS(builder, true, julianDate.hours(), julianDate.minutes());
             }
 
             case F4Y_2M_2D: {
-                final StringBuilder builder = new StringBuilder(12);
-                return formatYMD(builder, true, datetime[0], datetime[1], datetime[2]);
+                final StringBuilder builder = new StringBuilder(10);
+                return formatYMD(builder, true, julianDate.year(), julianDate.month(), julianDate.day());
             }
 
             case F2H_2M_2S: {
-                final StringBuilder builder = new StringBuilder(12);
-                return formatHMS(builder, true,
-                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
-                        datetime.length > 4 ? datetime[4] : julianDate.minutes(),
-                        datetime.length > 5 ? datetime[5] : (int)julianDate.seconds());
+                final StringBuilder builder = new StringBuilder(8);
+                return formatHMS(builder, true, julianDate.hours(), julianDate.minutes(), (int) julianDate.dseconds());
             }
 
             case F2H_2M: {
-                final StringBuilder builder = new StringBuilder(8);
-                return formatHMS(builder, true,
-                        datetime.length > 3 ? datetime[3] : julianDate.hours(),
-                        datetime.length > 4 ? datetime[4] : julianDate.minutes());
+                final StringBuilder builder = new StringBuilder(5);
+                return formatHMS(builder, true, julianDate.hours(), julianDate.minutes());
             }
         }
 
-        final StringBuilder builder = new StringBuilder(20);
-        formatYMD(builder, true, datetime[0], datetime[1], datetime[2]).append(STR_WS);
-        return formatHMS(builder, true, datetime[3], datetime[4]);
+        final StringBuilder builder = new StringBuilder(16);
+        formatYMD(builder, true, julianDate.year(), julianDate.month(), julianDate.day()).append(STR_WS);
+        return formatHMS(builder, true, julianDate.hours(), julianDate.minutes());
     }
 
     static StringBuilder formatYMD(StringBuilder builder, boolean separate, int... ymd) {

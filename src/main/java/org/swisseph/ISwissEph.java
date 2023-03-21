@@ -63,6 +63,10 @@ public interface ISwissEph extends AutoCloseable {
         return initJulianDate(new SweJulianDate(julDay));
     }
 
+    default ISweJulianDate getJulianDate(final ISweJulianDate julianDate) {
+        return initJulianDate(julianDate);
+    }
+
     default ISweJulianDate getJulianDate(final double julDay, final float timeZone) {
         return initJulianDate(new SweJulianDate(julDay, timeZone));
     }
@@ -81,7 +85,7 @@ public interface ISwissEph extends AutoCloseable {
      */
     default ISweJulianDate initJulianDate(ISweJulianDate julianDate) {
         if (null == julianDate) {
-            throw new SweRuntimeException("Julian date is mandatory parameter");
+            throw new SweRuntimeException("ISweJulianDate is mandatory parameter");
         }
 
         final double julDay = julianDate.julianDay();
@@ -110,12 +114,10 @@ public interface ISwissEph extends AutoCloseable {
 
         if (timeZone != d0) { // For conversion from local time to UTC
             utcjdt = swe_utc_time_zone(julianDate.year(), julianDate.month(), julianDate.day(),
-                    julianDate.hours(), julianDate.minutes(), julianDate.seconds(), false, timeZone);
+                    julianDate.hours(), julianDate.minutes(), julianDate.dseconds(), false, timeZone);
             utime = utcjdt.utime();
         } else if (isNaN(utime)) {
-            utime = julianDate.hours();
-            utime += (julianDate.minutes() / d60);
-            utime += (julianDate.seconds() / d3600);
+            utime = julianDate.localTime();
         }
 
         final double julday = swe_julday(utcjdt.year(), utcjdt.month(),
@@ -128,9 +130,7 @@ public interface ISwissEph extends AutoCloseable {
     }
 
     default ISweJulianDate initDateTime(ISweJulianDate julianDate) {
-        if (null != julianDate.date() && !isNaN(julianDate.localTime())) {
-            return julianDate;
-        }
+        if (null != julianDate.date()) return julianDate;
 
         final double julDay = julianDate.julianDay();
 
@@ -403,7 +403,7 @@ public interface ISwissEph extends AutoCloseable {
     /**
      * @return utime
      */
-    static double getDecimalHours(final int[] outYmdHm, double dsec) {
+    static double getDecimalHours(final int[] outYmdHm, final double dsec) {
         double utime = outYmdHm[3];
         utime += (outYmdHm[4] / d60);
         utime += (dsec / d3600);

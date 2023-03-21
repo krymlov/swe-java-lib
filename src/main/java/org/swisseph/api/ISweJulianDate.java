@@ -7,6 +7,7 @@
 package org.swisseph.api;
 
 
+import org.swisseph.app.SweRuntimeException;
 import swisseph.SweConst;
 import java.io.Serializable;
 
@@ -50,7 +51,8 @@ public interface ISweJulianDate extends Serializable {
     // ---------------------------------------------------------------------------
 
     int IDXI_YEAR = 0, IDXI_MONTH = 1, IDXI_DAY = 2;
-    int IDXD_TIMEZONE = 0, IDXD_JULDAY = 1, IDXD_DELTAT = 2, IDXD_UTIME = 3, IDXD_ETIME = 4, IDXD_LTIME = 5;
+    int IDXD_TIMEZONE = 0, IDXD_JULDAY = 1, IDXD_DELTAT = 2,
+            IDXD_UTIME = 3, IDXD_ETIME = 4, IDXD_LTIME = 5;
 
     static boolean sweGregorianCalendar(final double julDay) {
         return julDay >= JD_GC0 ? SE_GREG_CAL : SE_JUL_CAL;
@@ -73,11 +75,17 @@ public interface ISweJulianDate extends Serializable {
     }
 
     default boolean gregorianCalendar() {
-        final int[] date = date();
-        if (null != date && date.length > 2) {
-            return gregorianCalendar(date[0], date[1], date[2]);
+        final double julianDay = julianDay();
+
+        if (isNaN(julianDay)) {
+            final int[] date = date();
+            if (null != date && date.length > 2) {
+                return gregorianCalendar(date[0], date[1], date[2]);
+            }
+            throw new SweRuntimeException("ISweJulianDate is not initialized!");
         }
-        return sweGregorianCalendar(julianDay());
+
+        return sweGregorianCalendar(julianDay);
     }
 
     /**
@@ -135,7 +143,6 @@ public interface ISweJulianDate extends Serializable {
      */
     default int hours() {
         final double ltime = localTime();
-        if (isNaN(ltime)) return i0;
         if (d0 == ltime) return i0;
         return (int) ltime;
     }
@@ -145,7 +152,6 @@ public interface ISweJulianDate extends Serializable {
      */
     default int minutes() {
         double ltime = localTime();
-        if (isNaN(ltime)) return i0;
         if (d0 == ltime) return i0;
         ltime -= (int) ltime;
         ltime *= d60;
@@ -155,9 +161,8 @@ public interface ISweJulianDate extends Serializable {
     /**
      * @return local seconds
      */
-    default double seconds() {
+    default double dseconds() {
         double ltime = localTime();
-        if (isNaN(ltime)) return d0;
         if (d0 == ltime) return d0;
         ltime -= (int) ltime;
         ltime *= d60;
@@ -165,6 +170,8 @@ public interface ISweJulianDate extends Serializable {
         ltime *= d60;
         return ltime;
     }
+
+    void makeValidTime();
 
     /**
      * @return universal time (decimal hours in UT)
@@ -176,8 +183,8 @@ public interface ISweJulianDate extends Serializable {
      */
     default int uhours() {
         final double utime = utime();
-        if (isNaN(utime)) return i0;
         if (d0 == utime) return i0;
+        if (isNaN(utime)) return i0;
         return (int) utime;
     }
 
@@ -186,8 +193,8 @@ public interface ISweJulianDate extends Serializable {
      */
     default int uminutes() {
         double utime = utime();
-        if (isNaN(utime)) return i0;
         if (d0 == utime) return i0;
+        if (isNaN(utime)) return i0;
         utime -= (int) utime;
         utime *= d60;
         return (int) utime;
@@ -198,8 +205,8 @@ public interface ISweJulianDate extends Serializable {
      */
     default double useconds() {
         double utime = utime();
-        if (isNaN(utime)) return d0;
         if (d0 == utime) return d0;
+        if (isNaN(utime)) return d0;
         utime -= (int) utime;
         utime *= d60;
         utime -= (int) utime;

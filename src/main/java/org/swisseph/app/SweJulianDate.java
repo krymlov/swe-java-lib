@@ -14,30 +14,29 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Objects;
 
-import static java.lang.Double.NaN;
-import static java.lang.Double.compare;
+import static java.lang.Double.*;
 import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
+import static org.swisseph.api.ISweConstants.d3600E03;
 
 /**
  * @author Yura Krymlov
  * @version 1.2, 2023-03
  */
 public class SweJulianDate implements ISweJulianDate {
-    private static final long serialVersionUID = 4570855450497987964L;
+    private static final long serialVersionUID = 1257948680125346489L;
 
     /**
      * time zone, julian day, delta-T, universal time (UT), ephemeris time (ET), local time (LT)
      */
-    protected final double[] values = new double[]{d0, NaN, NaN, NaN, NaN, NaN};
+    protected final double[] values = new double[]{UT_TMZ, NaN, NaN, NaN, NaN, d0};
 
     /**
      * local date: yyyy, mm, dd
      */
     protected final int[] date;
 
-
-    public SweJulianDate(final double julDay) {
+    public SweJulianDate(double julDay) {
         this(julDay, UT_TMZ);
     }
 
@@ -47,7 +46,7 @@ public class SweJulianDate implements ISweJulianDate {
         this.date = null;
     }
 
-    public SweJulianDate(final SweDate sweDate) {
+    public SweJulianDate(SweDate sweDate) {
         this(sweDate.getJulDay(), sweDate.getYear(), sweDate.getMonth(), sweDate.getDay(), sweDate.getHour());
     }
 
@@ -65,22 +64,24 @@ public class SweJulianDate implements ISweJulianDate {
         this.values[IDXD_LTIME] = localTime;
         this.values[IDXD_UTIME] = utime;
         this.date = date;
+        makeValidTime();
     }
 
     public SweJulianDate(int[] date, float timeZone, double localTime) {
         this.values[IDXD_TIMEZONE] = timeZone;
         this.values[IDXD_LTIME] = localTime;
         this.date = date;
+        makeValidTime();
     }
 
-    public SweJulianDate(final Calendar calendar) {
-        this.date = new int[]{calendar.get(YEAR), calendar.get(MONTH) + 1, calendar.get(DAY_OF_MONTH), calendar.get(HOUR_OF_DAY), calendar.get(MINUTE)};
-        this.values[IDXD_TIMEZONE] = (float) (calendar.getTimeZone().getOffset(calendar.getTimeInMillis()) / d3600E03);
-        this.values[IDXD_LTIME] =
-                calendar.get(Calendar.HOUR_OF_DAY) +
-                calendar.get(Calendar.MINUTE)/d60 +
-                calendar.get(Calendar.SECOND)/d3600 +
-                calendar.get(Calendar.MILLISECOND)/d3600E03;
+    public SweJulianDate(Calendar calendar) {
+        this(new int[]{calendar.get(YEAR), calendar.get(MONTH) + 1, calendar.get(DAY_OF_MONTH),
+                        calendar.get(HOUR_OF_DAY), calendar.get(MINUTE)},
+                (float) (calendar.getTimeZone().getOffset(calendar.getTimeInMillis()) / d3600E03),
+                calendar.get(HOUR_OF_DAY) +
+                        calendar.get(MINUTE) / d60 +
+                        calendar.get(SECOND) / d3600 +
+                        calendar.get(MILLISECOND) / d3600E03);
     }
 
     @Override
@@ -143,30 +144,20 @@ public class SweJulianDate implements ISweJulianDate {
         return date;
     }
 
-    /*
     @Override
-    public double dseconds() {
-        if (date.length > IDXI_NANOS) {
-            double dsec = date[IDXI_SECONDS];
-            dsec += (date[IDXI_MILLIS] / d1000);
-            dsec += (date[IDXI_NANOS] / d1000E9);
-            return dsec;
-        } else if (date.length > IDXI_MILLIS) {
-            double dsec = date[IDXI_SECONDS];
-            dsec += (date[IDXI_MILLIS] / d1000);
-            return dsec;
-        } else if (!isNaN(values[IDXD_UTIME])) {
-            return useconds();
-        } else if (date.length > IDXI_SECONDS) {
-            return date[IDXI_SECONDS];
-        } else return d0;
-    }*/
+    public void makeValidTime() {
+        final int[] date = date();
+        if (null != date && d0 != values[IDXD_LTIME] && date.length > 4 && date[4] > minutes()) {
+            if (!isNaN(values[IDXD_UTIME])) values[IDXD_UTIME] += d1d3600E11;
+            values[IDXD_LTIME] += d1d3600E11;
+        }
+    }
 
     @Override
     public boolean equals(Object another) {
         if (this == another) return true;
-        if (another == null || getClass() != another.getClass()) return false;
-        return compare(((SweJulianDate) another).julianDay(), julianDay()) == 0;
+        if (!(another instanceof ISweJulianDate)) return false;
+        return compare(((ISweJulianDate)another).julianDay(), julianDay()) == 0;
     }
 
     @Override

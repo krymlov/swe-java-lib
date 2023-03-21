@@ -94,7 +94,9 @@ public interface ISweConstants {
     double d3600 = 3600.;
     double d86400 = 86400.;
     double d360000 = 360000.;
+
     double d3600E03 = 3600E03;
+    double d3600E11 = 3600E11;
     
     double dd20 = d1/d3;
     double dd40 = d2/d3;
@@ -110,6 +112,9 @@ public interface ISweConstants {
 
     // MILLIARCSEC
     double d1d3600E03 = d1/d3600E03;
+
+    // ???
+    double d1d3600E11 = d1/d3600E11;
 
     double DELTA_D001 = 0.001;
     double DELTA_D005 = 0.005;
