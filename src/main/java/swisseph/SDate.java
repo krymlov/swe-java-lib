@@ -68,6 +68,8 @@
 */
 package swisseph;
 
+import org.swisseph.ISwissEph;
+
 /**
  * This class keeps date and time values in just one place.<p>
  * Use it for UTC time conversions.
@@ -103,7 +105,7 @@ public final class SDate {
         this.ymdhm[3] = hour;
         this.ymdhm[4] = minute;
         this.second = second;
-        this.hour = Double.NaN;
+        this.hour = ISwissEph.getDecimalHours(this.ymdhm, this.second);
     }
 
     public int[] date() {

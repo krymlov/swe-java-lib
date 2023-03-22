@@ -8249,13 +8249,17 @@ if (false) {
     @Override
     public ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
         final SDate outsd = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);
-        return new SweJulianDate(tjd_et, outsd.date(), outsd.hour);
+        SweJulianDate julianDate = new SweJulianDate(tjd_et, outsd.date(), outsd.hour);
+        julianDate.localTime(outsd.hour);
+        return julianDate;
     }
     
     @Override
     public ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
         final SDate outsd = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);
-        return new SweJulianDate(tjd_ut, outsd.date(), outsd.hour);
+        SweJulianDate julianDate = new SweJulianDate(tjd_ut, outsd.date(), outsd.hour);
+        julianDate.localTime(outsd.hour);
+        return julianDate;
     }
 
     @Override
