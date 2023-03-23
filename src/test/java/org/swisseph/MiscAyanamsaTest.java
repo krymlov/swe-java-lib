@@ -130,11 +130,11 @@ public class MiscAyanamsaTest extends AbstractTest {
         Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
 
         // Lagna
-        Assertions.assertEquals(256.3946709789843, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals(256.3946709789843, sweObjects.longitudes()[LG]);
         Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
-        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY], DELTA_D0000001);
+        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY]);
         Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 

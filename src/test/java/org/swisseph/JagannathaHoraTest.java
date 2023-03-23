@@ -14,13 +14,13 @@ import org.swisseph.app.SweJulianDate;
 import org.swisseph.app.SweObjects;
 import org.swisseph.app.SweObjectsOptions;
 
-import static org.swisseph.api.ISweConstants.DELTA_D0000001;
 import static org.swisseph.api.ISweObjects.LG;
 import static org.swisseph.api.ISweObjects.SY;
 import static org.swisseph.api.ISweObjectsOptions.*;
 import static org.swisseph.app.SweObjectsOptions.TRUECITRA_AYANAMSA;
 import static org.swisseph.utils.IDegreeUtils.toDMSms;
-import static swisseph.SweConst.*;
+import static swisseph.SweConst.SEFLG_NONUT;
+import static swisseph.SweConst.SEFLG_TRUEPOS;
 
 /**
  * @author Yura Krymlov
@@ -44,12 +44,12 @@ public class JagannathaHoraTest extends AbstractTest {
         Assertions.assertEquals("23°06'37.30\"", toDMSms(sweObjects.ayanamsa()).toString());
         Assertions.assertEquals(23.110361977858815, sweObjects.ayanamsa());
 
-        // FIXME: Lagna is not equal to the one from the APP: JagannathaHora 8.x
-        Assertions.assertEquals(256.3946709789843, sweObjects.longitudes()[LG], DELTA_D0000001);
+        // Lagna
+        Assertions.assertEquals(256.3946709789843, sweObjects.longitudes()[LG]);
         Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
-        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY], DELTA_D0000001);
+        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY]);
         Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 }
