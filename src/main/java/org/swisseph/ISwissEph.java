@@ -13,6 +13,7 @@ import swisseph.DblObj;
 import swisseph.SweConst;
 import swisseph.SwephExp;
 
+import java.io.Closeable;
 import java.util.Calendar;
 
 import static java.lang.Double.isNaN;
@@ -35,7 +36,7 @@ import static swisseph.SweConst.ERR;
  * @author Yura
  * @version 1.1, 2021-12
  */
-public interface ISwissEph extends AutoCloseable {
+public interface ISwissEph extends Closeable {
     /**
      * @return SweConst.SE_GREG_CAL if julDay relates to Gregorian calendar date (>= October 15, 1582),
      * else returns SweConst.SE_JUL_CAL if julDay relates to Julian calendar (< October 15, 1582)
