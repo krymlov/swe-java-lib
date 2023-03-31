@@ -8,6 +8,8 @@ package org.swisseph.app;
 import org.swisseph.api.ISweEnum;
 import org.swisseph.api.ISweEnumEntity;
 
+import java.util.Objects;
+
 import static org.swisseph.api.ISweConstants.CH_VS;
 import static org.swisseph.api.ISweConstants.STR_EY;
 import static org.swisseph.utils.IDegreeUtils.toDMSms;
@@ -42,6 +44,21 @@ public class SweEnumEntity<E extends ISweEnum> implements ISweEnumEntity<E> {
     @Override
     public double julianDay() {
         return julianDay;
+    }
+
+    @Override
+    public boolean equals(Object another) {
+        if (this == another) return true;
+        if (!(another instanceof SweEnumEntity)) return false;
+        final SweEnumEntity<?> that = (SweEnumEntity<?>) another;
+        return Double.compare(that.julianDay, julianDay) == 0 &&
+                Double.compare(that.longitude, longitude) == 0 &&
+                Objects.equals(entityEnum, that.entityEnum);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(julianDay, longitude, entityEnum);
     }
 
     @Override
