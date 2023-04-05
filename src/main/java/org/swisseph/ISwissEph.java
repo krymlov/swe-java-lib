@@ -131,7 +131,9 @@ public interface ISwissEph extends Closeable {
     }
 
     default ISweJulianDate initDateTime(ISweJulianDate julianDate) {
-        if (null != julianDate.date()) return julianDate;
+        if (null != julianDate.date() && !isNaN(julianDate.localTime())) {
+            return julianDate;
+        }
 
         final double julDay = julianDate.julianDay();
 
