@@ -960,7 +960,7 @@ if(path == null) return;
     }
     if (sid_mode == SweConst.SE_SIDM_TRUE_CITRA || sid_mode == SweConst.SE_SIDM_TRUE_REVATI) 
       sip.sid_mode &= ~(SweConst.SE_SIDBIT_ECL_T0 | SweConst.SE_SIDBIT_SSY_PLANE);
-    if (sid_mode >= SwissData.SE_NSIDM_PREDEF && sid_mode != SweConst.SE_SIDM_USER)
+    if (sid_mode >= SweConst.SE_NSIDM_PREDEF && sid_mode != SweConst.SE_SIDM_USER)
       sip.sid_mode = sid_mode = SweConst.SE_SIDM_FAGAN_BRADLEY;
     swed.ayana_is_set = true;
     if (sid_mode == SweConst.SE_SIDM_USER) {
@@ -1599,7 +1599,7 @@ String slast_starname;
   public String swe_get_ayanamsa_name(int isidmode) {
     isidmode %= SweConst.SE_SIDBITS;
     
-    if (isidmode < SwissData.SE_NSIDM_PREDEF) {
+    if (isidmode < SweConst.SE_NSIDM_PREDEF) {
       return SwissData.ayanamsa_name[isidmode];
     }
     

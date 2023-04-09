@@ -197,8 +197,84 @@ interface SwephData {
     new AyaInit(0, 0),	                /*27: True Citra (Spica exactly at 0 Libra) */
     new AyaInit(0, 0),	                /*28: True Revati (zeta Psc exactly at 0 Aries) */
     new AyaInit(0, 0),			/*29: True Pushya (delta Cnc exactly a 16 Cancer */
-    new AyaInit(0, 0),                     /*30: - */
-        };
+    new AyaInit(0, 0),           // 30: Gil Brand
+/*************************/
+/* 31: Galactic Equator IAU 1958, i.e. galactic/ecliptic intersection point
+      based on galactic coordinate system */
+          new AyaInit(0, 0),	             // 31: GE IAU 1958
+/*************************/
+/* 32: Galactic Equator True, i.e. galactic/ecliptic intersection point based
+     on the galactic pole as given in: Liu/Zhu/Zhang, „Reconsidering the
+     galactic coordinate system“, A & A No. AA2010, Oct. 2010 */
+          new AyaInit(0, 0),	             // 32: GE true
+/*************************/
+/* 33: Galactic Equator Mula, i.e. galactic/ecliptic intersection point in the
+      middle of lunar mansion Mula */
+        new AyaInit(0, 0),	             // 33: GE Mula
+/*************************/
+/* 34: Skydram/Galactic Alignment (R. Mardyks); autumn equinox aligned with
+      Galactic Equator/Pole */
+        new AyaInit(2451079.734892000, 30),   // 34: Skydram/Mardyks
+/*************************/
+/* 35: Chandra Hari */
+        new AyaInit(0, 0),	             // 35: Chandra Hari
+/*************************/
+/* 36: Dhruva Galactic Centre Middle of Mula (Ernst Wilhelm) */
+        new AyaInit(0, 0),	             // 36: Ernst Wilhelm
+/*************************/
+/* 37: Kali 3623 = 522 CE, Ujjain (75.7684565), based on Kali midnight and
+      year length of Suryasiddhanta */
+        new AyaInit(1911797.740782065, 0),     // 36: 0 ayanamsha in year 522
+/*************************/
+/* 38: Babylonian (Britton 2010)
+      John P. Britton, "Studies in Babylonian lunar theory: part III. The
+      introduction of the uniform zodiac", in Arch. Hist. Exact. Sci.
+      (2010)64:617-663, p. 630. */
+        new AyaInit(1721057.5, -3.2),         // 38: Babylonian (Britton 2010)
+/*************************/
+/* 39: Sunil Sheoran ("Vedic")
+      S. Sheoran, "The Science of Time and Timeline of World History", 2017. */
+        new AyaInit(0, 0),                    // 39: Sunil Sheoran ("Vedic")
+/*************************/
+/* 40: Galactic Center at 0 Capricon (Cochrane) */
+        new AyaInit(0, 0),                    // 40: Cochrane
+/*************************/
+/* 41: "Galactic Equatorial" (N.A. Fiorenza) */
+        new AyaInit(2451544.5, 25.0),          // 41: N.A. Fiorenza */
+/*************************/
+/* 42: Vettius Valens (Moon; derived from Holden 1995 p. 12 for epoch of Valens
+      1 Jan. 150 CE julian) */
+        new AyaInit(1775845.5, -2.9422),      // 42: Vettius Valens
+/*************************/
+/* 43: Lahiri (1940), book "Panchanga darpan":
+      22°26'45".50 + 50".25748T + 0".00011115T^2 */
+        new AyaInit(J1900, 22.44597222), // 43: Lahiri (1940)
+/*************************/
+/* 44: Lahiri (VP285), mean sun at 360° in 285CE; epoch for mean sun at 0 acc.
+      to Simon 1994, corrected for Vondrak precession
+      (Preface to Lahiri's "Indian Ephemeris" 1980) */
+        new AyaInit(1825235.2458513028, 0.0), // 44: Lahiri VP285 (1980)
+/*************************/
+/* 45: Krishnamurti from mean equinox 291, based on Newcomb precession,
+      according to D. Senthilathiban, "Study of KP Ayanamsa with Modern
+      Precession Theories" (2019), but using precession Vondrak 2011 and
+      correction base on Newcomb precession. */
+//{1827424.752255678, 0.0, FALSE, SEMOD_PREC_NEWCOMB), // 45: Krishnamurti VP291
+        new AyaInit(1827424.752255678, 0.0), // 45: Krishnamurti VP291
+/*************************/
+/* 46: Lahiri original: Calendar Reform Committee 1956,
+      before the correction by 0.658" in IAE 1985.
+      The subtracted value is nutation according to Woolard 1953.
+      However, nutation Woolard was used by IENA/IAE only from 1960 on,
+      so this value is not correct. In order to reproduce mean ayanamshas
+      of IENA >=1960, we could choose 23.25 - 0.00464207 + 0.07 / 3600.0
+      as initial value in 1956. However this will not help to reproduce
+      true ayanamshas. A deviation of around 0.1" remains,
+      for unknown reasons. The difference between Lahiri (1) and
+      Lahiri ICRC (45) amounts to 1.1". */
+        new AyaInit(2435553.5, 23.25 - 0.00464207), // 46: SE_SIDM_LAHIRI_ICRC
+/*************************/
+};
 
 /*
  * earlier content

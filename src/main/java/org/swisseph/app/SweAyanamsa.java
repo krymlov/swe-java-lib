@@ -138,6 +138,74 @@ public enum SweAyanamsa implements ISweAyanamsa {
         @Override public int fid() { return SE_SIDM_TRUE_PUSHYA; }
         @Override public String code() { return AY29_CD; }
     }, // 29 True Pushya (delta Cnc exactly a 16 Cancer)
+    GALCENT_RGILBRAND {
+        @Override public int fid() { return SE_SIDM_GALCENT_RGILBRAND; }
+        @Override public String code() { return AY30_CD; }
+    },
+    GALEQU_IAU1958 {
+        @Override public int fid() { return SE_SIDM_GALEQU_IAU1958; }
+        @Override public String code() { return AY31_CD; }
+    },
+    GALEQU_TRUE {
+        @Override public int fid() { return SE_SIDM_GALEQU_TRUE; }
+        @Override public String code() { return AY32_CD; }
+    },
+    GALEQU_MULA {
+        @Override public int fid() { return SE_SIDM_GALEQU_MULA; }
+        @Override public String code() { return AY33_CD; }
+    },
+    GALALIGN_MARDYKS {
+        @Override public int fid() { return SE_SIDM_GALALIGN_MARDYKS; }
+        @Override public String code() { return AY34_CD; }
+    },
+    TRUE_MULA {
+        @Override public int fid() { return SE_SIDM_TRUE_MULA; }
+        @Override public String code() { return AY35_CD; }
+    },
+    GALCENT_MULA_WILHELM {
+        @Override public int fid() { return SE_SIDM_GALCENT_MULA_WILHELM; }
+        @Override public String code() { return AY36_CD; }
+    },
+    ARYABHATA_522 {
+        @Override public int fid() { return SE_SIDM_ARYABHATA_522; }
+        @Override public String code() { return AY37_CD; }
+    },
+    BABYL_BRITTON {
+        @Override public int fid() { return SE_SIDM_BABYL_BRITTON; }
+        @Override public String code() { return AY38_CD; }
+    },
+    TRUE_SHEORAN {
+        @Override public int fid() { return SE_SIDM_TRUE_SHEORAN; }
+        @Override public String code() { return AY39_CD; }
+    },
+    GALCENT_COCHRANE {
+        @Override public int fid() { return SE_SIDM_GALCENT_COCHRANE; }
+        @Override public String code() { return AY40_CD; }
+    },
+    GALEQU_FIORENZA {
+        @Override public int fid() { return SE_SIDM_GALEQU_FIORENZA; }
+        @Override public String code() { return AY41_CD; }
+    },
+    VALENS_MOON {
+        @Override public int fid() { return SE_SIDM_VALENS_MOON; }
+        @Override public String code() { return AY42_CD; }
+    },
+    LAHIRI_1940 {
+        @Override public int fid() { return SE_SIDM_LAHIRI_1940; }
+        @Override public String code() { return AY43_CD; }
+    },
+    LAHIRI_VP285 {
+        @Override public int fid() { return SE_SIDM_LAHIRI_VP285; }
+        @Override public String code() { return AY44_CD; }
+    },
+    KRISHNAMURTI_VP291 {
+        @Override public int fid() { return SE_SIDM_KRISHNAMURTI_VP291; }
+        @Override public String code() { return AY45_CD; }
+    },
+    LAHIRI_ICRC {
+        @Override public int fid() { return SE_SIDM_LAHIRI_ICRC; }
+        @Override public String code() { return AY46_CD; }
+    },
     AY_USER {
         @Override public int fid() { return SE_SIDM_USER; }
         @Override public String code() { return AYUR_CD; }

@@ -42,5 +42,22 @@ public interface ISweAyanamsa extends ISweEnumSequence<ISweAyanamsa> {
     String AY27_CD = "AY27"; // 27 True Spica (Spica exactly at 0 Libra)
     String AY28_CD = "AY28"; // 28 True Revati (zeta Psc exactly at 0 Aries)
     String AY29_CD = "AY29"; // 29 True Pushya (delta Cnc exactly a 16 Cancer)
+    String AY30_CD = "AY30"; // 30 Galactic Center (Gil Brand)
+    String AY31_CD = "AY31"; // 31 Galactic Equator (IAU1958)
+    String AY32_CD = "AY32"; // 32 Galactic Equator
+    String AY33_CD = "AY33"; // 33 Galactic Equator mid-Mula
+    String AY34_CD = "AY34"; // 34 Skydram (Mardyks)
+    String AY35_CD = "AY35"; // 35 True Mula (Chandra Hari)
+    String AY36_CD = "AY36"; // 36 Dhruva/Gal.Center/Mula (Wilhelm)
+    String AY37_CD = "AY37"; // 37 Aryabhata 522
+    String AY38_CD = "AY38"; // 38 Babylonian/Britton
+    String AY39_CD = "AY39"; // 39 Vedic Sheoran
+    String AY40_CD = "AY40"; // 40 Cochrane (Gal.Center = 0 Cap)
+    String AY41_CD = "AY41"; // 41 Galactic Equator (Fiorenza)
+    String AY42_CD = "AY42"; // 42 Vettius Valens
+    String AY43_CD = "AY43"; // 43 Lahiri 1940
+    String AY44_CD = "AY44"; // 44 Lahiri VP285
+    String AY45_CD = "AY45"; // 45 Krishnamurti-Senthilathiban
+    String AY46_CD = "AY46"; // 46 Lahiri ICRC
     String AYUR_CD = "AYUR"; // 255 defined by the user in the additional two par
 }

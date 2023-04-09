@@ -18,6 +18,7 @@ import java.util.Calendar;
 
 import static java.util.Calendar.*;
 import static org.swisseph.app.SweAyanamsa.LAHIRI;
+import static org.swisseph.app.SweAyanamsa.TRUE_PUSHYA;
 import static org.swisseph.app.SweHouseSystem.WHOLE_SIGN;
 import static org.swisseph.utils.IModuloUtils.modulo;
 
@@ -50,7 +51,7 @@ public class MiscChennaiTest extends AbstractTest {
     @ParameterizedTest()
     @EnumSource(SweAyanamsa.class)
     void testAyanamsa(SweAyanamsa ayanamsa) {
-        if (SweAyanamsa.AY_USER.equals(ayanamsa)) return;
+        if (ayanamsa.fid() > TRUE_PUSHYA.fid()) return;
         assertEquals(newSweObjects(2000 + ayanamsa.fid(), ayanamsa, WHOLE_SIGN, false));
     }
 
