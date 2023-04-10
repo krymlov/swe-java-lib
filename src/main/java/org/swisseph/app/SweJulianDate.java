@@ -7,6 +7,7 @@
 package org.swisseph.app;
 
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.swisseph.api.ISweJulianDate;
 import swisseph.SweDate;
 
@@ -17,7 +18,6 @@ import java.util.Objects;
 import static java.lang.Double.*;
 import static java.util.Calendar.*;
 import static org.swisseph.api.ISweConstants.*;
-import static org.swisseph.api.ISweConstants.d3600E03;
 
 /**
  * @author Yura Krymlov
@@ -158,6 +158,11 @@ public class SweJulianDate implements ISweJulianDate {
         if (this == another) return true;
         if (!(another instanceof ISweJulianDate)) return false;
         return compare(((ISweJulianDate)another).julianDay(), julianDay()) == 0;
+    }
+
+    @Override
+    public SweJulianDate clone() {
+        return SerializationUtils.clone(this);
     }
 
     @Override

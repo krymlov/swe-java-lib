@@ -28,7 +28,7 @@ import static org.swisseph.api.ISweConstants.*;
  * @author Yura Krymlov
  * @version 1.2, 2023-03
  */
-public interface ISweJulianDate extends Serializable {
+public interface ISweJulianDate extends Serializable, Cloneable {
     boolean SE_JUL_CAL = false;
     boolean SE_GREG_CAL = true;
 
