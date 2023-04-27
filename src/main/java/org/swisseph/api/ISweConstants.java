@@ -162,6 +162,7 @@ public interface ISweConstants {
     char CH_DT = '.'; // Dot
     char CH_DS = '-'; // Divis
     char CH_CN = ':'; // Colon
+    char EN_DASH = '–';
     
     char LONG_WEST = 'W';
     char LONG_EAST = 'E';

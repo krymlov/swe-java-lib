@@ -81,7 +81,7 @@ import org.swisseph.ISwissEph;
 public final class SDate {
     private final double second;
     private final int[] ymdhm = new int[5];
-    final double hour;
+    private final double hour;
 
     public SDate(int year, int month, int day, double hour) {
         this.hour = hour;
@@ -110,6 +110,10 @@ public final class SDate {
 
     public int[] date() {
         return ymdhm;
+    }
+
+    public double hour() {
+        return hour;
     }
 
     public double second() {

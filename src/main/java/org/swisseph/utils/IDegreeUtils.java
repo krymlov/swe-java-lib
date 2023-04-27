@@ -61,6 +61,10 @@ public interface IDegreeUtils {
      * @return string like 49°45'28" or 49:45:28
      */
     static StringBuilder toDMS(double ddeg, boolean timeFormat) {
+        return toDMS(ddeg, timeFormat, true);
+    }
+
+    static StringBuilder toDMS(double ddeg, boolean timeFormat, boolean round) {
         final StringBuilder builder = new StringBuilder(9);
 
         if (ddeg < 0) {
@@ -68,7 +72,7 @@ public interface IDegreeUtils {
             builder.append(CH_DS);
         }
 
-        ddeg += d05d3600;
+        if (round) ddeg += d05d3600;
         final int ideg = (int) ddeg;
 
         ddeg -= ideg;
@@ -100,6 +104,10 @@ public interface IDegreeUtils {
     }
 
     static StringBuilder toDMS(double ddeg, int dms, boolean timeFormat) {
+        return toDMS(ddeg, dms, timeFormat, true);
+    }
+
+    static StringBuilder toDMS(double ddeg, int dms, boolean timeFormat, boolean round) {
         final StringBuilder builder = new StringBuilder(9);
 
         if (ddeg < 0) {
@@ -107,7 +115,7 @@ public interface IDegreeUtils {
             builder.append(CH_DS);
         }
 
-        ddeg += d05d3600;
+        if (round) ddeg += d05d3600;
         final int ideg = (int) ddeg;
 
         if (ideg < i10) builder.append(CH_ZR);
