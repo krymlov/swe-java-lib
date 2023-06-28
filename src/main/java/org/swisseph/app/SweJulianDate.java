@@ -46,7 +46,7 @@ public class SweJulianDate implements ISweJulianDate {
         this.date = null;
     }
 
-    public SweJulianDate(SweDate sweDate) {
+    public SweJulianDate(final SweDate sweDate) {
         this(sweDate.getJulDay(), sweDate.getYear(), sweDate.getMonth(), sweDate.getDay(), sweDate.getHour());
     }
 
@@ -54,12 +54,13 @@ public class SweJulianDate implements ISweJulianDate {
         this(julDay, new int[]{year, month, day}, utime);
     }
 
-    public SweJulianDate(double julDay, int[] date, double utime) {
+    public SweJulianDate(double julDay, final int[] date, double utime) {
         this(date, utime, UT_TMZ, utime);
         this.values[IDXD_JULDAY] = julDay;
     }
 
-    public SweJulianDate(int[] date, double utime, float timeZone, double localTime) {
+    public SweJulianDate(final int[] date, double utime, float timeZone, double localTime) {
+        if (isNaN(localTime)) throw new SweRuntimeException("Valid local time is expected");
         this.values[IDXD_TIMEZONE] = timeZone;
         this.values[IDXD_LTIME] = localTime;
         this.values[IDXD_UTIME] = utime;
@@ -67,21 +68,34 @@ public class SweJulianDate implements ISweJulianDate {
         makeValidTime();
     }
 
-    public SweJulianDate(int[] date, float timeZone, double localTime) {
+    public SweJulianDate(final int[] date, float timeZone, double localTime) {
         this.values[IDXD_TIMEZONE] = timeZone;
         this.values[IDXD_LTIME] = localTime;
         this.date = date;
         makeValidTime();
     }
 
-    public SweJulianDate(Calendar calendar) {
+    public SweJulianDate(final Calendar calendar) {
         this(new int[]{calendar.get(YEAR), calendar.get(MONTH) + 1, calendar.get(DAY_OF_MONTH),
                         calendar.get(HOUR_OF_DAY), calendar.get(MINUTE)},
                 (float) (calendar.getTimeZone().getOffset(calendar.getTimeInMillis()) / d3600E03),
-                calendar.get(HOUR_OF_DAY) +
-                        calendar.get(MINUTE) / d60 +
-                        calendar.get(SECOND) / d3600 +
-                        calendar.get(MILLISECOND) / d3600E03);
+                localTime(calendar));
+    }
+
+    public static double localTime(final Calendar calendar) {
+        return calendar.get(HOUR_OF_DAY) +
+                calendar.get(MINUTE) / d60 +
+                calendar.get(SECOND) / d3600 +
+                calendar.get(MILLISECOND) / d3600E03;
+    }
+
+    public static double localTime(final int[] datetime) {
+        double localTime = d0;
+        if (datetime.length > 3) localTime = datetime[3];
+        if (datetime.length > 4) localTime += datetime[4] / d60;
+        if (datetime.length > 5) localTime += datetime[5] / d3600;
+        if (datetime.length > 6) localTime += datetime[6] / d3600E03;
+        return localTime;
     }
 
     @Override
