@@ -23,7 +23,10 @@ public class SweObjectsOptions implements ISweObjectsOptions {
     private static final long serialVersionUID = 461264153326654053L;
 
     public static final ISweObjectsOptions LAHIRI_AYANAMSA = new Builder().ayanamsa(getLahiri()).build();
+    public static final ISweObjectsOptions LAHIRI_AYANAMSA_TRUE_NODE = new Builder().ayanamsa(getLahiri()).trueNode(true).build();
+
     public static final ISweObjectsOptions TRUECITRA_AYANAMSA = new Builder().ayanamsa(getTrueSpica()).build();
+    public static final ISweObjectsOptions TRUECITRA_AYANAMSA_TRUE_NODE = new Builder().ayanamsa(getTrueSpica()).trueNode(true).build();
 
     protected final ISweHouseSystem houseSystem;
     protected final ISweAyanamsa ayanamsa;
