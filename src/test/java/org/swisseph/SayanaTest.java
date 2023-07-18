@@ -16,9 +16,8 @@ import org.swisseph.app.SweObjectsOptions;
 
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweObjects.*;
-import static org.swisseph.api.ISweObjectsOptions.*;
-import static org.swisseph.app.SweObjectsOptions.LAHIRI_AYANAMSA;
-import static swisseph.SweConst.SEFLG_SIDEREAL;
+import static org.swisseph.api.ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS;
+import static org.swisseph.app.SweObjectsOptions.TROPICAL_ZODIAC;
 import static swisseph.SweConst.SEFLG_TRUEPOS;
 
 /**
@@ -30,11 +29,8 @@ public class SayanaTest extends AbstractTest {
 
     @Test
     void testObjects_WITHOUT_SEFLG_TRUEPOS() {
-        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder().options(LAHIRI_AYANAMSA)
-                .mainFlags(DEFAULT_SS_MAIN_FLAGS ^ SEFLG_SIDEREAL)
-                .houseFlags(DEFAULT_SS_HOUSE_FLAGS ^ SEFLG_SIDEREAL)
-                .transitFlags(DEFAULT_SS_TRANSIT_FLAGS ^ SEFLG_SIDEREAL)
-                .calcFlags((DEFAULT_SS_CALC_FLAGS ^ SEFLG_SIDEREAL) ^ SEFLG_TRUEPOS)
+        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
+                .calcFlags(DEFAULT_SS_CALC_FLAGS ^ SEFLG_TRUEPOS)
                 .ayanamsa(null)
                 .build();
 
@@ -61,16 +57,8 @@ public class SayanaTest extends AbstractTest {
 
     @Test
     void testObjects_WITH_SEFLG_TRUEPOS() {
-        ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder().options(LAHIRI_AYANAMSA)
-                .mainFlags(DEFAULT_SS_MAIN_FLAGS ^ SEFLG_SIDEREAL)
-                .calcFlags(DEFAULT_SS_CALC_FLAGS ^ SEFLG_SIDEREAL)
-                .houseFlags(DEFAULT_SS_HOUSE_FLAGS ^ SEFLG_SIDEREAL)
-                .transitFlags(DEFAULT_SS_TRANSIT_FLAGS ^ SEFLG_SIDEREAL)
-                .ayanamsa(null)
-                .build();
-
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
-                GEO_LUCKNOW, sweObjectsOptions).completeBuild();
+                GEO_LUCKNOW, TROPICAL_ZODIAC).completeBuild();
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
         Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
