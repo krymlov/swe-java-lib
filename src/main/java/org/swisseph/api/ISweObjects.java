@@ -180,7 +180,7 @@ public interface ISweObjects extends ISweContext, Serializable {
                     sweLocation.latitude(), sweLocation.altitude());
         }
 
-        if (null != sweOptions) {
+        if (null != sweOptions && sweOptions.ayanamsa() != null) {
             swissEph.swe_set_sid_mode(sweOptions.ayanamsa().fid(),
                     sweOptions.initialJulianDay(), sweOptions.initialAyanamsa());
         }
