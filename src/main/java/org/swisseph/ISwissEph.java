@@ -658,4 +658,36 @@ public interface ISwissEph extends Closeable {
     default void swe_split_deg(double dDeg, int roundFlag, int[] iDegMinSec, double[] dSecFr, int[] iSign) {
         SwephExp.swe_split_deg(dDeg, roundFlag, iDegMinSec, dSecFr, iSign);
     }
+
+    default double swe_solcross(double x2cross, double jd_et, int flag, StringBuilder serr) {
+        return SwephExp.swe_solcross(x2cross, jd_et, flag, serr);
+    }
+
+    default double swe_solcross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr) {
+        return SwephExp.swe_solcross_ut(x2cross, jd_ut, flag, serr);
+    }
+
+    default double swe_mooncross(double x2cross, double jd_et, int flag, StringBuilder serr) {
+        return SwephExp.swe_mooncross(x2cross, jd_et, flag, serr);
+    }
+
+    default double swe_mooncross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr) {
+        return SwephExp.swe_mooncross_ut(x2cross, jd_ut, flag, serr);
+    }
+
+    default double swe_mooncross_node(double jd_et, int flag, double[] xlon, double[] xlat, StringBuilder serr) {
+        return SwephExp.swe_mooncross_node(jd_et, flag, xlon, xlat, serr);
+    }
+
+    default double swe_mooncross_node_ut(double jd_ut, int flag, double[] xlon, double[] xlat, StringBuilder serr) {
+        return SwephExp.swe_mooncross_node_ut(jd_ut, flag, xlon, xlat, serr);
+    }
+
+    default int swe_helio_cross(int ipl, double x2cross, double jd_et, int iflag, int dir, double[] jd_cross, StringBuilder serr) {
+        return SwephExp.swe_helio_cross(ipl, x2cross, jd_et, iflag, dir, jd_cross, serr);
+    }
+
+    default int swe_helio_cross_ut(int ipl, double x2cross, double jd_ut, int iflag, int dir, double[] jd_cross, StringBuilder serr) {
+        return SwephExp.swe_helio_cross_ut(ipl, x2cross, jd_ut, iflag, dir, jd_cross, serr);
+    }
 }

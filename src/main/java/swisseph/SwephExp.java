@@ -335,4 +335,13 @@ public class SwephExp {
     public static native double swe_deg_midp(double x1, double x0);
 
     public static native void swe_split_deg(double ddeg, int roundflag, int[] iDegMinSec, double[] dsecfr, int[] isgn);
+
+    public static native double swe_solcross(double x2cross, double jd_et, int flag, StringBuilder serr);
+    public static native double swe_solcross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr);
+    public static native double swe_mooncross(double x2cross, double jd_et, int flag, StringBuilder serr);
+    public static native double swe_mooncross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr);
+    public static native double swe_mooncross_node(double jd_et, int flag, double[] xlon, double[] xlat, StringBuilder serr);
+    public static native double swe_mooncross_node_ut(double jd_ut, int flag, double[] xlon, double[] xlat, StringBuilder serr);
+    public static native int swe_helio_cross(int ipl, double x2cross, double jd_et, int iflag, int dir, double[] jd_cross, StringBuilder serr);
+    public static native int swe_helio_cross_ut(int ipl, double x2cross, double jd_ut, int iflag, int dir, double[] jd_cross, StringBuilder serr);
 }
