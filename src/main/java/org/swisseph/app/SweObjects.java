@@ -23,7 +23,6 @@ import static java.lang.Double.isNaN;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweJulianDate.IDXD_DELTAT;
 import static org.swisseph.api.ISweJulianDate.IDXD_ETIME;
-import static org.swisseph.api.ISweObjects.calculatePlanetHouse;
 import static swisseph.SweConst.*;
 
 /**
@@ -182,7 +181,7 @@ public class SweObjects implements ISweObjects {
         signs[objId] = (int) (dres[0] / d30) + i1;
 
         if (i0 != signs[LG]) {
-            houses[objId] = calculatePlanetHouse(signs[LG], signs[objId]);
+            houses[objId] = calculatePlanetHouse(objId);
         }
 
         return this;
@@ -204,7 +203,7 @@ public class SweObjects implements ISweObjects {
         longitudes[KE] = (longitudes[RA] + d180) % d360;
 
         signs[KE] = (int) (longitudes[KE] / d30) + i1;
-        houses[KE] = calculatePlanetHouse(signs[LG], signs[KE]);
+        houses[KE] = calculatePlanetHouse(KE);
 
         return this;
     }

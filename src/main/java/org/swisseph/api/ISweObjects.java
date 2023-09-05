@@ -7,6 +7,7 @@
 package org.swisseph.api;
 
 import org.swisseph.ISwissEph;
+import org.swisseph.app.SweRuntimeException;
 
 import java.io.Serializable;
 
@@ -160,13 +161,27 @@ public interface ISweObjects extends ISweContext, Serializable {
         return OBJECTS_COUNT;
     }
 
-    static int calculatePlanetHouse(final int ascendantSign, final int planetSign) {
-        int planetHouse = planetSign;
-        planetHouse += i12;
-        planetHouse -= ascendantSign;
-        planetHouse %= i12;
-        planetHouse += i1;
-        return planetHouse;
+    default int calculatePlanetHouse(final int objId) {
+        if (SE_HSYS_WHOLE_SIGN == sweOptions().houseSystem().fid()) {
+            final int[] signs = signs();
+            int planetHouse = signs[objId];
+            planetHouse += i12;
+            planetHouse -= signs[LG];
+            planetHouse %= i12;
+            planetHouse += i1;
+            return planetHouse;
+        } else {
+            final double[] cusps = cusps();
+            final double lon = longitudes()[objId];
+            for (int i = 1; i <= 12; i++) {
+                final double cuspA = cusps[i], cuspB = cusps[i+1];
+                if (lon >= cuspA && (lon < cuspB || 0d == cuspB)) return i;
+                if (lon < cuspB) return i;
+            }
+
+            throw new SweRuntimeException("Failed to calculate house number for: "
+                + objId + "/" + sweOptions().houseSystem().code());
+        }
     }
 
     /**
