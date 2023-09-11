@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
+import org.swisseph.app.SweHouseSystem;
 import org.swisseph.app.SweJulianDate;
 import org.swisseph.app.SweObjects;
 import org.swisseph.app.SweObjectsOptions;
@@ -17,8 +18,10 @@ import org.swisseph.app.SweObjectsOptions;
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.api.ISweObjects.*;
 import static org.swisseph.api.ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS;
+import static org.swisseph.app.SweHouseSystem.WHOLE_SIGN;
 import static org.swisseph.app.SweObjectsOptions.TROPICAL_ZODIAC;
 import static swisseph.SweConst.SEFLG_TRUEPOS;
+import static swisseph.SweConst.SE_HSYS_WHOLE_SIGN;
 
 /**
  * @author Yura Krymlov
@@ -32,6 +35,7 @@ public class SayanaTest extends AbstractTest {
         ISweObjectsOptions sweObjectsOptions = new SweObjectsOptions.Builder()
                 .calcFlags(DEFAULT_SS_CALC_FLAGS ^ SEFLG_TRUEPOS)
                 .ayanamsa(null)
+                .houseSystem(WHOLE_SIGN)
                 .build();
 
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
@@ -57,8 +61,13 @@ public class SayanaTest extends AbstractTest {
 
     @Test
     void testObjects_WITH_SEFLG_TRUEPOS() {
+        ISweObjectsOptions tropicalZodiac = new SweObjectsOptions.Builder()
+                .ayanamsa(null)
+                .houseSystem(WHOLE_SIGN)
+                .build();
+
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
-                GEO_LUCKNOW, TROPICAL_ZODIAC).completeBuild();
+                GEO_LUCKNOW, tropicalZodiac).completeBuild();
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
         Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);

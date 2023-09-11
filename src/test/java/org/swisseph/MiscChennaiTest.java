@@ -19,6 +19,7 @@ import java.util.Calendar;
 import static java.util.Calendar.*;
 import static org.swisseph.app.SweAyanamsa.LAHIRI;
 import static org.swisseph.app.SweAyanamsa.TRUE_PUSHYA;
+import static org.swisseph.app.SweHouseSystem.NIL;
 import static org.swisseph.app.SweHouseSystem.WHOLE_SIGN;
 import static org.swisseph.utils.IModuloUtils.modulo;
 
@@ -39,8 +40,14 @@ public class MiscChennaiTest extends AbstractTest {
     @ParameterizedTest()
     @EnumSource(SweHouseSystem.class)
     void testHouseSystem(SweHouseSystem houseSystem) {
-        if (SweHouseSystem.NIL.equals(houseSystem)) return;
-        assertEquals(newSweObjects(1900 + houseSystem.fid(), LAHIRI, houseSystem, true));
+        if (WHOLE_SIGN.equals(houseSystem) || NIL.equals(houseSystem)) return;
+
+        SweRuntimeException exception = Assertions.assertThrows(SweRuntimeException.class, () -> {
+            newSweObjects(1900 + houseSystem.fid(), LAHIRI, houseSystem, true);
+        });
+
+        Assertions.assertEquals("Not implemented! House System: "
+                + houseSystem.code(), exception.getMessage());
     }
 
     @RepeatedTest(150)

@@ -170,18 +170,10 @@ public interface ISweObjects extends ISweContext, Serializable {
             planetHouse %= i12;
             planetHouse += i1;
             return planetHouse;
-        } else {
-            final double[] cusps = cusps();
-            final double lon = longitudes()[objId];
-            for (int i = 1; i <= 12; i++) {
-                final double cuspA = cusps[i], cuspB = cusps[i+1];
-                if (lon >= cuspA && (lon < cuspB || 0d == cuspB)) return i;
-                if (lon < cuspB) return i;
-            }
-
-            throw new SweRuntimeException("Failed to calculate house number for: "
-                + objId + "/" + sweOptions().houseSystem().code());
         }
+
+        throw new SweRuntimeException("Not implemented! House System: "
+                + sweOptions().houseSystem().code());
     }
 
     /**
