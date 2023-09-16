@@ -10,9 +10,9 @@ import org.swisseph.ISwissEph;
 import org.swisseph.app.SweRuntimeException;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
-import static org.swisseph.api.ISweConstants.i1;
-import static org.swisseph.api.ISweConstants.i12;
+import static org.swisseph.api.ISweConstants.*;
 import static swisseph.SweConst.*;
 
 /**
@@ -37,18 +37,18 @@ public interface ISweObjects extends ISweContext, Serializable {
             SE_URANUS, SE_NEPTUNE, SE_PLUTO};
 
     int LG = 0, // Lagna
-        SY = 1, // Surya
-        CH = 2, // Chandra
-        MA = 3, // Mangala
-        BU = 4, // Budha
-        GU = 5, // Guru
-        SK = 6, // Shukra
-        SA = 7, // Shani
-        RA = 8, // Rahu
-        KE = 9, // Ketu
-        UR = 10,// Uranus or Sweta
-        NE = 11,// Neptune or Syama
-        PL = 12;// Pluto or Teekshana/Teevra
+            SY = 1, // Surya
+            CH = 2, // Chandra
+            MA = 3, // Mangala
+            BU = 4, // Budha
+            GU = 5, // Guru
+            SK = 6, // Shukra
+            SA = 7, // Shani
+            RA = 8, // Rahu
+            KE = 9, // Ketu
+            UR = 10,// Uranus or Sweta
+            NE = 11,// Neptune or Syama
+            PL = 12;// Pluto or Teekshana/Teevra
 
     int FIRST_OBJECT_ID = SY;
     int LAST_OBJECT_ID = PL;
@@ -170,6 +170,27 @@ public interface ISweObjects extends ISweContext, Serializable {
             planetHouse %= i12;
             planetHouse += i1;
             return planetHouse;
+        } else {
+            final int cuspsLm1 = cusps().length - i1;
+            final double[] cusps = Arrays.copyOf(cusps(), cuspsLm1 + i1);
+            cusps[cuspsLm1] = d721;
+            double inc = d0;
+
+            for (int i = i1; i < cuspsLm1; i++) {
+                if (inc == d0 && cusps[i] <= d30) {
+                    if (i1 == i) break;
+                    inc = d360;
+                }
+                if (inc > d0) cusps[i] += inc;
+            }
+
+            double longitude = longitudes()[objId];
+            for (int idx = i1; idx < cuspsLm1; idx++) {
+                if (longitude < cusps[i1]) longitude += d360;
+                if (longitude >= cusps[idx] && longitude < cusps[idx + 1]) {
+                    return idx;
+                }
+            }
         }
 
         throw new SweRuntimeException("Not implemented! House System: "

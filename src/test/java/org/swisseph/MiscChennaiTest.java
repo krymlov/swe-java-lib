@@ -40,14 +40,12 @@ public class MiscChennaiTest extends AbstractTest {
     @ParameterizedTest()
     @EnumSource(SweHouseSystem.class)
     void testHouseSystem(SweHouseSystem houseSystem) {
-        if (WHOLE_SIGN.equals(houseSystem) || NIL.equals(houseSystem)) return;
+        if (NIL.equals(houseSystem)) return;
 
-        SweRuntimeException exception = Assertions.assertThrows(SweRuntimeException.class, () -> {
-            newSweObjects(1900 + houseSystem.fid(), LAHIRI, houseSystem, true);
-        });
-
-        Assertions.assertEquals("Not implemented! House System: "
-                + houseSystem.code(), exception.getMessage());
+        newSweObjects(1900 + houseSystem.fid(), LAHIRI, houseSystem, true);
+        newSweObjects(1950 + houseSystem.fid(), LAHIRI, houseSystem, true);
+        newSweObjects(2000 + houseSystem.fid(), LAHIRI, houseSystem, true);
+        newSweObjects(2050 + houseSystem.fid(), LAHIRI, houseSystem, true);
     }
 
     @RepeatedTest(150)

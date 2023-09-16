@@ -88,6 +88,8 @@ public interface ISweConstants {
     double d345 = 345.;
     double d357 = 357.;
     double d360 = 360.;
+    double d720 = 720.;
+    double d721 = 721.;
     double d999 = 999.;
     double d1000 = 1000.;
 
