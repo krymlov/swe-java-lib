@@ -37,18 +37,18 @@ public interface ISweObjects extends ISweContext, Serializable {
             SE_URANUS, SE_NEPTUNE, SE_PLUTO};
 
     int LG = 0, // Lagna
-            SY = 1, // Surya
-            CH = 2, // Chandra
-            MA = 3, // Mangala
-            BU = 4, // Budha
-            GU = 5, // Guru
-            SK = 6, // Shukra
-            SA = 7, // Shani
-            RA = 8, // Rahu
-            KE = 9, // Ketu
-            UR = 10,// Uranus or Sweta
-            NE = 11,// Neptune or Syama
-            PL = 12;// Pluto or Teekshana/Teevra
+        SY = 1, // Surya
+        CH = 2, // Chandra
+        MA = 3, // Mangala
+        BU = 4, // Budha
+        GU = 5, // Guru
+        SK = 6, // Shukra
+        SA = 7, // Shani
+        RA = 8, // Rahu
+        KE = 9, // Ketu
+        UR = 10,// Uranus or Sweta
+        NE = 11,// Neptune or Syama
+        PL = 12;// Pluto or Teekshana/Teevra
 
     int FIRST_OBJECT_ID = SY;
     int LAST_OBJECT_ID = PL;
@@ -184,10 +184,12 @@ public interface ISweObjects extends ISweContext, Serializable {
                 if (inc > d0) cusps[i] += inc;
             }
 
-            double longitude = longitudes()[objId];
+            final double objLong = longitudes()[objId];
+            final double longitude = objLong < cusps[i1] ? objLong + d360 : objLong;
+
             for (int idx = i1; idx < cuspsLm1; idx++) {
-                if (longitude < cusps[i1]) longitude += d360;
-                if (longitude >= cusps[idx] && longitude < cusps[idx + 1]) {
+                if (longitude >= cusps[idx] &&
+                        longitude < cusps[idx + 1]) {
                     return idx;
                 }
             }
