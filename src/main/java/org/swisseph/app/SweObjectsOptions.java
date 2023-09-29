@@ -139,6 +139,10 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         return (ISweObjectsOptions) super.clone();
     }
 
+    public static ISweObjectsOptions byDefault() {
+        return TRUECITRA_AYANAMSA;
+    }
+
     @Override
     public String toString() {
         return new StringBuilder(64)
