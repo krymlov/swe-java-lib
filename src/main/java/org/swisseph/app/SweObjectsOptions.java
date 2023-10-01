@@ -13,7 +13,7 @@ import org.swisseph.api.ISweObjectsOptions;
 import static org.swisseph.api.ISweConstants.CH_VS;
 import static org.swisseph.app.SweAyanamsa.getLahiri;
 import static org.swisseph.app.SweAyanamsa.getTrueSpica;
-import static org.swisseph.app.SweHouseSystem.PLACIDUS;
+import static org.swisseph.app.SweHouseSystem.WHOLE_SIGN;
 import static swisseph.SweConst.SEFLG_SIDEREAL;
 import static swisseph.SweConst.SE_SIDM_USER;
 
@@ -235,7 +235,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
 
         public Builder ayanamsa(ISweAyanamsa ayanamsa) {
             if (null == ayanamsa) {
-                this.houseSystem = PLACIDUS;
+                this.houseSystem = WHOLE_SIGN;
                 this.mainFlags ^= SEFLG_SIDEREAL;
                 this.calcFlags ^= SEFLG_SIDEREAL;
                 this.houseFlags ^= SEFLG_SIDEREAL;
