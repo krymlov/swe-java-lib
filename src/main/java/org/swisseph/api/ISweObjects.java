@@ -210,9 +210,12 @@ public interface ISweObjects extends ISweContext, Serializable {
                     sweLocation.latitude(), sweLocation.altitude());
         }
 
-        if (null != sweOptions && sweOptions.ayanamsa() != null) {
-            swissEph.swe_set_sid_mode(sweOptions.ayanamsa().fid(),
-                    sweOptions.initialJulianDay(), sweOptions.initialAyanamsa());
+        if (null != sweOptions) {
+            ISweAyanamsa ayanamsa = sweOptions.ayanamsa();
+            if (ayanamsa != null && ayanamsa.sidereal()) {
+                swissEph.swe_set_sid_mode(ayanamsa.fid(), sweOptions
+                        .initialJulianDay(), sweOptions.initialAyanamsa());
+            }
         }
 
         return swissEph;

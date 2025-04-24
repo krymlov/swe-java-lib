@@ -209,7 +209,12 @@ public enum SweAyanamsa implements ISweAyanamsa {
     AY_USER {
         @Override public int fid() { return SE_SIDM_USER; }
         @Override public String code() { return AYUR_CD; }
-    }; // 255 defined by the user
+    }, // 255 defined by the user
+    AY_NONE {
+        @Override public boolean sidereal() { return false; }
+        @Override public int fid() { return -SE_SIDM_USER; }
+        @Override public String code() { return AYN0_CD; }
+    };
 
     @Override
     public int uid() {
@@ -282,5 +287,9 @@ public enum SweAyanamsa implements ISweAyanamsa {
      */
     public static ISweAyanamsa byDefault() {
         return LAHIRI;
+    }
+
+    public static ISweAyanamsa getNone() {
+        return AY_NONE;
     }
 }

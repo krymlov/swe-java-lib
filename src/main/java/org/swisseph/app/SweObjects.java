@@ -112,7 +112,9 @@ public class SweObjects implements ISweObjects {
         // we need to calc ayanamsa on demand 
         // because it is slow operation
 
-        if (!isNaN(ayanamsa)) return ayanamsa;
+        if (!isNaN(ayanamsa) || !options.ayanamsa().sidereal()) {
+            return ayanamsa;
+        }
 
         // To calculate true ayanamsha using swetest, one should just write:
         // > swetest -b1.1.2000 -pb -sid27 -fPL (do NOT write -true)

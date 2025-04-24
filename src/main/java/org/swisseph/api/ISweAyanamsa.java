@@ -60,4 +60,9 @@ public interface ISweAyanamsa extends ISweEnumSequence<ISweAyanamsa> {
     String AY45_CD = "AY45"; // 45 Krishnamurti-Senthilathiban
     String AY46_CD = "AY46"; // 46 Lahiri ICRC
     String AYUR_CD = "AYUR"; // 255 defined by the user in the additional two par
+    String AYN0_CD = "AYN0"; // NONE
+
+    default boolean sidereal() {
+        return true;
+    }
 }

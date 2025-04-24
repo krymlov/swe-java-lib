@@ -11,8 +11,7 @@ import org.swisseph.api.ISweHouseSystem;
 import org.swisseph.api.ISweObjectsOptions;
 
 import static org.swisseph.api.ISweConstants.CH_VS;
-import static org.swisseph.app.SweAyanamsa.getLahiri;
-import static org.swisseph.app.SweAyanamsa.getTrueSpica;
+import static org.swisseph.app.SweAyanamsa.*;
 import static org.swisseph.app.SweHouseSystem.WHOLE_SIGN;
 import static swisseph.SweConst.SEFLG_SIDEREAL;
 import static swisseph.SweConst.SE_SIDM_USER;
@@ -24,8 +23,8 @@ import static swisseph.SweConst.SE_SIDM_USER;
 public class SweObjectsOptions implements ISweObjectsOptions {
     private static final long serialVersionUID = 461264153326654053L;
 
-    public static final ISweObjectsOptions TROPICAL_ZODIAC = new Builder().ayanamsa(null).build();
-    public static final ISweObjectsOptions TROPICAL_ZODIAC_TRUE_NODE = new Builder().ayanamsa(null).trueNode(true).build();
+    public static final ISweObjectsOptions TROPICAL_ZODIAC = new Builder().ayanamsa(getNone()).build();
+    public static final ISweObjectsOptions TROPICAL_ZODIAC_TRUE_NODE = new Builder().ayanamsa(getNone()).trueNode(true).build();
 
     public static final ISweObjectsOptions LAHIRI_AYANAMSA = new Builder().ayanamsa(getLahiri()).build();
     public static final ISweObjectsOptions LAHIRI_AYANAMSA_TRUE_NODE = new Builder().ayanamsa(getLahiri()).trueNode(true).build();
@@ -234,7 +233,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         }
 
         public Builder ayanamsa(ISweAyanamsa ayanamsa) {
-            if (null == ayanamsa) {
+            if (null == ayanamsa || !ayanamsa.sidereal()) {
                 this.houseSystem = WHOLE_SIGN;
                 this.mainFlags ^= SEFLG_SIDEREAL;
                 this.calcFlags ^= SEFLG_SIDEREAL;
