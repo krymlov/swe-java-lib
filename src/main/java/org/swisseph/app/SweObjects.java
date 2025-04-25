@@ -88,6 +88,12 @@ public class SweObjects implements ISweObjects {
         }
     }
 
+    protected SweObjects(ISweJulianDate sweJulianDate, ISweGeoLocation sweLocation, ISweObjectsOptions sweOptions) {
+        this.julianDate = sweJulianDate;
+        this.location = sweLocation;
+        this.options = sweOptions;
+    }
+
     @Override
     public ISwissEph initialization(ISwissEph swissEph) {
         if (null == swissEph) throw new SweRuntimeException("ISwissEph is mandatory parameter");
