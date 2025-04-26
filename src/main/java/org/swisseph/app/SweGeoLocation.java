@@ -8,6 +8,8 @@ package org.swisseph.app;
 
 import org.swisseph.api.ISweGeoLocation;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.StringJoiner;
 
 import static java.lang.String.valueOf;
@@ -96,6 +98,20 @@ public class SweGeoLocation implements ISweGeoLocation {
     @Override
     public ISweGeoLocation clone() throws CloneNotSupportedException {
         return (ISweGeoLocation) super.clone();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null || getClass() != other.getClass()) return false;
+        SweGeoLocation that = (SweGeoLocation) other;
+        return Double.compare(pressure, that.pressure) == 0 &&
+                Double.compare(temperature, that.temperature) == 0 &&
+                    Objects.deepEquals(geopos, that.geopos);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Arrays.hashCode(geopos), pressure, temperature);
     }
 
     @Override
