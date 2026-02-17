@@ -117,6 +117,10 @@ public interface ISweObjects extends ISweContext, Serializable {
      */
     void throwSweError(boolean throwSweError);
 
+    StringBuilder sweError();
+
+    boolean throwSweError();
+
     boolean[] retrogrades();
 
     double[] longitudes();

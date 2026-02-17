@@ -39,8 +39,4 @@ public interface ISweContext {
      * @return sorted sequence of {@link ISweObjects} by longitude
      */
     ISweObjectsSequence sweSequence();
-
-    StringBuilder sweError();
-
-    boolean throwSweError();
 }
