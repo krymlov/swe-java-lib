@@ -112,6 +112,11 @@ public interface ISweObjects extends ISweContext, Serializable {
      */
     ISweObjects completeRebuild(ISwissEph swissEph);
 
+    /**
+     * Throw swe-error during an object calculation or just set it and stop further processing
+     */
+    void throwSweError(boolean throwSweError);
+
     boolean[] retrogrades();
 
     double[] longitudes();

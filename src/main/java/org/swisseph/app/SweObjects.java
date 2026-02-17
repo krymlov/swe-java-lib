@@ -51,9 +51,11 @@ public class SweObjects implements ISweObjects {
     protected final ISweGeoLocation location;
 
     protected double ayanamsa = Double.NaN;
+    protected boolean throwSweError = true;
 
     // ------------------------------------------------------------------------
 
+    protected transient StringBuilder sweError =  new StringBuilder(0);
     protected transient SweObjectsSequence sequence;
     protected transient ISwissEph swissEph;
 
@@ -146,8 +148,7 @@ public class SweObjects implements ISweObjects {
 
         try {
             final double[] daya = new double[]{0};
-            final StringBuilder serr = new StringBuilder(0);
-            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.epheTime(), options.mainFlags(), daya, serr);
+            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.epheTime(), options.mainFlags(), daya, sweError);
             if (result != ERR) return this.ayanamsa = daya[0];
         } catch (NotImplementedException nie) {
             // ignore
@@ -164,7 +165,11 @@ public class SweObjects implements ISweObjects {
         int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.houseFlags(),
                 location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
 
-        if (result == ERR) throw new SweRuntimeException(CALC_FAILED);
+        if (result == ERR) {
+            sweError.append(CALC_FAILED);
+            if (throwSweError) throw new SweRuntimeException(CALC_FAILED);
+            return this;
+        }
 
         houses[LG] = i1;
         longitudes[LG] = ascmc[LG];
@@ -181,7 +186,10 @@ public class SweObjects implements ISweObjects {
         final int result = swissEph.swe_calc(julianDate.epheTime(),
                 getSupportedObjects()[objId], options.calcFlags(), dres, serr);
 
-        if (result == ERR) throw new SweRuntimeException(serr.toString());
+        if (result == ERR) {
+            if (throwSweError) throw new SweRuntimeException(serr.toString());
+            return this;
+        }
 
         latitudes[objId] = dres[1];
         longitudes[objId] = dres[0];
@@ -197,21 +205,23 @@ public class SweObjects implements ISweObjects {
 
     @Override
     public ISweObjects buildObject(final int objectId) {
-        return buildObject(objectId, new StringBuilder(0));
+        return buildObject(objectId, sweError);
     }
 
     @Override
     public ISweObjects buildLunarNodes() {
         if (i0 != houses[KE]) return this;
 
-        buildObject(RA, new StringBuilder(0));
+        buildObject(RA, sweError);
 
-        latitudes[KE] = latitudes[RA];
-        retrogrades[KE] = retrogrades[RA];
-        longitudes[KE] = (longitudes[RA] + d180) % d360;
+        if (sweError.length() == OK) {
+            latitudes[KE] = latitudes[RA];
+            retrogrades[KE] = retrogrades[RA];
+            longitudes[KE] = (longitudes[RA] + d180) % d360;
 
-        signs[KE] = (int) (longitudes[KE] / d30) + i1;
-        houses[KE] = calculatePlanetHouse(KE);
+            signs[KE] = (int) (longitudes[KE] / d30) + i1;
+            houses[KE] = calculatePlanetHouse(KE);
+        }
 
         return this;
     }
@@ -219,44 +229,45 @@ public class SweObjects implements ISweObjects {
     @Override
     public ISweObjects buildSunMoon() {
         if (i0 != houses[CH]) return this;
-
-        final StringBuilder serr = new StringBuilder(0);
-        buildObject(SY, serr);
-        buildObject(CH, serr);
+        buildObject(SY, sweError);
+        buildObject(CH, sweError);
         return this;
     }
 
     @Override
     public ISweObjects buildMarsKetu() {
         if (i0 != houses[KE]) return this;
-        final StringBuilder serr = new StringBuilder(0);
-        for (int objId = MA; objId < RA; objId++) buildObject(objId, serr);
+        for (int objId = MA; objId < RA; objId++) {
+            buildObject(objId, sweError);
+        }
         return buildLunarNodes();
     }
 
     @Override
     public ISweObjects buildJupiterSaturn() {
         if (i0 != houses[SA]) return this;
-        final StringBuilder serr = new StringBuilder(0);
-        for (int objId = GU; objId <= SA; objId++) buildObject(objId, serr);
+        for (int objId = GU; objId <= SA; objId++) {
+            buildObject(objId, sweError);
+        }
         return this;
     }
 
     @Override
     public ISweObjects buildUranusPluto() {
         if (i0 != houses[PL]) return this;
-        final StringBuilder serr = new StringBuilder(0);
-        for (int objId = UR; objId < OBJECTS_COUNT; objId++) buildObject(objId,  serr);
+        for (int objId = UR; objId < OBJECTS_COUNT; objId++) {
+            buildObject(objId, sweError);
+        }
         return this;
     }
 
     @Override
     public SweObjects completeBuild() {
+        if (sweError.length() != OK) return this;
         if (i0 == houses[LG]) buildAscendant();
         if (i0 == houses[CH]) buildSunMoon();
         if (i0 == houses[KE]) buildMarsKetu();
         if (i0 == houses[PL]) buildUranusPluto();
-
         return this;
     }
 
@@ -297,6 +308,21 @@ public class SweObjects implements ISweObjects {
     @Override
     public ISweGeoLocation sweLocation() {
         return location;
+    }
+
+    @Override
+    public StringBuilder sweError() {
+        return sweError;
+    }
+
+    @Override
+    public boolean throwSweError() {
+        return this.throwSweError;
+    }
+
+    @Override
+    public void throwSweError(boolean throwSweError) {
+        this.throwSweError = throwSweError;
     }
 
     @Override
