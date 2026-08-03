@@ -80,8 +80,8 @@ public class Ayanamsa27Test extends AbstractTest {
         Assertions.assertEquals("23°06'14.40\"", toDMSms(toDDms(23061440)).toString());
 
         // Lagna
-        Assertions.assertEquals(256.3946710, sweObjects.longitudes()[LG], DELTA_D0000001);
-        Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+        Assertions.assertEquals(256.3919204121967, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'30.91\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
         Assertions.assertEquals(118.6475653, sweObjects.longitudes()[SY], DELTA_D0000001);
@@ -95,8 +95,8 @@ public class Ayanamsa27Test extends AbstractTest {
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild();
 
         // Lagna
-        Assertions.assertEquals(256.3946710, sweObjects.longitudes()[LG], DELTA_D0000001);
-        Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+        Assertions.assertEquals(256.3919204121967, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'30.91\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
         Assertions.assertEquals(118.6504369, sweObjects.longitudes()[SY], DELTA_D0000001);

@@ -112,8 +112,8 @@ public class MiscAyanamsaTest extends AbstractTest {
         Assertions.assertEquals(23.10761141107119, sweObjects.ayanamsa());
 
         // Lagna
-        Assertions.assertEquals(256.3951080, sweObjects.longitudes()[LG], DELTA_D0000001);
-        Assertions.assertEquals("256°23'42.39\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+        Assertions.assertEquals(256.392357441707, sweObjects.longitudes()[LG], DELTA_D0000001);
+        Assertions.assertEquals("256°23'32.49\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
         Assertions.assertEquals(118.6475653, sweObjects.longitudes()[SY], DELTA_D0000001);
@@ -130,8 +130,8 @@ public class MiscAyanamsaTest extends AbstractTest {
         Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
 
         // Lagna
-        Assertions.assertEquals(256.3946709789843, sweObjects.longitudes()[LG]);
-        Assertions.assertEquals("256°23'40.82\"", toDMSms(sweObjects.longitudes()[LG]).toString());
+        Assertions.assertEquals(256.3919204121967, sweObjects.longitudes()[LG]);
+        Assertions.assertEquals("256°23'30.91\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
         Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY]);

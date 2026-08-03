@@ -23,8 +23,19 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
             SEFLG_SIDEREAL |        // sidereal zodiac
                     SEFLG_SWIEPH;   // fastest method, requires data files
 
+    /**
+     * <code>SEFLG_TRUEPOS</code> does not change the house geometry itself, but
+     * <code>swe_houses_ex()</code> passes the flags on to <code>swe_get_ayanamsa_ex()</code>.
+     * For star-based ayanamsas (True Chitrapaksha and alike) the ayanamsa is derived from
+     * the computed position of the star, so the flag decides whether that position is the
+     * true (geometric) or the apparent one.
+     * <p>
+     * Keep it here and not in {@link #DEFAULT_SS_MAIN_FLAGS}: the main flags are also used
+     * to build the ayanamsa value reported to the user, which should stay the apparent one.
+     */
     int DEFAULT_SS_HOUSE_FLAGS =
-            DEFAULT_SS_MAIN_FLAGS;
+            DEFAULT_SS_MAIN_FLAGS |
+                    SEFLG_TRUEPOS;  // true position of the star behind the ayanamsa
 
     int DEFAULT_SS_CALC_FLAGS =
             DEFAULT_SS_MAIN_FLAGS |
