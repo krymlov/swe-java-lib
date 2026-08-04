@@ -217,18 +217,22 @@ public class PlanetHouseTest extends AbstractTest {
     }
 
     /**
-     * Meridian, Horizontal and Morinus do not start house 1 at the ascendant, so the
-     * house 1 that buildAscendant() records for LG disagrees with where the ascendant
-     * actually falls. Documented here rather than changed - which of the two the library
-     * should report is a semantic decision, not a bug in the house position.
+     * Meridian, Horizontal and Morinus do not start house 1 at the ascendant - they start
+     * it at the equatorial ascendant, the north point and so on. buildAscendant() used to
+     * record house 1 for the ascendant unconditionally; it now asks for the house like
+     * every other object, so houses()[LG] agrees with the cusps.
      */
     @Test
-    void ascendantIsNotOnTheFirstCuspOfMeridianHorizontalMorinus() {
+    void theAscendantGetsTheHouseItActuallyFallsIn() {
         for (SweHouseSystem hsys : new SweHouseSystem[]{MERIDIAN, HORIZONTAL, MORINUS}) {
             final ISweObjects o = chart(hsys, JHD.longitude(), JHD.latitude(), 1976);
-            assertEquals(1, o.houses()[LG], hsys + ": buildAscendant() always records house 1");
-            assertNotEquals(1, (int) o.calculatePlanetHousePosition(LG),
-                    hsys + ": but the ascendant is not inside house 1 there");
+            assertEquals((int) o.calculatePlanetHousePosition(LG), o.houses()[LG], hsys.name());
+            assertNotEquals(1, o.houses()[LG], hsys + ": house 1 does not start at the ascendant");
+        }
+
+        // and where the first cusp is the ascendant it is still house 1
+        for (SweHouseSystem hsys : new SweHouseSystem[]{PLACIDUS, KOCH, CAMPANUS, EQUAL, WHOLE_SIGN}) {
+            assertEquals(1, chart(hsys, JHD.longitude(), JHD.latitude(), 1976).houses()[LG], hsys.name());
         }
     }
 

@@ -107,9 +107,43 @@ public class SweObjects implements ISweObjects {
         return this.swissEph.initJulianDate(sweJulianDate);
     }
 
+    /**
+     * Delta t, computed with a tidal acceleration that does not depend on what was
+     * calculated before.
+     * <p>
+     * <code>swe_deltat_ex()</code> normally derives the tidal acceleration from the DE
+     * number of the ephemeris file that happens to be open at that moment. Delta t is
+     * fixed here, in the constructor, before any planet has been computed, so the same
+     * chart built twice on one thread used to get two different values: 11.3 seconds at
+     * year 1000, which is 2e-3 degrees of Moon. Pinning the acceleration that belongs to
+     * the chosen ephemeris removes the order dependence and reproduces what
+     * <code>swetest</code> prints, then control is handed back to swisseph.
+     * <p>
+     * From about 1800 onwards the term makes no difference at all.
+     */
     protected void initJulianDateDeltaT() {
-        julianDate.values()[IDXD_DELTAT] = swissEph.swe_deltat_ex
-                (julianDate.julianDay(), options.mainFlags(), null);
+        pinTidalAcceleration();
+
+        try {
+            julianDate.values()[IDXD_DELTAT] = swissEph.swe_deltat_ex
+                    (julianDate.julianDay(), options.mainFlags(), null);
+        } finally {
+            releaseTidalAcceleration();
+        }
+    }
+
+    /**
+     * Pins the tidal acceleration that belongs to the chosen ephemeris, so that anything
+     * deriving delta t is reproducible. Must be paired with
+     * {@link #releaseTidalAcceleration()} in a finally block.
+     */
+    protected void pinTidalAcceleration() {
+        swissEph.swe_set_tid_acc((options.mainFlags() & SEFLG_MOSEPH) != i0
+                ? SE_TIDAL_MOSEPH : SE_TIDAL_DEFAULT);
+    }
+
+    protected void releaseTidalAcceleration() {
+        swissEph.swe_set_tid_acc(SE_TIDAL_AUTOMATIC);
     }
 
     protected void initEphemerisTime() {
@@ -188,8 +222,18 @@ public class SweObjects implements ISweObjects {
     public ISweObjects buildAscendant() {
         if (0 != houses[LG]) return this;
 
-        int result = swissEph.swe_houses_ex(julianDate.julianDay(), options.houseFlags(),
-                location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
+        // swe_houses_ex() takes a UT julian day and derives delta t itself, so it needs
+        // the same pinning as initJulianDateDeltaT() - otherwise the ascendant of an old
+        // chart moves depending on what was computed before it
+        final int result;
+        pinTidalAcceleration();
+
+        try {
+            result = swissEph.swe_houses_ex(julianDate.julianDay(), options.houseFlags(),
+                    location.latitude(), location.longitude(), options.houseSystem().fid(), cusps, ascmc);
+        } finally {
+            releaseTidalAcceleration();
+        }
 
         if (result == ERR) {
             sweError.append(CALC_FAILED);
@@ -197,9 +241,13 @@ public class SweObjects implements ISweObjects {
             return this;
         }
 
-        houses[LG] = i1;
-        longitudes[LG] = ascmc[LG];
-        signs[LG] = (int) (ascmc[LG] / d30) + i1;
+        longitudes[LG] = ascmc[SE_ASC];
+        signs[LG] = (int) (ascmc[SE_ASC] / d30) + i1;
+
+        // the ascendant is house 1 in every system whose first cusp is the ascendant,
+        // but Meridian, Horizontal and Morinus start house 1 elsewhere (the equatorial
+        // ascendant, the north point, ...), so ask for the house instead of assuming it
+        houses[LG] = calculatePlanetHouse(LG);
 
         return this;
     }

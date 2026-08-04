@@ -33,20 +33,6 @@ public final class Swetest {
 
     public static final File EPHE = new File("ephe").getAbsoluteFile();
 
-    /**
-     * Tidal acceleration, pinned on both sides.
-     * <p>
-     * <code>swe_deltat_ex()</code> derives it from the DE number of the ephemeris file
-     * that is currently open, so delta t - and every position computed from it - silently
-     * depends on what was calculated before. Opening the year 1000 moon file moves delta t
-     * by 11.3 s; having computed year 1000 first moves the year 1500 answer by 2.6 s; from
-     * 1800 on the term no longer matters. swetest starts cold every time, the library does
-     * not, so both are told the value explicitly instead. See
-     * SwetestEpochsCrossCheckTest#deltaTDependsOnWhichEphemerisFileIsOpen.
-     */
-    public static final double TIDAL_ACCELERATION = -25.80;   // SE_TIDAL_DE431
-    public static final String TIDACC = "-tidacc" + TIDAL_ACCELERATION;
-
     /** planet letters in swetest order and where they land in {@link org.swisseph.api.ISweObjects} */
     public static final String BODIES = "0123456789";
     public static final String[] BODY_NAMES = {"Sun", "Moon", "Mercury", "Venus", "Mars",
@@ -70,7 +56,6 @@ public final class Swetest {
         cmd.add("-b" + date[2] + "." + date[1] + "." + date[0]);
         cmd.add("-ut" + utcTime);
         cmd.add("-eswe");
-        cmd.add(TIDACC);
         cmd.add("-edir" + EPHE.getPath());
         cmd.addAll(Arrays.asList(extra));
 

@@ -5,8 +5,6 @@
  */
 package org.swisseph;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -62,18 +60,6 @@ public class SwetestEpochsCrossCheckTest extends AbstractTest {
     static final double[] SOUTH_POLE = {0., -89.900000};        // extreme south
     static final double[] DATE_LINE_E = {179.900000, 1.000000}; // extreme east
     static final double[] DATE_LINE_W = {-179.900000, -1.};     // extreme west
-
-    /** see {@link Swetest#TIDAL_ACCELERATION} - without this, pre-1800 charts drift
-     * depending on what was computed before on the same thread */
-    @BeforeEach
-    void pinTidalAcceleration() {
-        getSwephExp().swe_set_tid_acc(Swetest.TIDAL_ACCELERATION);
-    }
-
-    @AfterEach
-    void restoreTidalAcceleration() {
-        getSwephExp().swe_set_tid_acc(SE_TIDAL_AUTOMATIC);
-    }
 
     private static int[] date(int year) {
         return new int[]{year, 6, 15, 12, 0};
@@ -355,28 +341,29 @@ public class SwetestEpochsCrossCheckTest extends AbstractTest {
      * measures it, so the day it is fixed the numbers here say so.
      */
     @Test
-    void deltaTDependsOnWhichEphemerisFileIsOpen() {
+    void deltaTIsStableWhateverWasComputedBefore() {
         assumeTrue(available());
 
-        // year 1000: opening the moon file for that range moves delta t by 11 seconds,
-        // which is 2e-3 degrees of Moon
-        assertEquals(11.276125, warmMinusCold(2086474.), 1e-5, "year 1000");
-
-        // from 1800 on the tidal acceleration term no longer matters
+        // the raw swisseph behaviour this guards against: swe_deltat_ex() takes the tidal
+        // acceleration from the DE number of the ephemeris file that is open, so opening
+        // the year 1000 moon file moves delta t by 11 s - 2e-3 degrees of Moon
+        assertEquals(11.276125, warmMinusCold(2086474.), 1e-5, "raw swe_deltat_ex at year 1000");
         for (double jd : new double[]{2378662., 2451345., 2488070.}) {
-            assertEquals(0., warmMinusCold(jd), 0., "jd " + jd);
+            assertEquals(0., warmMinusCold(jd), 0., "raw swe_deltat_ex at jd " + jd);
         }
 
-        // and it is not only cold versus warm: which file is open decides, so computing a
-        // year 1000 chart first changes the answer for year 1500
+        // SweObjects pins the tidal acceleration around that call, so a chart no longer
+        // depends on what was built before it - the same chart twice, with a year 1000
+        // chart of a different epoch in between, has to come out identical
         coldStart();
-        final double alone = getSwephExp().swe_deltat_ex(2269099., ISweObjectsOptions.DEFAULT_SS_MAIN_FLAGS, null);
-        coldStart();
-        getSwephExp().swe_calc(2086474., SE_MOON, ISweObjectsOptions.DEFAULT_SS_MAIN_FLAGS, new double[6], null);
-        final double after1000 = getSwephExp().swe_deltat_ex(2269099., ISweObjectsOptions.DEFAULT_SS_MAIN_FLAGS, null);
+        final ISweObjects first = chart(1500, KYIV, sidereal(SweAyanamsa.LAHIRI, PLACIDUS, false));
+        chart(1000, TROMSO, tropical(CAMPANUS, true));
+        final ISweObjects again = chart(1500, KYIV, sidereal(SweAyanamsa.LAHIRI, PLACIDUS, false));
 
-        assertEquals(2.556740, (after1000 - alone) * 86400., 1e-5,
-                "year 1500 delta t depends on year 1000 having been computed first");
+        assertEquals(first.sweJulianDate().deltaT(), again.sweJulianDate().deltaT(), 0., "delta t");
+        for (int i = LG; i <= PL; i++) {
+            assertEquals(first.longitudes()[i], again.longitudes()[i], 0., "object " + i);
+        }
     }
 
     /** forgets every open ephemeris file and any pinned tidal acceleration */

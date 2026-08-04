@@ -232,15 +232,17 @@ public class SweObjectsOptions implements ISweObjectsOptions {
             return this;
         }
 
+        /**
+         * <code>SEFLG_SIDEREAL</code> is not touched here - it is derived from the
+         * ayanamsa in {@link #build()}, so the result does not depend on the order the
+         * builder methods are called in, and calling this twice is harmless.
+         * <p>
+         * It used to flip the bit with <code>^=</code> and to overwrite the house system
+         * with whole sign, which meant that <code>ayanamsa(none)</code> twice turned the
+         * sidereal zodiac back on, and that <code>houseSystem(X).ayanamsa(none)</code>
+         * silently discarded X while <code>ayanamsa(none).houseSystem(X)</code> kept it.
+         */
         public Builder ayanamsa(ISweAyanamsa ayanamsa) {
-            if (null == ayanamsa || !ayanamsa.sidereal()) {
-                this.houseSystem = WHOLE_SIGN;
-                this.mainFlags ^= SEFLG_SIDEREAL;
-                this.calcFlags ^= SEFLG_SIDEREAL;
-                this.houseFlags ^= SEFLG_SIDEREAL;
-                this.transitFlags ^= SEFLG_SIDEREAL;
-            }
-
             this.ayanamsa = ayanamsa;
             return this;
         }
@@ -271,10 +273,21 @@ public class SweObjectsOptions implements ISweObjectsOptions {
         }
 
         public ISweObjectsOptions build() {
+            final boolean sidereal = null != ayanamsa && ayanamsa.sidereal();
+
             return new SweObjectsOptions(ayanamsa, houseSystem, trueNode,
-                    mainFlags, houseFlags, calcFlags,
-                    initialJulianDay, initialAyanamsa,
-                    riseSetFlags, transitFlags);
+                    sidereal(mainFlags, sidereal), sidereal(houseFlags, sidereal),
+                    sidereal(calcFlags, sidereal), initialJulianDay, initialAyanamsa,
+                    riseSetFlags, sidereal(transitFlags, sidereal));
+        }
+
+        /**
+         * Keeps <code>SEFLG_SIDEREAL</code> in step with the ayanamsa. A sidereal ayanamsa
+         * with the flag cleared, or a tropical zodiac with it set, is not a configuration
+         * worth preserving - swisseph would fall back to Fagan/Bradley for the latter.
+         */
+        private static int sidereal(int flags, boolean sidereal) {
+            return sidereal ? (flags | SEFLG_SIDEREAL) : (flags & ~SEFLG_SIDEREAL);
         }
     }
 }

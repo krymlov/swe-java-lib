@@ -9,7 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.swisseph.api.ISweJulianDate;
+import org.swisseph.app.SweAyanamsa;
+import org.swisseph.app.SweHouseSystem;
 import org.swisseph.app.SweJulianDate;
+import org.swisseph.app.SweObjectsOptions;
 import org.swisseph.utils.IDateUtils;
 import org.swisseph.utils.IDegreeUtils;
 import org.swisseph.utils.IModuloUtils;
@@ -151,6 +154,57 @@ public class PrecisionTest {
     private static String format7(int h, int m, double s) {
         return IDateUtils.format7(new SweJulianDate(new int[]{2024, 3, 7}, 0f,
                 h + m / 60. + s / 3600.)).toString();
+    }
+
+    // ---------------------------------------------------------------- options
+
+    /**
+     * SEFLG_SIDEREAL is derived from the ayanamsa when the options are built, so neither
+     * the order of the builder calls nor calling one of them twice can change it. It used
+     * to be XORed inside {@code ayanamsa()}.
+     */
+    @Test
+    void siderealFlagFollowsTheAyanamsaWhateverTheBuilderOrder() {
+        final int sidereal = swisseph.SweConst.SEFLG_SIDEREAL;
+
+        for (org.swisseph.api.ISweObjectsOptions o : new org.swisseph.api.ISweObjectsOptions[]{
+                new SweObjectsOptions.Builder().ayanamsa(SweAyanamsa.LAHIRI).build(),
+                new SweObjectsOptions.Builder().ayanamsa(SweAyanamsa.LAHIRI)
+                        .ayanamsa(SweAyanamsa.LAHIRI).build(),
+                new SweObjectsOptions.Builder().houseSystem(SweHouseSystem.PLACIDUS)
+                        .ayanamsa(SweAyanamsa.LAHIRI).build()}) {
+            assertEquals(sidereal, o.mainFlags() & sidereal, "sidereal ayanamsa");
+            assertEquals(sidereal, o.calcFlags() & sidereal);
+            assertEquals(sidereal, o.houseFlags() & sidereal);
+        }
+
+        for (org.swisseph.api.ISweObjectsOptions o : new org.swisseph.api.ISweObjectsOptions[]{
+                SweObjectsOptions.TROPICAL_ZODIAC,
+                new SweObjectsOptions.Builder().ayanamsa(SweAyanamsa.getNone()).build(),
+                // twice - this used to toggle the sidereal zodiac back on
+                new SweObjectsOptions.Builder().ayanamsa(SweAyanamsa.getNone())
+                        .ayanamsa(SweAyanamsa.getNone()).build()}) {
+            assertEquals(0, o.mainFlags() & sidereal, "tropical zodiac");
+            assertEquals(0, o.calcFlags() & sidereal);
+            assertEquals(0, o.houseFlags() & sidereal);
+        }
+    }
+
+    /**
+     * A house system set before the ayanamsa used to be silently replaced by whole sign.
+     */
+    @Test
+    void theHouseSystemSurvivesATropicalAyanamsa() {
+        assertEquals(SweHouseSystem.PLACIDUS, new SweObjectsOptions.Builder()
+                .houseSystem(SweHouseSystem.PLACIDUS)
+                .ayanamsa(SweAyanamsa.getNone()).build().houseSystem());
+
+        assertEquals(SweHouseSystem.PLACIDUS, new SweObjectsOptions.Builder()
+                .ayanamsa(SweAyanamsa.getNone())
+                .houseSystem(SweHouseSystem.PLACIDUS).build().houseSystem());
+
+        // and the default is still whole sign
+        assertEquals(SweHouseSystem.WHOLE_SIGN, SweObjectsOptions.TROPICAL_ZODIAC.houseSystem());
     }
 
     @Test
