@@ -51,6 +51,7 @@ public class SweObjects implements ISweObjects {
     protected final ISweGeoLocation location;
 
     protected double ayanamsa = Double.NaN;
+    protected double obliquity = Double.NaN;
     protected boolean throwSweError = true;
 
     // ------------------------------------------------------------------------
@@ -173,6 +174,16 @@ public class SweObjects implements ISweObjects {
         return this.ayanamsa = swissEph.swe_get_ayanamsa(julianDate.epheTime());
     }
 
+    /**
+     * Cached: {@link #calculatePlanetHousePosition(int)} needs it for every object and it
+     * only depends on the date.
+     */
+    @Override
+    public double trueObliquity() {
+        if (isNaN(obliquity)) obliquity = ISweObjects.super.trueObliquity();
+        return obliquity;
+    }
+
     @Override
     public ISweObjects buildAscendant() {
         if (0 != houses[LG]) return this;
@@ -290,6 +301,7 @@ public class SweObjects implements ISweObjects {
         if (null != this.sequence) this.sequence.sorted = false;
 
         this.ayanamsa = Double.NaN;
+        this.obliquity = Double.NaN;
         Arrays.fill(this.houses, i0);
 
         this.swissEph = initialization(swissEph);

@@ -10,7 +10,6 @@ import org.swisseph.ISwissEph;
 import org.swisseph.app.SweRuntimeException;
 
 import java.io.Serializable;
-import java.util.Arrays;
 
 import static org.swisseph.api.ISweConstants.*;
 import static swisseph.SweConst.*;
@@ -170,42 +169,94 @@ public interface ISweObjects extends ISweContext, Serializable {
         return OBJECTS_COUNT;
     }
 
+    /**
+     * @return the house the object falls into, 1 to 12
+     * @see #calculatePlanetHousePosition(int)
+     */
     default int calculatePlanetHouse(final int objId) {
-        if (SE_HSYS_WHOLE_SIGN == sweOptions().houseSystem().fid()) {
-            final int[] signs = signs();
-            int planetHouse = signs[objId];
-            planetHouse += i12;
-            planetHouse -= signs[LG];
-            planetHouse %= i12;
-            planetHouse += i1;
-            return planetHouse;
-        } else {
-            final int cuspsLm1 = cusps().length - i1;
-            final double[] cusps = Arrays.copyOf(cusps(), cuspsLm1 + i1);
-            cusps[cuspsLm1] = d721;
-            double inc = d0;
+        return (int) calculatePlanetHousePosition(objId);
+    }
 
-            for (int i = i1; i < cuspsLm1; i++) {
-                if (inc == d0 && cusps[i] <= d30) {
-                    if (i1 == i) break;
-                    inc = d360;
-                }
-                if (inc > d0) cusps[i] += inc;
-            }
+    /**
+     * The house position of an object as Swiss Ephemeris expresses it: 1.0 exactly on the
+     * cusp of the first house, 1.5 in the middle of it, 12.99... just short of the
+     * ascendant. The integer part is the house number.
+     * <p>
+     * Everything except whole sign houses goes through <code>swe_house_pos()</code>, the
+     * function Swiss Ephemeris provides for precisely this and the one behind the house
+     * position column of <code>swetest -fPj</code>. Two details it needs care with:
+     * <ul>
+     * <li><b>Frame.</b> <code>swe_house_pos()</code> rebuilds the cusps itself out of the
+     * ARMC, so it works in the tropical frame. For a sidereal chart
+     * <code>swe_houses_ex()</code> subtracts the ayanamsa from every element of
+     * <code>ascmc[]</code> <i>except</i> the ARMC (<code>sidereal_houses_trad()</code>
+     * skips index 2 explicitly), so the ARMC handed back is still tropical and the object
+     * has to be made tropical too - sidereal longitude plus ayanamsa. Both shift by the
+     * same amount, so the resulting house is the same one the sidereal cusps give.</li>
+     * <li><b>Latitude.</b> The ecliptic latitude is passed as 0, i.e. the object is
+     * projected onto the ecliptic. That is what the cusp comparison this method used to
+     * perform did, and what <code>swetest -hpos_meth 1</code> does. Feeding the real
+     * latitude instead (swetest's default) is also defensible but is a different
+     * convention, and it moves objects that are far off the ecliptic: in the reference
+     * chart Pluto sits at 17 deg latitude and its Koch house position goes from 10.48 to
+     * 10.06 - one bad day away from landing in another house.</li>
+     * </ul>
+     * Whole sign houses cannot use <code>swe_house_pos()</code>. They are the one system
+     * whose sidereal cusps are not simply the tropical cusps shifted by the ayanamsa:
+     * Swiss Ephemeris snaps each cusp down to the start of its sign <i>after</i>
+     * subtracting the ayanamsa, which is not invariant under the shift. There the house is
+     * just the distance in signs from the ascendant.
+     *
+     * @return house position in [1, 13)
+     */
+    default double calculatePlanetHousePosition(final int objId) {
+        final ISweHouseSystem houseSystem = sweOptions().houseSystem();
 
-            final double objLong = longitudes()[objId];
-            final double longitude = objLong < cusps[i1] ? objLong + d360 : objLong;
-
-            for (int idx = i1; idx < cuspsLm1; idx++) {
-                if (longitude >= cusps[idx] &&
-                        longitude < cusps[idx + 1]) {
-                    return idx;
-                }
-            }
+        if (SE_HSYS_WHOLE_SIGN == houseSystem.fid()) {
+            final double longitude = longitudes()[objId];
+            final int house = ((signs()[objId] - signs()[LG] + i12) % i12) + i1;
+            return house + (longitude % d30) / d30;
         }
 
-        throw new SweRuntimeException("Not implemented! House System: "
-                + sweOptions().houseSystem().code());
+        // a tropical chart has no ayanamsa to add back
+        final double ayanamsa = sweOptions().ayanamsa().sidereal() ? ayanamsa() : d0;
+
+        final double[] xpin = new double[]{longitudes()[objId] + ayanamsa, d0};
+        final double house = swissEph().swe_house_pos(ascmc()[SE_ARMC], sweLocation().latitude(),
+                trueObliquity(), houseSystem.fid(), xpin, sweError());
+
+        if (house < d1) {
+            throw new SweRuntimeException("Cannot determine the house of object " + objId
+                    + " in house system " + houseSystem.code() + ": " + sweError());
+        }
+
+        return house;
+    }
+
+    /**
+     * The true obliquity of the ecliptic of date, in degrees - mean obliquity plus the
+     * nutation in obliquity. This is what <code>swe_houses_ex()</code> builds the cusps
+     * with, unconditionally, so it is what <code>swe_house_pos()</code> has to be given.
+     * Passing the mean obliquity instead shifts a house position by about 1e-5 of a house.
+     * <p>
+     * Only the ephemeris selection is taken from the options. <code>SEFLG_SIDEREAL</code>
+     * and <code>SEFLG_NONUT</code> must not be passed on: nutation is cached per date
+     * inside Swiss Ephemeris, and any call made with <code>SEFLG_NONUT</code> - which
+     * <code>swe_get_ayanamsa_ex()</code> sets internally - leaves that cache zeroed, so
+     * <code>SE_ECL_NUT</code> would then hand back the mean obliquity in xx[0].
+     *
+     * @return true obliquity of date, in degrees
+     */
+    default double trueObliquity() {
+        final double[] xx = new double[6];
+        final int result = swissEph().swe_calc(sweJulianDate().epheTime(),
+                SE_ECL_NUT, sweOptions().mainFlags() & SEFLG_EPHMASK, xx, sweError());
+
+        if (ERR == result) {
+            throw new SweRuntimeException("Cannot obtain the obliquity: " + sweError());
+        }
+
+        return xx[0];
     }
 
     /**

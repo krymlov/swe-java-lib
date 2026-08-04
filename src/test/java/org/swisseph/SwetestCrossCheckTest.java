@@ -148,6 +148,36 @@ public class SwetestCrossCheckTest extends AbstractTest {
     }
 
     /**
+     * House positions. <code>-fPj</code> replaces the longitude column with the house
+     * position (one value per line, which is what the parser above expects) and
+     * <code>-hsyP1</code> selects Placidus with swetest's hpos_meth 1, i.e. the object
+     * projected onto the ecliptic - the same convention
+     * {@link ISweObjects#calculatePlanetHousePosition(int)} uses.
+     * <p>
+     * The chart here is sidereal while swetest is run tropical: for Placidus the house
+     * position is invariant under the ayanamsa shift, which is exactly why the library
+     * can hand a tropical longitude to <code>swe_house_pos()</code>.
+     */
+    @Test
+    void housePositionsMatchSwetestLive() throws Exception {
+        assumeTrue(available(), "swetest64.exe / ephe not found");
+
+        final Map<String, Double> ref = runSwetest("-p" + SWETEST_BODIES, "-fPj",
+                "-house" + JHD.longitude() + "," + JHD.latitude() + ",P", "-hsyP1");
+        final ISweObjects o = objects(SweAyanamsa.LAHIRI);
+
+        final String[] names = {"Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter",
+                "Saturn", "Uranus", "Neptune", "Pluto", "mean Node"};
+        for (int i = 0; i < names.length; i++) {
+            final Double expected = ref.get(names[i]);
+            assertNotNull(expected, names[i] + " missing from swetest output");
+            final int obj = SWETEST_TO_OBJECT[i];
+            assertEquals(expected, o.calculatePlanetHousePosition(obj), 1e-6, names[i]);
+            assertEquals(expected.intValue(), o.houses()[obj], names[i] + " house");
+        }
+    }
+
+    /**
      * The pure Java port is an older Swiss Ephemeris (2.01.00), so it is held to a
      * looser bound than the native library - but it still has to agree with the
      * reference program to well under an arc second.
