@@ -146,9 +146,24 @@ public class SweObjects implements ISweObjects {
         // >
         // > This is not documented. But I'm not sure we should do so because it may create confusion.
 
+        // The reported ayanamsa follows the same true/apparent choice as the planets.
+        //
+        // For a star based ayanamsa (True Chitra and alike) the ayanamsa is derived from
+        // the computed position of the star, so SEFLG_TRUEPOS changes it - by 55 arc
+        // seconds for True Citra in 1976. Reporting it from mainFlags alone handed back
+        // the apparent value even for a chart whose planets and houses were built with
+        // SEFLG_TRUEPOS, i.e. a number the rest of the chart was not built on, and one
+        // that swetest only prints when run WITHOUT -true.
+        //
+        // Taking the bit from calcFlags keeps `swetest -true` and ayanamsa() in agreement
+        // for the default options, and still reports the apparent value when the caller
+        // deliberately clears SEFLG_TRUEPOS. Everything else the caller put into
+        // mainFlags (SEFLG_NONUT, ...) is preserved.
+
         try {
             final double[] daya = new double[]{0};
-            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.epheTime(), options.mainFlags(), daya, sweError);
+            final int iflag = options.mainFlags() | (options.calcFlags() & SEFLG_TRUEPOS);
+            final int result = swissEph.swe_get_ayanamsa_ex(julianDate.epheTime(), iflag, daya, sweError);
             if (result != ERR) return this.ayanamsa = daya[0];
         } catch (NotImplementedException nie) {
             // ignore

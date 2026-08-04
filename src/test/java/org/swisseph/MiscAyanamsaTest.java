@@ -125,9 +125,11 @@ public class MiscAyanamsaTest extends AbstractTest {
         ISweObjects sweObjects = new SweObjects(getSwephExp(), new SweJulianDate(date1947, 0f, 10.5),
                 GEO_LUCKNOW, TRUECITRA_AYANAMSA).completeBuild();
 
-        // Ayanamsa
-        Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
+        // Ayanamsa - the default options compute the planets with SEFLG_TRUEPOS, so the
+        // reported ayanamsa is the true one too: swetest -b15.8.1947 -ut10:30 -sid27 -true
+        // prints 23 6'24.3011, where without -true it prints 23 6'14.4062
+        Assertions.assertEquals("23°06'24.30\"", toDMSms(sweObjects.ayanamsa()).toString());
+        Assertions.assertEquals(23.10675029747533, sweObjects.ayanamsa());
 
         // Lagna
         Assertions.assertEquals(256.3919204121967, sweObjects.longitudes()[LG]);

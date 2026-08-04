@@ -30,8 +30,11 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
      * the computed position of the star, so the flag decides whether that position is the
      * true (geometric) or the apparent one.
      * <p>
-     * Keep it here and not in {@link #DEFAULT_SS_MAIN_FLAGS}: the main flags are also used
-     * to build the ayanamsa value reported to the user, which should stay the apparent one.
+     * Keep it here and not in {@link #DEFAULT_SS_MAIN_FLAGS}, because the main flags are
+     * also used for things that must stay apparent. The ayanamsa reported by
+     * {@link ISweObjects#ayanamsa()} adds <code>SEFLG_TRUEPOS</code> itself, so the value
+     * shown to the user is the one the houses and the planets were built on, and matches
+     * <code>swetest ... -true</code>.
      */
     int DEFAULT_SS_HOUSE_FLAGS =
             DEFAULT_SS_MAIN_FLAGS |

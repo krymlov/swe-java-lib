@@ -129,20 +129,25 @@ public class JhdIuriiKTest extends AbstractTest {
     }
 
     /**
-     * For a star based ayanamsa the reported (apparent) value and the one the houses
-     * are built with (SEFLG_TRUEPOS) are genuinely different numbers.
+     * A star based ayanamsa really does have two different values, and the reported one
+     * must be the one the chart was built with - i.e. what swetest prints with -true.
+     * Clearing SEFLG_TRUEPOS from the calc flags must switch it back to the apparent one.
      */
     @Test
-    void starBasedAyanamsaIsReportedApparentButUsedTrue() {
-        final ISweObjects o = objects(getSwephExp(), TRUE_CITRA, PLACIDUS);
-        final double[] daya = new double[1];
-        final StringBuilder serr = new StringBuilder();
+    void starBasedAyanamsaFollowsTheTruePosChoice() {
+        final double aTrue = 23 + 30 / 60. + 49.1419 / 3600.;      // swetest -sid27 -true
+        final double aApparent = 23 + 31 / 60. + 9.4986 / 3600.;   // swetest -sid27
+        assertNotEquals(aTrue, aApparent);
 
-        assertEquals(23 + 31 / 60. + 9.4986 / 3600., o.ayanamsa(), DELTA_SWETEST, "apparent");
+        assertEquals(aTrue, objects(getSwephExp(), TRUE_CITRA, PLACIDUS).ayanamsa(),
+                DELTA_SWETEST, "default options compute true positions");
 
-        getSwephExp().swe_set_sid_mode(TRUE_CITRA.fid(), 0., 0.);
-        getSwephExp().swe_get_ayanamsa_ex_ut(SWETEST_JULDAY, ISweObjectsOptions.DEFAULT_SS_HOUSE_FLAGS, daya, serr);
-        assertEquals(23 + 30 / 60. + 49.1419 / 3600., daya[0], DELTA_SWETEST, "true");
+        final ISweObjects apparent = new SweObjects(getSwephExp(),
+                new SweJulianDate(JHD.date(), JHD.timeZone(), JHD.localTime()), JHD.geoLocation(),
+                new SweObjectsOptions.Builder().ayanamsa(TRUE_CITRA).houseSystem(PLACIDUS)
+                        .calcFlags(ISweObjectsOptions.DEFAULT_SS_CALC_FLAGS ^ SEFLG_TRUEPOS)
+                        .build()).completeBuild();
+        assertEquals(aApparent, apparent.ayanamsa(), DELTA_SWETEST, "SEFLG_TRUEPOS cleared");
     }
 
     // ---------------------------------------------------------- the chart
@@ -196,21 +201,19 @@ public class JhdIuriiKTest extends AbstractTest {
     /**
      * swetest -sid&lt;n&gt;, same date and place.
      * <p>
-     * Positions come from the run with <code>-true</code> (the library computes them
-     * with SEFLG_TRUEPOS). The ayanamsa column comes from the run <b>without</b>
-     * <code>-true</code>, because {@link ISweObjects#ayanamsa()} deliberately reports
-     * the apparent value - see the comment on
-     * {@link ISweObjectsOptions#DEFAULT_SS_HOUSE_FLAGS}. The two differ only for
-     * star based ayanamsas; here only True Citra (sid 27) moves, by 55 arc seconds.
+     * Everything, ayanamsa included, comes from the run <b>with</b> <code>-true</code>:
+     * the default options compute the planets with SEFLG_TRUEPOS and
+     * {@link ISweObjects#ayanamsa()} follows that same choice. The flag only moves a
+     * star based ayanamsa - here just True Citra (sid 27), by 55 arc seconds.
      */
     @ParameterizedTest(name = "sid{0}")
     @CsvSource({
-            //  sid, apparent ayanamsa d, m, s,   Sun,         Moon,        Ascendant
+            //  sid, ayanamsa d, m, s,            Sun,         Moon,        Ascendant
             " 0, 24, 24, 44.3167,   4.5072050, 244.2221932, 220.0721869",
             " 1, 23, 31, 44.7692,   5.3904126, 245.1054009, 220.9553945",
             " 3, 22,  4, 58.0844,   6.8367139, 246.5517022, 222.4016959",
             " 5, 23, 25, 56.1008,   5.4872649, 245.2022532, 221.0522469",
-            "27, 23, 31,  9.4986,   5.4058646, 245.1208529, 220.9708466"})
+            "27, 23, 30, 49.1419,   5.4058646, 245.1208529, 220.9708466"})
     void nativeAyanamsasMatchSwetest(int sid, int deg, int min, double sec,
                                      double sun, double moon, double asc) {
         final ISweAyanamsa ayanamsa = SweAyanamsaOf(sid);
