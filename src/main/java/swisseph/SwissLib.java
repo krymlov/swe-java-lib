@@ -2746,4 +2746,151 @@ public void swe_set_astro_models(int[] imodel) {
 
 static final double PREC_IAU_CTIES=2.0; // J2000 +/- two centuries
 
+//////////////////////////////////////////////////////////////////////////////
+// other functions from swephlib.c: //////////////////////////////////////////
+// they are not needed for Swiss Ephemeris, but may be useful to former ///////
+// Placalc users. a centisec is an int holding 1/100 of an arc second ////////
+//////////////////////////////////////////////////////////////////////////////
+
+  /** 360 degrees expressed in centiseconds */
+  public static final int DEG360 = 360 * 360000;
+  /** 180 degrees expressed in centiseconds */
+  public static final int DEG180 = 180 * 360000;
+  /** 30 degrees expressed in centiseconds */
+  public static final int DEG30 = 30 * 360000;
+
+  /**
+  * Normalizes a centisec value into the interval [0..DEG360[.
+  * @param p centiseconds
+  * @return normalized centiseconds
+  */
+  public static int swe_csnorm(int p) {
+    if (p < 0) {
+      do { p += DEG360; } while (p < 0);
+    } else if (p >= DEG360) {
+      do { p -= DEG360; } while (p >= DEG360);
+    }
+    return p;
+  }
+
+  /**
+  * Distance in centisecs p1 - p2, normalized to [0..360[.
+  */
+  public static int swe_difcsn(int p1, int p2) {
+    return swe_csnorm(p1 - p2);
+  }
+
+  /**
+  * Distance in degrees p1 - p2, normalized to [0..360[.
+  */
+  public static double swe_difdegn(double p1, double p2) {
+    return swe_degnorm(p1 - p2);
+  }
+
+  /**
+  * Distance in centisecs p1 - p2, normalized to [-180..180[.
+  */
+  public static int swe_difcs2n(int p1, int p2) {
+    int dif = swe_csnorm(p1 - p2);
+    if (dif >= DEG180) return dif - DEG360;
+    return dif;
+  }
+
+  /**
+  * Rounds centiseconds to whole seconds, but at 29.5959 always downwards,
+  * so that a value never rounds up into the next sign.
+  */
+  public static int swe_csroundsec(int x) {
+    int t = (x + 50) / 100 * 100;       /* round to seconds */
+    if (t > x && t % DEG30 == 0) {      /* was rounded up to next sign */
+      t = x / 100 * 100;                /* round last second of sign downwards */
+    }
+    return t;
+  }
+
+  /**
+  * Day of week for a julian day number: monday = 0, ... sunday = 6.
+  */
+  public static int swe_day_of_week(double jd) {
+    return (((int) SMath.floor(jd - 2433282 - 1.5) % 7) + 7) % 7;
+  }
+
+  /**
+  * Centiseconds of time to "hh:mm:ss".
+  * @param t centiseconds of time
+  * @param sep separator placed between the fields
+  * @param suppressZero drop ":ss" when the seconds are zero
+  */
+  public static String swe_cs2timestr(int t, int sep, boolean suppressZero) {
+    final char[] a = "        ".toCharArray();
+    a[2] = a[5] = (char) sep;
+
+    t = ((t + 50) / 100) % (24 * 3600);  /* round to seconds */
+    int s = t % 60;
+    int m = (t / 60) % 60;
+    int h = t / 3600 % 100;
+
+    int len = 8;
+    if (s == 0 && suppressZero) {
+      len = 5;
+    } else {
+      a[6] = (char) (s / 10 + '0');
+      a[7] = (char) (s % 10 + '0');
+    }
+
+    a[0] = (char) (h / 10 + '0');
+    a[1] = (char) (h % 10 + '0');
+    a[3] = (char) (m / 10 + '0');
+    a[4] = (char) (m % 10 + '0');
+    return new String(a, 0, len);
+  }
+
+  /**
+  * Centiseconds of arc to "dddPmm'ss", leading blanks stripped.
+  * @param t centiseconds of arc
+  * @param pchar direction character used when t is positive
+  * @param mchar direction character used when t is negative
+  */
+  public static String swe_cs2lonlatstr(int t, char pchar, char mchar) {
+    final char[] a = "      '  ".toCharArray();
+    /* mask     dddEmm'ss" */
+    if (t < 0) pchar = mchar;
+
+    t = (SMath.abs(t) + 50) / 100;       /* round to seconds */
+    int s = t % 60;
+    int m = t / 60 % 60;
+    int h = t / 3600 % 1000;
+
+    int len = 9;
+    if (s == 0) {
+      len = 6;                           /* cut off seconds */
+    } else {
+      a[7] = (char) (s / 10 + '0');
+      a[8] = (char) (s % 10 + '0');
+    }
+
+    a[3] = pchar;
+    if (h > 99) a[0] = (char) (h / 100 + '0');
+    if (h > 9) a[1] = (char) (h % 100 / 10 + '0');
+    a[2] = (char) (h % 10 + '0');
+    a[4] = (char) (m / 10 + '0');
+    a[5] = (char) (m % 10 + '0');
+
+    int from = 0;
+    while (from < len && a[from] == ' ') from++;
+    return new String(a, from, len - from);
+  }
+
+  /**
+  * Centiseconds of arc to "dd&deg;mm'ss" within a sign, degrees 0..29.
+  * Leading zeros in the degrees are suppressed (the field is blank padded).
+  */
+  public static String swe_cs2degstr(int t) {
+    t = t / 100 % (30 * 3600);           /* truncate to seconds */
+    int s = t % 60;
+    int m = t / 60 % 60;
+    int h = t / 3600 % 100;              /* only 0..99 degrees */
+    return String.format("%2d%s%02d'%02d", h, String.valueOf(SweConst.ODEGREE_CHAR), m, s);
+  }
+
 } // End of class SwissLib.

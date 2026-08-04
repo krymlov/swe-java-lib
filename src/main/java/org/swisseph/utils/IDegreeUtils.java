@@ -171,6 +171,7 @@ public interface IDegreeUtils {
             builder.append(CH_DS);
         }
 
+        ddeg += D05_CSEC;
         final int ideg = (int) ddeg;
 
         ddeg -= ideg;
@@ -184,9 +185,7 @@ public interface IDegreeUtils {
         ddeg -= isec;
         ddeg *= d100;
 
-        final int imls;
-        if (ddeg > d99) imls = (int) ddeg;
-        else imls = (int) Math.round(ddeg);
+        final int imls = ddeg < d99 ? (int) ddeg : i99;
 
         if (ideg < i10) builder.append(CH_ZR);
         builder.append(ideg);
@@ -225,6 +224,7 @@ public interface IDegreeUtils {
             builder.append(CH_DS);
         }
 
+        ddeg += D05_CSEC;
         final int ideg = (int) ddeg;
 
         ddeg -= ideg;
@@ -238,9 +238,7 @@ public interface IDegreeUtils {
         ddeg -= isec;
         ddeg *= d100;
 
-        final int imls;
-        if (ddeg > d99) imls = (int) ddeg;
-        else imls = (int) Math.round(ddeg);
+        final int imls = ddeg < d99 ? (int) ddeg : i99;
 
         builder.append(ideg);
 
@@ -312,6 +310,10 @@ public interface IDegreeUtils {
      * Decimal Degrees = degrees + (minutes/60.) + (seconds/3600.)
      * 49°45'27.50" -> 49.75764
      * </pre>
+     * <p>
+     * The result is the exact decimal value of the DMS triple. It used to be biased
+     * by +1 milli-arcsecond to compensate for {@link #toIDMSms(double)} truncating
+     * instead of rounding; that truncation is fixed, so the bias is gone.
      *
      * @param ideg to convert
      * @return decimal ideg like 49.75764
@@ -335,8 +337,6 @@ public interface IDegreeUtils {
         ddeg += imin / d60;
         ddeg += isec / d3600;
         ddeg += imls / d360000;
-
-        ddeg += d1d3600E03;
 
         return ng ? -ddeg : ddeg;
     }

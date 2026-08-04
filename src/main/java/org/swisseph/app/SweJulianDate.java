@@ -158,13 +158,31 @@ public class SweJulianDate implements ISweJulianDate {
         return date;
     }
 
+    /**
+     * Snaps the stored local and universal decimal-hours values to the nearest
+     * nanosecond, so that a time assembled as {@code h + m/60. + s/3600.} does not
+     * decompose back one second short (1.0166666666666666 -> 01:00:59.99999999999979).
+     * <p>
+     * This replaces an earlier fix that added d1d3600E11 (2.78e-15 h) whenever the
+     * caller-supplied minutes exceeded the decomposed ones. That epsilon was below one
+     * ULP of a decimal-hours value from 16h onwards, it could not repair the whole-hour
+     * wrap (09:59:59.999... stayed in the previous hour, because 0 > 59 is false), and
+     * it did nothing at all for the 3-element dates produced by swe_revjul.
+     */
     @Override
     public void makeValidTime() {
-        final int[] date = date();
-        if (null != date && d0 != values[IDXD_LTIME] && date.length > 4 && date[4] > minutes()) {
-            if (!isNaN(values[IDXD_UTIME])) values[IDXD_UTIME] += d1d3600E11;
-            values[IDXD_LTIME] += d1d3600E11;
-        }
+        values[IDXD_LTIME] = roundToNanos(values[IDXD_LTIME]);
+        values[IDXD_UTIME] = roundToNanos(values[IDXD_UTIME]);
+    }
+
+    /**
+     * @param time decimal hours
+     * @return time rounded to the nearest nanosecond, NaN passed through
+     */
+    protected static double roundToNanos(final double time) {
+        if (isNaN(time)) return time;
+        final double seconds = time * d3600;
+        return (Math.round(seconds / D1_NANOS) * D1_NANOS) / d3600;
     }
 
     @Override

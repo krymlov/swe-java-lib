@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 import static org.swisseph.api.ISweConstants.*;
+import static org.swisseph.api.ISweJulianDate.splitTime;
 
 /**
  * @author Yura Krymlov
@@ -43,9 +44,13 @@ public interface IDateUtils {
     /**
      * The method is intended to convert datetime as long value
      * in format 'yyyyMMddHHmmss' to the {@link Date} object
+     * <p>
+     * The value is zero padded back to 14 digits first: Long.toString() drops the
+     * leading zeros of a year below 1000, so 500-01-01 12:00:00 (5000101120000)
+     * would otherwise be read as the year 5000.
      */
     static Date convert(final long datetime) throws ParseException {
-        return FDTE_FORMATER.parse(Long.toString(datetime));
+        return FDTE_FORMATER.parse(String.format("%014d", datetime));
     }
 
     /**
@@ -90,14 +95,20 @@ public interface IDateUtils {
 
         switch (format) {
             case F4Y_2M_2D_2H_2M_2S_MS: {
-                final double seconds = julianDate.dseconds();
+                // seconds are rendered as ss.cc - a fixed two-digit fraction, so snap the
+                // whole time to a centisecond first and let the carry run through the
+                // seconds and minutes rather than printing an impossible "60.00"
+                final double[] hms = splitTime(julianDate.localTime(), D05_CSEC_UNIT);
+                final int isec = (int) hms[2];
+                final int csec = (int) Math.round((hms[2] - isec) * i100);
+
                 final StringBuilder builder = new StringBuilder(25);
                 formatYMD(builder, true, julianDate.year(), julianDate.month(), julianDate.day()).append(STR_WS);
-                formatHMS(builder, true, julianDate.hours(), julianDate.minutes());
-                builder.append(CH_CN);
+                formatHMS(builder, true, (int) hms[0], (int) hms[1], isec);
+                builder.append(CH_DT);
 
-                if (seconds < d10) builder.append('0');
-                return builder.append(((int) (julianDate.dseconds() * i100)) / d100);
+                if (csec < i10) builder.append(CH_ZR);
+                return builder.append(csec);
             }
 
             case F4Y_2M_2D_2H_2M_2S: {

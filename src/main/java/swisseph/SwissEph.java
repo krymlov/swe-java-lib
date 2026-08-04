@@ -8468,6 +8468,75 @@ if (false) {
     return retc;
   }
 
+  /*******************************************************
+   * other functions from swephlib.c;
+   * they are not needed for Swiss Ephemeris,
+   * but may be useful to former Placalc users.
+   *
+   * these overrides keep this implementation pure Java - without them the
+   * ISwissEph defaults would call into the native library through SwephExp.
+   ********************************************************/
+
+  @Override
+  public int swe_csnorm(int p) {
+    return SwissLib.swe_csnorm(p);
+  }
+
+  @Override
+  public int swe_difcsn(int p1, int p2) {
+    return SwissLib.swe_difcsn(p1, p2);
+  }
+
+  @Override
+  public double swe_difdegn(double p1, double p2) {
+    return SwissLib.swe_difdegn(p1, p2);
+  }
+
+  @Override
+  public int swe_difcs2n(int p1, int p2) {
+    return SwissLib.swe_difcs2n(p1, p2);
+  }
+
+  @Override
+  public double swe_difdeg2n(double p1, double p2) {
+    return SwissLib.swe_difdeg2n(p1, p2);
+  }
+
+  @Override
+  public double swe_difrad2n(double p1, double p2) {
+    return SwissLib.swe_difrad2n(p1, p2);
+  }
+
+  @Override
+  public int swe_csroundsec(int x) {
+    return SwissLib.swe_csroundsec(x);
+  }
+
+  @Override
+  public int swe_d2l(double x) {
+    return SwissLib.swe_d2l(x);
+  }
+
+  @Override
+  public int swe_day_of_week(double jd) {
+    return SwissLib.swe_day_of_week(jd);
+  }
+
+  @Override
+  public String swe_cs2timestr(int t, char sep, boolean suppressZero) {
+    return SwissLib.swe_cs2timestr(t, sep, suppressZero);
+  }
+
+  @Override
+  public String swe_cs2lonlatstr(int t, char pchar, char mchar) {
+    return SwissLib.swe_cs2lonlatstr(t, pchar, mchar);
+  }
+
+  @Override
+  public String swe_cs2degstr(int t) {
+    return SwissLib.swe_cs2degstr(t);
+  }
+
 } // Ende class SwissEph
 
 

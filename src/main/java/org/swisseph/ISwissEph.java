@@ -690,4 +690,70 @@ public interface ISwissEph extends Closeable {
     default int swe_helio_cross_ut(int ipl, double x2cross, double jd_ut, int iflag, int dir, double[] jd_cross, StringBuilder serr) {
         return SwephExp.swe_helio_cross_ut(ipl, x2cross, jd_ut, iflag, dir, jd_cross, serr);
     }
+
+    /*******************************************************
+     * other functions from swephlib.c;
+     * they are not needed for Swiss Ephemeris,
+     * but may be useful to former Placalc users.
+     *
+     * a centisec (CSEC) is an int32 holding 1/100 of an arc second
+     * (or of a second of time), so it maps onto a Java int.
+     ********************************************************/
+
+    /* normalize argument into interval [0..DEG360] */
+    default /*centisec*/ int swe_csnorm(/*centisec*/ int p) {
+        return SwephExp.swe_csnorm(p);
+    }
+
+    /* distance in centisecs p1 - p2 normalized to [0..360[ */
+    default /*centisec*/ int swe_difcsn(/*centisec*/ int p1, /*centisec*/ int p2) {
+        return SwephExp.swe_difcsn(p1, p2);
+    }
+
+    default double swe_difdegn(double p1, double p2) {
+        return SwephExp.swe_difdegn(p1, p2);
+    }
+
+    /* distance in centisecs p1 - p2 normalized to [-180..180[ */
+    default /*centisec*/ int swe_difcs2n(/*centisec*/ int p1, /*centisec*/ int p2) {
+        return SwephExp.swe_difcs2n(p1, p2);
+    }
+
+    default double swe_difdeg2n(double p1, double p2) {
+        return SwephExp.swe_difdeg2n(p1, p2);
+    }
+
+    default double swe_difrad2n(double p1, double p2) {
+        return SwephExp.swe_difrad2n(p1, p2);
+    }
+
+    /* round second, but at 29.5959 always down */
+    default /*centisec*/ int swe_csroundsec(/*centisec*/ int x) {
+        return SwephExp.swe_csroundsec(x);
+    }
+
+    /* double to int32 with rounding, no overflow check */
+    default int swe_d2l(double x) {
+        return SwephExp.swe_d2l(x);
+    }
+
+    /* monday = 0, ... sunday = 6 */
+    default int swe_day_of_week(double jd) {
+        return SwephExp.swe_day_of_week(jd);
+    }
+
+    /* centiseconds of time -> "hh:mm:ss" */
+    default String swe_cs2timestr(/*CSEC*/ int t, char sep, boolean suppressZero) {
+        return SwephExp.swe_cs2timestr(t, sep, suppressZero);
+    }
+
+    /* centiseconds of arc -> "dddPmm'ss", pchar/mchar are the direction characters */
+    default String swe_cs2lonlatstr(/*CSEC*/ int t, char pchar, char mchar) {
+        return SwephExp.swe_cs2lonlatstr(t, pchar, mchar);
+    }
+
+    /* centiseconds of arc -> "dd<deg>mm'ss" within a zodiac sign (0..29 degrees) */
+    default String swe_cs2degstr(/*CSEC*/ int t) {
+        return SwephExp.swe_cs2degstr(t);
+    }
 }

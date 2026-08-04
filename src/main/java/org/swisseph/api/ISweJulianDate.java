@@ -139,36 +139,70 @@ public interface ISweJulianDate extends Serializable, Cloneable {
     int day();
 
     /**
+     * Splits decimal hours into whole hours, whole minutes and (fractional) seconds.
+     * <p>
+     * A decimal-hours value is normally built as {@code h + m/60. + s/3600.}, which is
+     * not exact in binary: 1h01m00s becomes 1.0166666666666666, and naively truncating
+     * that back yields 01:00:59.99999999999979. Snapping the total to the nearest
+     * nanosecond before splitting removes that noise - it is seven orders of magnitude
+     * above the error and still far below what a julian day number can resolve.
+     *
+     * @param time decimal hours
+     * @return {hours, minutes, seconds} - seconds keeps its fractional part
+     */
+    static double[] splitTime(final double time) {
+        return splitTime(time, D1_NANOS);
+    }
+
+    /**
+     * Same as {@link #splitTime(double)} but snapping to an explicit unit, so that a
+     * caller rendering a fixed number of fractional digits gets the carry across
+     * seconds, minutes and hours for free instead of printing 59.996 as "60.00".
+     *
+     * @param time decimal hours
+     * @param unit rounding unit in seconds, e.g. .01 to render ss.cc
+     * @return {hours, minutes, seconds} - seconds keeps its fractional part
+     */
+    static double[] splitTime(final double time, final double unit) {
+        if (isNaN(time)) return new double[]{i0, i0, d0};
+
+        double seconds = time * d3600;
+        seconds = Math.round(seconds / unit) * unit;
+
+        final double hours = Math.floor(seconds / d3600);
+        seconds -= hours * d3600;
+
+        double minutes = Math.floor(seconds / d60);
+        seconds -= minutes * d60;
+
+        // guard the fp corner where seconds lands exactly on 60. after the subtraction
+        if (seconds >= d60) {
+            seconds -= d60;
+            minutes += d1;
+        }
+
+        return new double[]{hours, minutes, seconds};
+    }
+
+    /**
      * @return local hours
      */
     default int hours() {
-        final double ltime = localTime();
-        if (d0 == ltime) return i0;
-        return (int) ltime;
+        return (int) splitTime(localTime())[i0];
     }
 
     /**
      * @return local minutes
      */
     default int minutes() {
-        double ltime = localTime();
-        if (d0 == ltime) return i0;
-        ltime -= (int) ltime;
-        ltime *= d60;
-        return (int) ltime;
+        return (int) splitTime(localTime())[i1];
     }
 
     /**
      * @return local seconds
      */
     default double dseconds() {
-        double ltime = localTime();
-        if (d0 == ltime) return d0;
-        ltime -= (int) ltime;
-        ltime *= d60;
-        ltime -= (int) ltime;
-        ltime *= d60;
-        return ltime;
+        return splitTime(localTime())[i2];
     }
 
     void makeValidTime();
@@ -182,35 +216,20 @@ public interface ISweJulianDate extends Serializable, Cloneable {
      * @return hours in UT
      */
     default int uhours() {
-        final double utime = utime();
-        if (d0 == utime) return i0;
-        if (isNaN(utime)) return i0;
-        return (int) utime;
+        return (int) splitTime(utime())[i0];
     }
 
     /**
      * @return minutes in UT
      */
     default int uminutes() {
-        double utime = utime();
-        if (d0 == utime) return i0;
-        if (isNaN(utime)) return i0;
-        utime -= (int) utime;
-        utime *= d60;
-        return (int) utime;
+        return (int) splitTime(utime())[i1];
     }
 
     /**
      * @return seconds in UT
      */
     default double useconds() {
-        double utime = utime();
-        if (d0 == utime) return d0;
-        if (isNaN(utime)) return d0;
-        utime -= (int) utime;
-        utime *= d60;
-        utime -= (int) utime;
-        utime *= d60;
-        return utime;
+        return splitTime(utime())[i2];
     }
 }

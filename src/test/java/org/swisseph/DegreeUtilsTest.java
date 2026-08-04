@@ -23,13 +23,24 @@ import static org.swisseph.utils.IDegreeUtils.toDDms;
 @Execution(ExecutionMode.CONCURRENT)
 public class DegreeUtilsTest extends AbstractTest {
 
+    /**
+     * Independent reference rendering, deg°mm'ss.mmm
+     * <p>
+     * It deliberately does NOT decompose by repeated truncation. Chaining
+     * {@code (int)} casts through degrees, minutes and seconds turns an exact value
+     * such as 0.02 (= 0°01'12") into 00°01'11.999 - the reference used to carry that
+     * very defect, which is why it agreed with the equally truncating toDMSms().
+     * Rounding the whole angle once, into thousandths of an arc second, and splitting
+     * that integer is exact.
+     */
     static StringBuilder convertToDMS(double decimalDegrees) {
-        int degrees = (int) decimalDegrees;
-        double fractionalDegrees = Math.abs(decimalDegrees - degrees) * 60;
-        int minutes = (int) fractionalDegrees;
-        double fractionalMinutes = (fractionalDegrees - minutes) * 60;
-        int seconds = (int) fractionalMinutes;
-        int milliseconds = (int) ((fractionalMinutes - seconds) * 1000);
+        long total = Math.round(Math.abs(decimalDegrees) * 3_600_000d);
+
+        int milliseconds = (int) (total % 1000);
+        int seconds = (int) ((total /= 1000) % 60);
+        int minutes = (int) ((total /= 60) % 60);
+        int degrees = (int) (total / 60);
+        if (decimalDegrees < 0) degrees = -degrees;
 
         StringBuilder sb = new StringBuilder();
         if (degrees < i10) sb.append(CH_ZR);
@@ -38,6 +49,7 @@ public class DegreeUtilsTest extends AbstractTest {
         sb.append(minutes).append("'");
         if (seconds < i10) sb.append(CH_ZR);
         sb.append(seconds).append(".");
+        if (milliseconds < i100) sb.append(CH_ZR);
         if (milliseconds < i10) sb.append(CH_ZR);
         sb.append(milliseconds);//.append("\"");
 

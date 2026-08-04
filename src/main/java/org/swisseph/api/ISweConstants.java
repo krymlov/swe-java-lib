@@ -26,6 +26,7 @@ public interface ISweConstants {
     int i12 = 12;
     int i30 = 30;
     int i60 = 60;
+    int i99 = 99;
     int i100 = 100;
     int i360 = 360;
     int i1000 = 1000;
@@ -111,6 +112,18 @@ public interface ISweConstants {
     
     // round to a millisecond
     double d005d3600 = .005/d3600;
+
+    // round to a centisecond of arc (1/100 of an arc second) - half of the
+    // smallest unit rendered by IDegreeUtils.toDMSms()/toIDMSms()
+    double D05_CSEC = d05/d360000;
+
+    // round a decimal-hours value to the nearest nanosecond: large enough to
+    // absorb the ~1e-11 s of noise that h + m/60 + s/3600 accumulates, small
+    // enough to be far below the resolution a julian day number can carry
+    double D1_NANOS = 1e-9;
+
+    // rounding unit (in seconds) for a time rendered as ss.cc
+    double D05_CSEC_UNIT = d1/d100;
 
     // MILLIARCSEC
     double d1d3600E03 = d1/d3600E03;
