@@ -150,6 +150,12 @@ public interface ISwissEph extends Closeable {
         tmzjdt.values()[IDXD_JULDAY] = utcjdt.julianDay();
         tmzjdt.values()[IDXD_UTIME] = utcjdt.utime();
 
+        // the date fields were produced with the caller's calendar, so the result has to
+        // keep saying so - otherwise it would deduce the other calendar from its own date
+        if (null != julianDate.calendar() && tmzjdt instanceof SweJulianDate) {
+            ((SweJulianDate) tmzjdt).calendar(julianDate.calendar());
+        }
+
         return tmzjdt;
     }
 

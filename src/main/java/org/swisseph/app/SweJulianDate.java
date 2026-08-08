@@ -36,6 +36,13 @@ public class SweJulianDate implements ISweJulianDate {
      */
     protected final int[] date;
 
+    /**
+     * Gregorian/Julian override, null while the calendar is deduced from the date
+     *
+     * @see #calendar(Boolean)
+     */
+    protected Boolean calendar;
+
     public SweJulianDate(double julDay) {
         this(julDay, UT_TMZ);
     }
@@ -96,6 +103,34 @@ public class SweJulianDate implements ISweJulianDate {
         if (datetime.length > 5) localTime += datetime[5] / d3600;
         if (datetime.length > 6) localTime += datetime[6] / d3600E03;
         return localTime;
+    }
+
+    @Override
+    public Boolean calendar() {
+        return calendar;
+    }
+
+    /**
+     * Forces the calendar the date fields are read in, instead of deducing it from the
+     * date. Must be set before the instance is handed to
+     * {@link org.swisseph.ISwissEph#initJulianDate}, which is where the conversion happens.
+     * <pre>
+     * // 4 April 1000 the way Jagannatha Hora reads it - proleptic Gregorian
+     * new SweJulianDate(new int[]{1000, 4, 4, 17, 50}, 5.5f, 17.844444)
+     *         .calendar(SE_GREG_CAL)
+     *
+     * // an Old Style Russian date - Julian although it is well after 1582
+     * new SweJulianDate(new int[]{1900, 1, 1, 12, 0}, 3f, 12.)
+     *         .calendar(SE_JUL_CAL)
+     * </pre>
+     *
+     * @param calendar {@link #SE_GREG_CAL}, {@link #SE_JUL_CAL}, or null to deduce it
+     * @return this, so it can be chained onto a constructor
+     * @see ISweJulianDate#calendar()
+     */
+    public SweJulianDate calendar(final Boolean calendar) {
+        this.calendar = calendar;
+        return this;
     }
 
     @Override

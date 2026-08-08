@@ -74,7 +74,37 @@ public interface ISweJulianDate extends Serializable, Cloneable {
         return gregorianCalendar() ? SweConst.SE_GREG_CAL : SweConst.SE_JUL_CAL;
     }
 
+    /**
+     * The calendar the date fields are expressed in, when the caller wants to say so
+     * instead of letting it be deduced from the date.
+     * <p>
+     * By default this returns <code>null</code> and {@link #gregorianCalendar()} applies
+     * the usual rule: Gregorian from 1582-10-15 on, Julian before it. Two cases need to
+     * override that, and both are ordinary rather than exotic:
+     * <ul>
+     * <li>{@link #SE_GREG_CAL} for a date <b>before</b> the reform - the
+     * <b>proleptic Gregorian</b> calendar. Jagannatha Hora works this way, so its charts
+     * for old dates cannot be reproduced without it: "4 April 1000" read proleptically is
+     * six days away from the Julian reading, a different chart rather than a rounding
+     * difference.</li>
+     * <li>{@link #SE_JUL_CAL} for a date <b>after</b> the reform - <b>Old Style</b> dates.
+     * Russia kept the Julian calendar until 1918, Greece until 1923, so historical birth
+     * data from those countries is routinely 13 days off if read as Gregorian.</li>
+     * </ul>
+     * Both directions honour it: {@link org.swisseph.ISwissEph#initJulianDay} passes it to
+     * <code>swe_julday()</code> and {@link org.swisseph.ISwissEph#initDateTime} to
+     * <code>swe_revjul()</code>.
+     *
+     * @return {@link #SE_GREG_CAL}, {@link #SE_JUL_CAL}, or <code>null</code> to deduce it
+     */
+    default Boolean calendar() {
+        return null;
+    }
+
     default boolean gregorianCalendar() {
+        final Boolean calendar = calendar();
+        if (null != calendar) return calendar;
+
         final double julianDay = julianDay();
 
         if (isNaN(julianDay)) {
