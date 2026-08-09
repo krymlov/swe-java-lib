@@ -1038,6 +1038,12 @@ public interface SweConst {
     double SE_TIDAL_DE441 = (-25.936);   /* unpublished value, from email by Jon Giorgini to DK on 11 Apr 2021 */
     double SE_TIDAL_26 = (-26.0);
     double SE_TIDAL_STEPHENSON_2016 = (-25.85);
+
+    /**
+     * Hand delta t back to the model, undoing swe_set_delta_t_userdef(). Same value as
+     * SE_DELTAT_AUTOMATIC in swephexp.h.
+     */
+    double SE_DELTAT_AUTOMATIC = (-1E-10);
     double SE_TIDAL_DEFAULT = SE_TIDAL_DE431;
     double SE_TIDAL_AUTOMATIC = 999999;
     double SE_TIDAL_MOSEPH = SE_TIDAL_DE404;

@@ -447,6 +447,7 @@ org.swisseph.app.SweStations. Роки 2000-2011, нативна проти по
   SwetestEpochsCrossCheckTest         114
   PlanetHouseTest                      38
   TransitCalculatorTest                27   <- розділ 6
+  ApiCoverageTest                      19
   CuspsTest                            11   <- розділ 4
   JhdIuriiKTest                        19
   SweStationsTest                      17   <- розділ 6
@@ -458,7 +459,7 @@ org.swisseph.app.SweStations. Роки 2000-2011, нативна проти по
   SayanaTest, AyanamsaTest,
   JagannathaHoraTest                    8
   ----------------------------------------
-  разом                              1357
+  разом                              1376
 
 Класи, що звіряються з еталоном напряму:
 

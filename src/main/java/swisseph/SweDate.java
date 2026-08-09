@@ -461,6 +461,24 @@ public class SweDate implements Serializable {
   }
 
   /**
+  * Delta t as fixed by swe_set_delta_t_userdef(), in days, or SE_DELTAT_AUTOMATIC when the
+  * model is in charge. Thread local for the same reason the rest of the state is: two
+  * threads may be computing charts with different settings.
+  */
+  private static final ThreadLocal<Double> USER_DELTA_T =
+      ThreadLocal.withInitial(() -> SweConst.SE_DELTAT_AUTOMATIC);
+
+  /** @see #USER_DELTA_T */
+  static void setUserDeltaT(double dt) {
+    USER_DELTA_T.set(dt);
+  }
+
+  /** @see #USER_DELTA_T */
+  static double getUserDeltaT() {
+    return USER_DELTA_T.get();
+  }
+
+  /**
   * This will return a java.util.Date object with the date of this
   * SweDate object. This is needed often in internationalisation of date
   * and time formats. You can add an offset in milliseconds to account for
@@ -1370,6 +1388,13 @@ public class SweDate implements Serializable {
    * double tjd 	= 	julian day in UT
    */
   public static double calc_deltaT(double tjd) {
+    // A value pinned with swe_set_delta_t_userdef() wins over the model, as in swephlib.c.
+    // The check belongs here rather than in getDeltaT(), because swe_deltat() and
+    // swe_deltat_ex() call this directly.
+    final double userDeltaT = USER_DELTA_T.get();
+    if (userDeltaT != SweConst.SE_DELTAT_AUTOMATIC) {
+      return userDeltaT;
+    }
     double ans = 0;
     double B, Y, Ygreg, dd;
     int iy;

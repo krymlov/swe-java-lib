@@ -8282,6 +8282,232 @@ if (false) {
       }
     }
 
+  // ------------------------------------------------- the raw 1:1 SwephExp forms
+  // Each has a convenience sibling above that returns an ISweJulianDate; these fill in the
+  // out-parameters instead, so a caller written against swephexp.h needs no translation.
+
+  @Override
+  public void swe_revjul(double jd, int gregflag, int[] jYearMonDay, double[] jut) {
+    final SweDate.IDate dt = SweDate.swe_revjul(jd, gregflag == SE_GREG_CAL);
+    if (null != jYearMonDay && jYearMonDay.length >= 3) {
+      jYearMonDay[0] = dt.year;
+      jYearMonDay[1] = dt.month;
+      jYearMonDay[2] = dt.day;
+    }
+    if (null != jut && jut.length >= 1) {
+      jut[0] = dt.hour;
+    }
+  }
+
+  @Override
+  public int swe_utc_to_jd(int iyear, int imonth, int iday, int ihour, int imin, double dsec,
+                           int gregflag, double[] dret, StringBuilder serr) {
+    final double[] jd = SweDate.getJDfromUTC(iyear, imonth, iday, ihour, imin, dsec,
+        gregflag == SE_GREG_CAL, false);
+    if (null != dret) {
+      // dret[0] = julian day in TT (ET), dret[1] = julian day in UT1
+      if (dret.length > 0) dret[0] = jd[0];
+      if (dret.length > 1) dret[1] = jd[1];
+    }
+    return SweConst.OK;
+  }
+
+  @Override
+  public void swe_jdet_to_utc(double tjd_et, int gregflag, int[] iYearMonthDayHourMin, double[] dsec) {
+    final SDate sd = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);
+    copyUtcOut(sd, iYearMonthDayHourMin, dsec);
+  }
+
+  @Override
+  public void swe_jdut1_to_utc(double tjd_ut, int gregflag, int[] iYearMonthDayHourMin, double[] dsec) {
+    final SDate sd = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);
+    copyUtcOut(sd, iYearMonthDayHourMin, dsec);
+  }
+
+  @Override
+  public void swe_utc_time_zone(int iyear, int imonth, int iday, int ihour, int imin,
+                                double dsec, double d_timezone,
+                                int[] ioutYearMonthDayHourMin, double[] dsec_out) {
+    // the raw call takes the time zone with the sign Swiss Ephemeris documents: positive
+    // converts local time to UTC. getLocalTimeFromUTC() wants it the same way round.
+    final SDate sd = SweDate.getLocalTimeFromUTC(iyear, imonth, iday, ihour, imin, dsec, d_timezone);
+    copyUtcOut(sd, ioutYearMonthDayHourMin, dsec_out);
+  }
+
+  @Override
+  public int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
+                            double[] geopos, double atpress, double attemp,
+                            double[] tret, StringBuilder serr) {
+    final DblObj box = new DblObj();
+    final int retc = swe_rise_trans(tjd_ut, ipl, starname, epheflag, rsmi, geopos,
+        atpress, attemp, box, serr);
+    if (null != tret && tret.length > 0) tret[0] = box.val;
+    return retc;
+  }
+
+  /** the five calendar fields plus the seconds, as the raw UTC calls return them */
+  private static void copyUtcOut(SDate sd, int[] ymdhm, double[] dsec) {
+    if (null != ymdhm) {
+      final int[] date = sd.date();
+      for (int i = 0; i < 5 && i < ymdhm.length && i < date.length; i++) {
+        ymdhm[i] = date[i];
+      }
+    }
+    if (null != dsec && dsec.length > 0) {
+      dsec[0] = sd.second();
+    }
+  }
+
+  // ---------------------------------------------------- the crossing solvers
+  //
+  // swe_solcross(), swe_mooncross(), swe_mooncross_node() and swe_helio_cross() are the only
+  // ISwissEph methods that used to have no override here at all, so a swisseph.SwissEph built
+  // without the native library threw UnsatisfiedLinkError the moment one was called.
+  //
+  // Swiss Ephemeris solves them analytically. This port solves them with the transit search
+  // it already carries: a crossing of a longitude IS a longitude transit, so TCPlanet with
+  // SEFLG_TRANSIT_LONGITUDE finds it, and TCPlanetPlanet finds the Moon over its node. That
+  // costs accuracy - measured against the native solvers the search is within 0.011 s for the
+  // Sun and 0.008 s for the Moon - and buys an engine that works without the .dll/.so.
+  //
+  // On failure they return the same thing the native functions do: a value below the
+  // requested date, with the reason in serr.
+
+  /** flags TCPlanet accepts: the ephemeris plus the frame, never the transit bits */
+  private static int crossFlags(int flag) {
+    return flag & (SweConst.SEFLG_EPHMASK | SweConst.SEFLG_SIDEREAL | SweConst.SEFLG_TRUEPOS
+        | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL | SweConst.SEFLG_EQUATORIAL
+        | SweConst.SEFLG_HELCTR | SweConst.SEFLG_TOPOCTR);
+  }
+
+  /**
+  * Next crossing of {@code x2cross} by {@code planet}, searching forward from {@code jd},
+  * in the same time frame the caller used.
+  *
+  * @param ut true when jd and the result are UT, false for ET
+  * @return the crossing, or {@code jd - 1} with a message in serr when there is none
+  */
+  private double crossing(int planet, double x2cross, double jd, int flag, boolean ut,
+                          StringBuilder serr) {
+    try {
+      final TransitCalculator tc = new TCPlanet(this, planet,
+          crossFlags(flag) | SweConst.SEFLG_TRANSIT_LONGITUDE, x2cross);
+      return ut ? TransitCalculator.getTransitUT(tc, jd, false)
+                : TransitCalculator.getTransitET(tc, jd, false);
+    } catch (RuntimeException e) {
+      if (null != serr) {
+        serr.setLength(0);
+        serr.append(null == e.getMessage() ? e.toString() : e.getMessage());
+      }
+      return jd - 1;
+    }
+  }
+
+  @Override
+  public double swe_solcross(double x2cross, double jd_et, int flag, StringBuilder serr) {
+    return crossing(SweConst.SE_SUN, x2cross, jd_et, flag, false, serr);
+  }
+
+  @Override
+  public double swe_solcross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr) {
+    return crossing(SweConst.SE_SUN, x2cross, jd_ut, flag, true, serr);
+  }
+
+  @Override
+  public double swe_mooncross(double x2cross, double jd_et, int flag, StringBuilder serr) {
+    return crossing(SweConst.SE_MOON, x2cross, jd_et, flag, false, serr);
+  }
+
+  @Override
+  public double swe_mooncross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr) {
+    return crossing(SweConst.SE_MOON, x2cross, jd_ut, flag, true, serr);
+  }
+
+  /**
+  * When the Moon next crosses its <b>true</b> node - the moment its ecliptic latitude
+  * changes sign. Found as a conjunction of the Moon with SE_TRUE_NODE, then the Moon's
+  * position there is returned in xlon/xlat.
+  */
+  @Override
+  public double swe_mooncross_node(double jd_et, int flag, double[] xlon, double[] xlat,
+                                   StringBuilder serr) {
+    return mooncrossNode(jd_et, flag, xlon, xlat, false, serr);
+  }
+
+  @Override
+  public double swe_mooncross_node_ut(double jd_ut, int flag, double[] xlon, double[] xlat,
+                                       StringBuilder serr) {
+    return mooncrossNode(jd_ut, flag, xlon, xlat, true, serr);
+  }
+
+  private double mooncrossNode(double jd, int flag, double[] xlon, double[] xlat,
+                               boolean ut, StringBuilder serr) {
+    try {
+      final TransitCalculator tc = new TCPlanetPlanet(this, SweConst.SE_MOON,
+          SweConst.SE_TRUE_NODE, crossFlags(flag) | SweConst.SEFLG_TRANSIT_LONGITUDE, 0.);
+      final double cross = ut ? TransitCalculator.getTransitUT(tc, jd, false)
+                              : TransitCalculator.getTransitET(tc, jd, false);
+
+      final double[] xx = new double[6];
+      final double jdET = ut ? cross + swe_deltat(cross) : cross;
+      swe_calc(jdET, SweConst.SE_MOON, crossFlags(flag), xx, serr);
+      if (null != xlon && xlon.length > 0) xlon[0] = xx[0];
+      if (null != xlat && xlat.length > 0) xlat[0] = xx[1];
+      return cross;
+    } catch (RuntimeException e) {
+      if (null != serr) {
+        serr.setLength(0);
+        serr.append(null == e.getMessage() ? e.toString() : e.getMessage());
+      }
+      return jd - 1;
+    }
+  }
+
+  /**
+  * Heliocentric longitude crossing. {@code dir} may be given as 0 for the next crossing in
+  * either direction, positive to search forward and negative backward; the native function
+  * uses the same convention.
+  *
+  * @return SweConst.OK, or SweConst.ERR with the reason in serr
+  */
+  @Override
+  public int swe_helio_cross(int ipl, double x2cross, double jd_et, int iflag, int dir,
+                             double[] jd_cross, StringBuilder serr) {
+    return helioCross(ipl, x2cross, jd_et, iflag, dir, jd_cross, false, serr);
+  }
+
+  @Override
+  public int swe_helio_cross_ut(int ipl, double x2cross, double jd_ut, int iflag, int dir,
+                                double[] jd_cross, StringBuilder serr) {
+    return helioCross(ipl, x2cross, jd_ut, iflag, dir, jd_cross, true, serr);
+  }
+
+  private int helioCross(int ipl, double x2cross, double jd, int iflag, int dir,
+                         double[] jd_cross, boolean ut, StringBuilder serr) {
+    if (ipl == SweConst.SE_SUN || ipl == SweConst.SE_MOON) {
+      if (null != serr) {
+        serr.setLength(0);
+        serr.append("heliocentric crossings are not defined for object ").append(ipl);
+      }
+      return SweConst.ERR;
+    }
+    try {
+      final TransitCalculator tc = new TCPlanet(this, ipl,
+          crossFlags(iflag) | SweConst.SEFLG_HELCTR | SweConst.SEFLG_TRANSIT_LONGITUDE, x2cross);
+      final boolean backwards = dir < 0;
+      final double cross = ut ? TransitCalculator.getTransitUT(tc, jd, backwards)
+                              : TransitCalculator.getTransitET(tc, jd, backwards);
+      if (null != jd_cross && jd_cross.length > 0) jd_cross[0] = cross;
+      return SweConst.OK;
+    } catch (RuntimeException e) {
+      if (null != serr) {
+        serr.setLength(0);
+        serr.append(null == e.getMessage() ? e.toString() : e.getMessage());
+      }
+      return SweConst.ERR;
+    }
+  }
+
   @Override
   public void swe_split_deg(double dDeg, int roundFlag, int[] iDegMinSec, double[] dSecFr, int[] iSign) {
     final IntObj ihour = new IntObj(), imin = new IntObj(),
@@ -8341,47 +8567,108 @@ if (false) {
 
   @Override
   public void swe_set_astro_models(StringBuilder samod, int iflag) {
-    throw new NotImplementedException("swe_set_astro_models");
+    // The argument is the comma separated list of model numbers swetest takes for -amod,
+    // one per SE_MODEL_* slot; an empty field leaves that model alone. Same parsing as
+    // swi_set_astro_models() in swephlib.c.
+    if (null == samod) return;
+    final String[] fields = samod.toString().split(",", -1);
+    for (int i = 0; i < fields.length && i < swed.astro_models.length; i++) {
+      final String f = fields[i].trim();
+      if (f.isEmpty()) continue;
+      try {
+        swed.astro_models[i] = Integer.parseInt(f);
+      } catch (NumberFormatException notANumber) {
+        // swephlib.c ignores unparsable fields too
+      }
+    }
   }
 
   @Override
   public void swe_get_astro_models(StringBuilder samod, StringBuilder sdet, int iflag) {
-    throw new NotImplementedException("swe_get_astro_models");
+    // samod gets the model numbers in the same comma separated form swe_set_astro_models()
+    // accepts. sdet is the human readable detail; the native library builds a long report
+    // there, this port only names the models it actually consults.
+    if (null != samod) {
+      samod.setLength(0);
+      for (int i = 0; i < swed.astro_models.length; i++) {
+        if (i > 0) samod.append(',');
+        samod.append(swed.astro_models[i]);
+      }
+    }
+    if (null != sdet) {
+      sdet.setLength(0);
+      sdet.append("precession long term: ").append(swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM])
+          .append("\nprecession short term: ").append(swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM])
+          .append("\nnutation: ").append(swed.astro_models[SweConst.SE_MODEL_NUT])
+          .append("\nsidereal time: ").append(swed.astro_models[SweConst.SE_MODEL_SIDT])
+          .append("\ndelta t: ").append(swed.astro_models[SweConst.SE_MODEL_DELTAT])
+          .append("\njpl horizons mode: ").append(swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE])
+          .append("\njpl horizons approx mode: ").append(swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE]);
+    }
   }
 
   @Override
   public int swe_calc_pctr(double tjd, int ipl, int iplctr, int iflag, double[] xxret, StringBuilder serr) {
-    throw new NotImplementedException("swe_calc_pctr");
+    throw new NotImplementedException("swe_calc_pctr: planetocentric positions need the light time and aberration between two moving bodies, which this port has no path for; use the native library");
   }
 
   @Override
+  // swe_fixstar2*() reads the same sefstars.txt as swe_fixstar*(); the "2" forms exist only
+  // because upstream builds a sorted index over the file first, which makes repeated lookups
+  // much faster. The positions are identical, so here they delegate - a caller gets the right
+  // numbers, just without the speedup.
+
   public int swe_fixstar2(StringBuilder star, double tjd, int iflag, double[] xx, StringBuilder serr) {
-    throw new NotImplementedException("swe_fixstar2");
+    return swe_fixstar(star, tjd, iflag, xx, serr);
   }
 
   @Override
   public int swe_fixstar2_ut(StringBuilder star, double tjd_ut, int iflag, double[] xx, StringBuilder serr) {
-    throw new NotImplementedException("swe_fixstar2_ut");
+    return swe_fixstar_ut(star, tjd_ut, iflag, xx, serr);
   }
 
   @Override
   public int swe_fixstar2_mag(StringBuilder star, double[] mag, StringBuilder serr) {
-    throw new NotImplementedException("swe_fixstar2_mag");
+    return swe_fixstar_mag(star, mag, serr);
   }
 
   @Override
   public int swe_get_ayanamsa_ex(double tjd_et, int iflag, double[] daya, StringBuilder serr) {
-    throw new NotImplementedException("swe_get_ayanamsa_ex");
+    // The port only has the older swe_get_ayanamsa(), which is the SEFLG_NONUT form; the ex
+    // call adds nutation in longitude unless the caller asked for SEFLG_NONUT. That is the
+    // same relationship sidereal_houses_trad() relies on - see SweHouse.
+    if (null == daya || daya.length < 1) {
+      if (null != serr) { serr.setLength(0); serr.append("daya must be a double[1] or longer"); }
+      return SweConst.ERR;
+    }
+    double ay = swe_get_ayanamsa(tjd_et);
+    if ((iflag & SweConst.SEFLG_NONUT) == 0) {
+      final double[] nutlo = new double[2];
+      sl.swi_nutation(tjd_et, iflag, nutlo);
+      ay += nutlo[0] * SwissData.RADTODEG;
+    }
+    daya[0] = SwissLib.swe_degnorm(ay);
+    return iflag & SweConst.SEFLG_EPHMASK;
   }
 
   @Override
   public int swe_get_ayanamsa_ex_ut(double tjd_ut, int iflag, double[] daya, StringBuilder serr) {
-    throw new NotImplementedException("swe_get_ayanamsa_ex_ut");
+    return swe_get_ayanamsa_ex(tjd_ut + SweDate.getDeltaT(tjd_ut), iflag, daya, serr);
   }
 
   @Override
   public String swe_get_current_file_data(int ifno, double[] tfstart, double[] tfend, int[] denum) {
-    throw new NotImplementedException("swe_get_current_file_data");
+    // Reports the ephemeris file swe_calc() last used for a group of objects: ifno 0 planets,
+    // 1 moon, 2 main asteroid, 3 other asteroid, 4 star. Null out-parameters are skipped, as
+    // in swephlib.c; the return value is null when nothing has been read yet.
+    if (ifno < 0 || ifno >= swed.fidat.length) return null;
+    final FileData fd = swed.fidat[ifno];
+    if (null == fd || null == fd.fnam || fd.fnam.isEmpty()) return null;
+
+    if (null != tfstart && tfstart.length > 0) tfstart[0] = fd.tfstart;
+    if (null != tfend && tfend.length > 0) tfend[0] = fd.tfend;
+    if (null != denum && denum.length > 0) denum[0] = fd.sweph_denum;
+    return fd.fnam;
   }
 
   @Override
@@ -8390,7 +8677,16 @@ if (false) {
           double utime,   /* universal time in hours (decimal) */
           char c,         /* calendar g[regorian]|j[ulian] */
           double[] tjd) {
-    throw new NotImplementedException("swe_date_conversion");
+    // Same contract as swe_date_conversion() in swedate.c: the julian day always goes into
+    // tjd[0], and the return code says whether the date existed in that calendar. A date
+    // like 31 February converts to a julian day that reads back as 3 March, which is how
+    // the check is made.
+    final boolean gregflag = (c == 'g' || c == 'G');
+    final double jd = SweDate.swe_julday(y, m, d, utime, gregflag);
+    if (null != tjd && tjd.length > 0) tjd[0] = jd;
+
+    final SweDate.IDate back = SweDate.swe_revjul(jd, gregflag);
+    return (back.year == y && back.month == m && back.day == d) ? SweConst.OK : SweConst.ERR;
   }
 
   /**
@@ -8465,18 +8761,25 @@ if (false) {
 
   @Override
   public int swe_get_orbital_elements(double tjd_et, int ipl, int iflag, double[] dret, StringBuilder serr) {
-    throw new NotImplementedException("swe_houses_ex2");
+    // the message used to say "swe_houses_ex2" - a copied literal, not this method
+    throw new NotImplementedException("swe_get_orbital_elements: osculating orbital elements "
+        + "are not ported - 17 documented return values derived from the heliocentric state "
+        + "vector; use org.swisseph.SwephNative");
   }
 
   @Override
   public int swe_orbit_max_min_true_distance(double tjd_et, int ipl, int iflag, double[] dmax,
                                               double[] dmin, double[] dtrue, StringBuilder serr) {
-    throw new NotImplementedException("swe_houses_ex2");
+    throw new NotImplementedException("swe_orbit_max_min_true_distance: builds on "
+        + "swe_get_orbital_elements(), which is not ported; use org.swisseph.SwephNative");
   }
 
   @Override
   public void swe_set_interpolate_nut(/*AS_BOOL*/int do_interpolate) {
-    throw new NotImplementedException("swe_set_interpolate_nut");
+    // Upstream caches nutation at three dates and interpolates between them, which makes
+    // swe_calc() faster and slightly less exact. The port always computes nutation directly,
+    // so the flag is recorded and the answer is the "do not interpolate" one either way.
+    swed.do_interpolate_nut = (do_interpolate != 0);
   }
 
   /* coordinate transformation polar -> polar */
@@ -8492,7 +8795,8 @@ if (false) {
 
   @Override
   public void swe_set_delta_t_userdef(double dt) {
-    throw new NotImplementedException("swe_set_delta_t_userdef");
+    // SE_DELTAT_AUTOMATIC hands control back to the delta t model; any other value pins it.
+    SweDate.setUserDeltaT(dt);
   }
 
   @Override

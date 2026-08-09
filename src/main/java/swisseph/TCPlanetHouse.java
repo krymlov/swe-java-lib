@@ -527,8 +527,12 @@ public class TCPlanetHouse extends TransitCalculator {
                 "Calculation failed with return code " + ret + ":\n" + serr.toString());
         }
 
-        // House calculation:
-        ret = sw.swe_houses_ex(jdET - SweDate.getDeltaT(jdET), houseFlags, houseGeolat, houseGeolon,
+        // House calculation. swe_houses_ex() takes a UT julian day, so delta t has to come
+        // off - and it must come from the engine this calculator was built with. It used to
+        // be SweDate.getDeltaT() unconditionally, i.e. the pure Java value even when sw is
+        // SwephNative: the same defect that was fixed in TransitCalculator.getTransit*(),
+        // and it also ignored a delta t pinned with swe_set_delta_t_userdef().
+        ret = sw.swe_houses_ex(jdET - deltaT(jdET), houseFlags, houseGeolat, houseGeolon,
             houseSystem, cusps, ascmc);
 
         if ( ret < 0 ) {

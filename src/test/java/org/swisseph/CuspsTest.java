@@ -6,8 +6,6 @@
 package org.swisseph;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.swisseph.api.ISweHouseSystem;
 import org.swisseph.api.ISweObjects;
 import org.swisseph.api.ISweObjectsOptions;
@@ -40,7 +38,6 @@ import static swisseph.SweConst.SE_NASCMC;
  * @author Yura Krymlov
  * @version 1.0, 2026-08
  */
-@Execution(ExecutionMode.CONCURRENT)
 public class CuspsTest extends AbstractTest {
 
     static final double GEO_LON = 81 + 8 / 60., GEO_LAT = 16 + 10 / 60.;

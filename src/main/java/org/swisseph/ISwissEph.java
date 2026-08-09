@@ -150,10 +150,21 @@ public interface ISwissEph extends Closeable {
         tmzjdt.values()[IDXD_JULDAY] = utcjdt.julianDay();
         tmzjdt.values()[IDXD_UTIME] = utcjdt.utime();
 
-        // the date fields were produced with the caller's calendar, so the result has to
-        // keep saying so - otherwise it would deduce the other calendar from its own date
-        if (null != julianDate.calendar() && tmzjdt instanceof SweJulianDate) {
-            ((SweJulianDate) tmzjdt).calendar(julianDate.calendar());
+        // The date fields were produced with a particular calendar, so the result has to keep
+        // saying which - otherwise it would deduce one from its own fields, and that is not
+        // always the same answer.
+        //
+        // It used to record only an EXPLICIT override, leaving a deduced calendar unstamped.
+        // That breaks around 15 October 1582: a julian day on the Gregorian side of the
+        // boundary, read at a negative time zone, gives a local date of 14 October 1582 -
+        // which deduces as JULIAN, because it is before the boundary. Feeding those fields
+        // back produced a julian day ten days off. Recording the calendar actually used makes
+        // the round trip exact; for every date away from the gap it is the same value that
+        // would have been deduced, so nothing else changes.
+        if (tmzjdt instanceof SweJulianDate) {
+            ((SweJulianDate) tmzjdt).calendar(
+                    null != julianDate.calendar() ? julianDate.calendar()
+                            : julianDate.gregorianCalendar());
         }
 
         return tmzjdt;
@@ -361,6 +372,74 @@ public interface ISwissEph extends Closeable {
 
         final int[] outYmdHm = new int[]{year, month, day, hour, min};
         return new SweJulianDate(dret[1], outYmdHm, getDecimalHours(outYmdHm, dsec));
+    }
+
+    /**
+     * The 1:1 form of {@code swe_revjul()}: writes year, month, day into
+     * {@code jYearMonDay} and the decimal hour into {@code jut[0]}.
+     *
+     * @see #swe_revjul(double, int)
+     */
+    default void swe_revjul(double jd, int gregflag, int[] jYearMonDay, double[] jut) {
+        SwephExp.swe_revjul(jd, gregflag, jYearMonDay, jut);
+    }
+
+    /**
+     * The 1:1 form of {@code swe_utc_to_jd()}: {@code dret[0]} is the julian day in TT (ET),
+     * {@code dret[1]} the julian day in UT1.
+     *
+     * @see #swe_utc_to_jd(int, int, int, int, int, double, int, StringBuilder)
+     */
+    default int swe_utc_to_jd(int iyear, int imonth, int iday, int ihour, int imin, double dsec,
+                              int gregflag, double[] dret, StringBuilder serr) {
+        return SwephExp.swe_utc_to_jd(iyear, imonth, iday, ihour, imin, dsec, gregflag, dret, serr);
+    }
+
+    /**
+     * The 1:1 form of {@code swe_jdet_to_utc()}: five calendar fields into
+     * {@code iYearMonthDayHourMin}, seconds into {@code dsec[0]}.
+     *
+     * @see #swe_jdet_to_utc(double, int)
+     */
+    default void swe_jdet_to_utc(double tjd_et, int gregflag, int[] iYearMonthDayHourMin, double[] dsec) {
+        SwephExp.swe_jdet_to_utc(tjd_et, gregflag, iYearMonthDayHourMin, dsec);
+    }
+
+    /**
+     * The 1:1 form of {@code swe_jdut1_to_utc()}.
+     *
+     * @see #swe_jdut1_to_utc(double, int)
+     */
+    default void swe_jdut1_to_utc(double tjd_ut, int gregflag, int[] iYearMonthDayHourMin, double[] dsec) {
+        SwephExp.swe_jdut1_to_utc(tjd_ut, gregflag, iYearMonthDayHourMin, dsec);
+    }
+
+    /**
+     * The 1:1 form of {@code swe_utc_time_zone()}. Note the sign convention of the raw call:
+     * a <b>positive</b> {@code d_timezone} converts local time to UTC, a negative one
+     * converts UTC to local time. The convenience form takes a {@code utcToLocal} flag and
+     * flips the sign for you.
+     *
+     * @see #swe_utc_time_zone(int, int, int, int, int, double, boolean, double)
+     */
+    default void swe_utc_time_zone(int iyear, int imonth, int iday, int ihour, int imin,
+                                   double dsec, double d_timezone,
+                                   int[] ioutYearMonthDayHourMin, double[] dsec_out) {
+        SwephExp.swe_utc_time_zone(iyear, imonth, iday, ihour, imin, dsec, d_timezone,
+                ioutYearMonthDayHourMin, dsec_out);
+    }
+
+    /**
+     * The 1:1 form of {@code swe_rise_trans()}, taking a {@code double[1]} for the result
+     * instead of the port's {@code DblObj} box.
+     *
+     * @see #swe_rise_trans(double, int, StringBuilder, int, int, double[], double, double, DblObj, StringBuilder)
+     */
+    default int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
+                               double[] geopos, double atpress, double attemp,
+                               double[] tret, StringBuilder serr) {
+        return SwephExp.swe_rise_trans(tjd_ut, ipl, starname, epheflag, rsmi, geopos,
+                atpress, attemp, tret, serr);
     }
 
     default ISweJulianDate swe_jdet_to_utc(final double tjd_et, int gregflag) {

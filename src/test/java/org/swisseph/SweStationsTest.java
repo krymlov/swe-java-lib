@@ -6,8 +6,6 @@
 package org.swisseph;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.swisseph.api.ISweStation;
 import org.swisseph.app.SweStations;
 import swisseph.SweDate;
@@ -35,7 +33,6 @@ import static swisseph.SweConst.*;
  * @author Yura Krymlov
  * @version 1.0, 2026-08
  */
-@Execution(ExecutionMode.CONCURRENT)
 public class SweStationsTest extends AbstractTest {
 
     static final double Y2000 = 2451544.5;
