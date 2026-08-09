@@ -81,7 +81,12 @@ final class Extensions {
     if (tc.checkIdenticalResult(offset, val)) { // If not 0.0 but "very small", then
                             // interpolate after another calculation
                             // in the calculation loop below
-      return val;
+      // This method returns a julian day, so return the date the condition holds on -
+      // NOT val, which is a longitude / speed / distance. With the default
+      // checkIdenticalResult() (val == offset) the old code returned the offset itself
+      // as if it were a date; with SEFLG_PARTILE_TRANSIT_END, where the condition is
+      // true right away, getTransitUT() handed back values like 88.4 and 178.4.
+      return jdET;
     }
 
 
@@ -122,7 +127,7 @@ final class Extensions {
 
       // Hits the transiting point exactly...:
       if(tc.checkIdenticalResult(offset, val)) {
-        return val;
+        return jdET;   // a date, not val - see the same fix above
       }
 
       // The planet may have moved forward or backward, in one of these

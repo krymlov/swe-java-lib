@@ -136,6 +136,21 @@ public abstract class TransitCalculator {
   double preprocessDate(double jdET, boolean back) {
     return jdET;
   }
+
+  /**
+   * Delta t for the ET&nbsp;&harr;&nbsp;UT conversions below, taken from the engine this
+   * calculator was built with.
+   * <p>
+   * It used to be {@code SweDate.getDeltaT()} unconditionally, i.e. the pure Java value even
+   * for a calculator driven by the native library. The two agree closely for modern dates but
+   * not for older ones - 3.6 seconds at 1750 - and that difference showed up as an apparent
+   * error of the transit search when its result was compared with
+   * {@code swe_solcross_ut()}. Asking the engine keeps the conversion consistent with the
+   * positions the search is actually iterating over.
+   */
+  protected double deltaT(double jd) {
+    return sw.swe_deltat(jd);
+  }
   // These routines check the result if it meets the stop condition
   protected boolean checkIdenticalResult(double offset, double val) {
     return val == offset;
@@ -247,8 +262,8 @@ public abstract class TransitCalculator {
    protected static double getTransitET(TransitCalculator tc, double jdET, boolean backwards, double jdLimit)
    throws IllegalArgumentException, SwissephException {
      boolean calcUT = (tc instanceof TCHouses);
-     return Extensions.getTransit(tc, jdET - (calcUT ? SweDate.getDeltaT(jdET) : 0), 
-         backwards, jdLimit) + (calcUT ? SweDate.getDeltaT(jdET) : 0);
+     return Extensions.getTransit(tc, jdET - (calcUT ? tc.deltaT(jdET) : 0), 
+         backwards, jdLimit) + (calcUT ? tc.deltaT(jdET) : 0);
    }
    /**
    * Searches for the next or previous transit of a planet over a specified
@@ -274,10 +289,10 @@ public abstract class TransitCalculator {
      boolean calcUT = (tc instanceof TCHouses);
      double jdET = Extensions.getTransit(
                            tc,
-                           jdUT + (calcUT ? 0 : SweDate.getDeltaT(jdUT)),
+                           jdUT + (calcUT ? 0 : tc.deltaT(jdUT)),
                            backwards,
                            (backwards?-Double.MAX_VALUE:Double.MAX_VALUE));
-     return jdET - (calcUT ? 0 : SweDate.getDeltaT(jdET));
+     return jdET - (calcUT ? 0 : tc.deltaT(jdET));
    }
    /**
    * Searches for the next or previous transit of a planet over a specified
@@ -306,9 +321,9 @@ public abstract class TransitCalculator {
           throws IllegalArgumentException, SwissephException {
      double jdET = Extensions.getTransit(
                            tc,
-                           jdUT + SweDate.getDeltaT(jdUT),
+                           jdUT + tc.deltaT(jdUT),
                            backwards,
-                           jdLimit + SweDate.getDeltaT(jdLimit));
-     return jdET - SweDate.getDeltaT(jdET);
+                           jdLimit + tc.deltaT(jdLimit));
+     return jdET - tc.deltaT(jdET);
    }
 }

@@ -334,7 +334,7 @@ public class TCPlanetHouse extends TransitCalculator {
         // Calculate basic parameters: ///////////////////////////////////////////
         rollover = true;
 
-        this.offset = offset;
+        this.offset = checkOffset(offset);
 
         maxSpeed1 = getSpeed(false, planet);
         minSpeed1 = getSpeed(true, planet);
@@ -408,7 +408,25 @@ public class TCPlanetHouse extends TransitCalculator {
      * @see #getOffset()
      */
     public void setOffset(double value) {
-        offset = value;
+        offset = checkOffset(value);
+    }
+
+    /**
+     * Brings the offset into the range the search expects.
+     * <p>
+     * This class sets <code>rollover = true</code>, so the offset is an angle in
+     * [0&nbsp;..&nbsp;360). It used to be stored exactly as given - alone among the four
+     * TransitCalculator implementations, all of which have this - and an offset outside that
+     * range sent the search into an endless loop instead of answering: with
+     * <code>offset = 370</code>, <code>above = (val &gt;= offset)</code> can never become
+     * true, so the loop never reaches its stop condition. 370 degrees is now 10 degrees, as
+     * it already was in TCPlanet, TCPlanetPlanet and TCHouses.
+     */
+    private double checkOffset(double val) {
+        while ( val < 0. ) {
+            val += 360.;
+        }
+        return val % 360.;
     }
 
     /**
@@ -468,6 +486,18 @@ public class TCPlanetHouse extends TransitCalculator {
     }
 
     ///////////////////////////////////////////////////////////////////////////////
+    /**
+     * True when swe_calc() failed because the date is outside the ephemeris range. Swiss
+     * Ephemeris reports that as "jd <x> > Swiss Eph. upper limit <y>;" or the corresponding
+     * lower limit message, with the offending date in the text.
+     */
+    static boolean isOutOfEphemerisRange(StringBuilder serr) {
+        if ( null == serr ) return false;
+        String msg = serr.toString();
+        return msg.contains("Swiss Eph. upper limit") || msg.contains("Swiss Eph. lower limit")
+            || msg.contains("jplfile") && msg.contains("limit");
+    }
+
     protected double getMaxSpeed() {
         return maxSpeed;
     }
@@ -487,7 +517,9 @@ public class TCPlanetHouse extends TransitCalculator {
         int ret = sw.swe_calc(jdET, planet, planetFlags, xx, serr);
         if ( ret < 0 ) {
             int type = SwissephException.UNDEFINED_ERROR;
-            if ( serr.toString().matches("jd 2488117.1708818264 > Swiss Eph. upper limit 2487932.5;") ) {
+            // The message is "jd <x> > Swiss Eph. upper limit <y>;" (or "< ... lower limit ...");
+            // matching it as a literal only ever recognised one single julian day.
+            if ( isOutOfEphemerisRange(serr) ) {
                 type = SwissephException.BEYOND_USER_TIME_LIMIT;
             }
             //System.err.println("SERR: " + serr);
@@ -549,14 +581,19 @@ public class TCPlanetHouse extends TransitCalculator {
             // years before 1900:               1"      (from saturn to neptune) (added: nodes)
             // years after 2099:                same as before 1900
             //
+            // The bands above are calendar years, but jd is a julian day. Comparing the
+            // two made 'jd > 2099' always true, so every position transit silently used
+            // the coarsest band - 0.08" for the Sun..Jupiter and 1" for everything else,
+            // instead of the 0.005" that applies from 1980 to 2099.
+            final int year = SweDate.swe_revjul(jd, SweDate.SE_GREG_CAL).year;
             if ( planet >= SweConst.SE_SUN && planet <= SweConst.SE_JUPITER ) {
-                if ( jd < 1980 || jd > 2099 ) {
+                if ( year < 1980 || year > 2099 ) {
                     degPrec = 0.08;
                 }
             } else {
-                if ( jd >= 1900 && jd < 1980 ) {
+                if ( year >= 1900 && year < 1980 ) {
                     degPrec = 0.08;
-                } else if ( jd < 1900 || jd > 2099 ) { // Unclear about true nodes...
+                } else if ( year < 1900 || year > 2099 ) { // Unclear about true nodes...
                     degPrec = 1;
                 }
             }

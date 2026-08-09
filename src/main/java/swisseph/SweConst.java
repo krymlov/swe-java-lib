@@ -1136,9 +1136,18 @@ public interface SweConst {
      * will be good, latitude bad.
      */
 
-    int SEMOD_DELTAT_ESPENAK_MEEUS_2006 = 1;
-    int SEMOD_DELTAT_STEPHENSON_MORRISON_2004 = 2;
-    int SEMOD_DELTAT_DEFAULT = SEMOD_DELTAT_ESPENAK_MEEUS_2006;
+    /*
+     * Renumbered to match swephexp.h of Swiss Ephemeris 2.10.03. The port used to number
+     * these 1 and 2 while the native library used 4 and 3, so the same value passed to
+     * swe_set_astro_models() selected different models in the two engines.
+     */
+    int SEMOD_NDELTAT = 5;
+    int SEMOD_DELTAT_STEPHENSON_MORRISON_1984 = 1;
+    int SEMOD_DELTAT_STEPHENSON_1997 = 2;
+    int SEMOD_DELTAT_STEPHENSON_MORRISON_2004 = 3;
+    int SEMOD_DELTAT_ESPENAK_MEEUS_2006 = 4;
+    int SEMOD_DELTAT_STEPHENSON_ETC_2016 = 5;
+    int SEMOD_DELTAT_DEFAULT = SEMOD_DELTAT_STEPHENSON_ETC_2016;
 
 
 

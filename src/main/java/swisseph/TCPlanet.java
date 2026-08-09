@@ -361,7 +361,9 @@ public class TCPlanet extends TransitCalculator {
         int ret = sw.swe_calc(jdET, planet, flags, xx, serr);
         if ( ret < 0 ) {
             int type = SwissephException.UNDEFINED_ERROR;
-            if ( serr.toString().matches("jd 2488117.1708818264 > Swiss Eph. upper limit 2487932.5;") ) {
+            // The message is "jd <x> > Swiss Eph. upper limit <y>;" (or "< ... lower limit ...");
+            // matching it as a literal only ever recognised one single julian day.
+            if ( isOutOfEphemerisRange(serr) ) {
                 type = SwissephException.BEYOND_USER_TIME_LIMIT;
             }
             throw new SwissephException(jdET, type,
@@ -369,6 +371,18 @@ public class TCPlanet extends TransitCalculator {
         }
 
         return xx[idx];
+    }
+
+    /**
+     * True when swe_calc() failed because the date is outside the ephemeris range. Swiss
+     * Ephemeris reports that as "jd <x> > Swiss Eph. upper limit <y>;" or the corresponding
+     * lower limit message, with the offending date in the text.
+     */
+    static boolean isOutOfEphemerisRange(StringBuilder serr) {
+        if ( null == serr ) return false;
+        String msg = serr.toString();
+        return msg.contains("Swiss Eph. upper limit") || msg.contains("Swiss Eph. lower limit")
+            || msg.contains("jplfile") && msg.contains("limit");
     }
 
     protected double getMaxSpeed() {
@@ -412,14 +426,19 @@ public class TCPlanet extends TransitCalculator {
             // years before 1900:               1"      (from saturn to neptune) (added: nodes)
             // years after 2099:                same as before 1900
             //
+            // The bands above are calendar years, but jd is a julian day. Comparing the
+            // two made 'jd > 2099' always true, so every position transit silently used
+            // the coarsest band - 0.08" for the Sun..Jupiter and 1" for everything else,
+            // instead of the 0.005" that applies from 1980 to 2099.
+            final int year = SweDate.swe_revjul(jd, SweDate.SE_GREG_CAL).year;
             if ( planet >= SweConst.SE_SUN && planet <= SweConst.SE_JUPITER ) {
-                if ( jd < 1980 || jd > 2099 ) {
+                if ( year < 1980 || year > 2099 ) {
                     degPrec = 0.08;
                 }
             } else {
-                if ( jd >= 1900 && jd < 1980 ) {
+                if ( year >= 1900 && year < 1980 ) {
                     degPrec = 0.08;
-                } else if ( jd < 1900 || jd > 2099 ) { // Unclear about true nodes...
+                } else if ( year < 1900 || year > 2099 ) { // Unclear about true nodes...
                     degPrec = 1;
                 }
             }
