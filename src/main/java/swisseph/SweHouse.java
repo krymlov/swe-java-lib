@@ -86,6 +86,88 @@ package swisseph;
 final class SweHouse {
   static final double MILLIARCSEC=1.0 / 3600000.0;
 
+  private static final double SOLAR_YEAR = 365.24219893;
+
+  /**
+  * Degrees the ARMC advances in a day - the sidereal rotation rate. Same definition as
+  * ARMCS in swehouse.c.
+  */
+  static final double ARMCS = (SOLAR_YEAR + 1) / SOLAR_YEAR * 360;
+
+  /** one second, the interval swehouse.c differentiates the cusps over */
+  static final double HOUSE_SPEED_DT = 1.0 / 86400.0;
+
+  /**
+  * How many cusps a house system fills in: 36 Gauquelin sectors, otherwise the 12 houses.
+  */
+  static int cuspsCount(int hsys) {
+    return Character.toUpperCase((char) hsys) == 'G' ? 36 : 12;
+  }
+
+  /**
+  * Central difference of three house calculations - one at the requested moment and one
+  * either side of it, 2*dt apart - giving the speed in longitude in degrees per day.
+  * <p>
+  * Differences are taken with swe_difdeg2n(), so a cusp crossing 0 degrees between two
+  * samples still gives the right sign and magnitude.
+  * <p>
+  * <b>A jumping ascendant.</b> Placidus and Koch are undefined beyond the polar circle and
+  * their ascendant can move by more than 90 degrees between two samples a second apart.
+  * When that happens the affected side is replaced by the central sample and the interval
+  * halved, so the derivative becomes one-sided over the half that is still continuous. That
+  * is what swehouse.c does with its <code>hp1 = h</code> / <code>hm1 = h</code>.
+  * <p>
+  * <b>Snapped systems.</b> Whole sign cusps sit on sign boundaries, so as a function of
+  * time they are a staircase: differencing gives zero almost everywhere and a spike at each
+  * step. Upstream reports the rate of the underlying ascendant for every cusp instead
+  * (<code>cusp_speed[i] = ac_speed</code> in CalcH), and so does this.
+  *
+  * @param hsys the house system, needed to recognise the snapped ones
+  * @param c0 cusps at the requested moment, a0 the matching ascmc
+  * @param cm cusps one dt earlier, am the matching ascmc
+  * @param cp cusps one dt later, ap the matching ascmc
+  * @param dt half the interval, in days
+  * @param cusp_speed may be null
+  * @param ascmc_speed may be null
+  */
+  static void differentiate(int hsys, double[] c0, double[] a0, double[] cm, double[] am,
+                            double[] cp, double[] ap, double dt,
+                            double[] cusp_speed, double[] ascmc_speed) {
+    final double ascSpeed = SwissLib.swe_difdeg2n(ap[0], am[0]) / (2. * dt);
+
+    if (null != ascmc_speed) {
+      for (int i = 0; i < SweConst.SE_NASCMC && i < ascmc_speed.length; i++) {
+        ascmc_speed[i] = SwissLib.swe_difdeg2n(ap[i], am[i]) / (2. * dt);
+      }
+      for (int i = SweConst.SE_NASCMC; i < ascmc_speed.length; i++) {
+        ascmc_speed[i] = 0.;
+      }
+    }
+
+    if (null == cusp_speed) return;
+    cusp_speed[0] = 0.;
+    final int ito = cuspsCount(hsys);
+    final char ihs = Character.toUpperCase((char) hsys);
+
+    if (ihs == 'W' || ihs == 'N') {   // whole sign: a staircase, report the ascendant's rate
+      for (int i = 1; i <= ito && i < cusp_speed.length; i++) {
+        cusp_speed[i] = ascSpeed;
+      }
+      return;
+    }
+
+    double[] hi = cp, lo = cm;
+    double h = dt;
+    if (Math.abs(SwissLib.swe_difdeg2n(ap[0], a0[0])) > 90.) {
+      hi = c0; h = dt / 2.;         // the later sample jumped, use the lower half only
+    } else if (Math.abs(SwissLib.swe_difdeg2n(am[0], a0[0])) > 90.) {
+      lo = c0; h = dt / 2.;         // the earlier sample jumped, use the upper half only
+    }
+    for (int i = 1; i <= ito && i < cusp_speed.length && i < hi.length && i < lo.length; i++) {
+      cusp_speed[i] = SwissLib.swe_difdeg2n(hi[i], lo[i]) / (2. * h);
+    }
+  }
+
   final SwissLib sl;
   final SwissEph sw;
   final SwissData swed;
@@ -255,7 +337,7 @@ final class SweHouse {
       } else if ((sip.sid_mode & SweConst.SE_SIDBIT_SSY_PLANE)!=0) {
         retc = sidereal_houses_ssypl(tjde, armc, eps_mean + nutlo[1], nutlo, geolat, hsys, cusp, ascmc, aOffs);
       } else {
-        retc = sidereal_houses_trad(tjde, armc, eps_mean + nutlo[1], nutlo[0], geolat, hsys, cusp, ascmc, aOffs);
+        retc = sidereal_houses_trad(tjde, iflag, armc, eps_mean + nutlo[1], nutlo[0], geolat, hsys, cusp, ascmc, aOffs);
       }
     } else {
       retc = swe_houses_armc(armc, geolat, eps_mean + nutlo[1], hsys, cusp, ascmc, aOffs);
@@ -499,6 +581,7 @@ final class SweHouse {
 
   /* common simplified procedure */
   private int sidereal_houses_trad(double tjde,
+                                   int iflag,
                                    double armc,
                                    double eps,
                                    double nutl,
@@ -521,15 +604,33 @@ final class SweHouse {
     if (ihs == 'W')  /* whole sign houses: treat as 'E' and fix later */
       ihs2 = 'E';
     retc = swe_houses_armc(armc, lat, eps, ihs2, cusp, ascmc, aOffs);
-    for (i = 1; i <= ito; i++)
-      cusp[i] = SwissLib.swe_degnorm(cusp[i] - ay - nutl);
+    // THE BRACES. The whole sign snap used to sit outside the loop body - the for covered
+    // only the swe_degnorm() line - so it ran once, after the loop, against cusp[ito+1].
+    // None of the twelve cusps was ever snapped to a sign boundary, and whole sign charts
+    // came back as equal houses measured from the ascendant: the 19 degree discrepancy
+    // that etc/difference.txt used to report.
+    //
+    // NUTATION. Upstream reads the ayanamsa with swe_get_ayanamsa_ex(tjde, iflag), which
+    // includes nutation in longitude unless the caller asked for SEFLG_NONUT, and then
+    // subtracts that alone. This port has only the older swe_get_ayanamsa(), which is the
+    // SEFLG_NONUT form, so the nutation has to be subtracted separately to get the same
+    // frame - and must NOT be when the caller did ask for SEFLG_NONUT.
+    final double dnut = (iflag & SweConst.SEFLG_NONUT) != 0 ? 0. : nutl;
+    for (i = 1; i <= ito; i++) {
+      cusp[i] = SwissLib.swe_degnorm(cusp[i] - ay - dnut);
       if (ihs == 'W') /* whole sign houses */
         cusp[i] -= (cusp[i] % 30);
+    }
+    if (ihs == 'N') { /* whole sign houses with house 1 = 0 degrees Aries */
+      for (i = 1; i <= ito; i++) {
+        cusp[i] = (i - 1) * 30;
+      }
+    }
     for (i = 0; i < SweConst.SE_NASCMC; i++) {
       if (i == 2) /* armc */ {
         continue;
       }
-      ascmc[aOffs+i] = SwissLib.swe_degnorm(ascmc[aOffs+i] - ay - nutl);
+      ascmc[aOffs+i] = SwissLib.swe_degnorm(ascmc[aOffs+i] - ay - dnut);
     }
     return retc;
   }

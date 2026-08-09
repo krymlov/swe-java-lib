@@ -2926,9 +2926,13 @@ String slast_starname;
       return swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusps, ascmc);
   }
 
+  /**
+  * The plain <code>swe_houses()</code> of swephexp.h, which takes no flags: houses in the
+  * <b>tropical</b> zodiac. It is the same call as the iflag form with iflag == 0.
+  */
   @Override
   public int swe_houses(double tjd_ut, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
-    throw new NotImplementedException("swe_houses");
+    return swe_houses(tjd_ut, 0, geolat, geolon, hsys, cusps, ascmc);
   }
 
   SweHouse getSweHouse() {
@@ -8389,16 +8393,69 @@ if (false) {
     throw new NotImplementedException("swe_date_conversion");
   }
 
+  /**
+  * Houses plus the speed in longitude of every cusp and of every ascmc point, in
+  * degrees per day.
+  * <p>
+  * The speeds are obtained by central differencing over one second of time, which is what
+  * Swiss Ephemeris itself does for every house system that has no closed-form speed
+  * (see <code>do_interpol</code> in swehouse.c). Differencing the date rather than the ARMC
+  * also picks up the drift of nutation and, in sidereal mode, of the ayanamsa - both far
+  * below the resolution of the difference, but in the right direction.
+  *
+  * @param cusp_speed may be null; cusp_speed[1..12] (or [1..36] for Gauquelin) on return
+  * @param ascmc_speed may be null; ascmc_speed[0..7] on return
+  * @see #swe_houses_armc_ex2(double, double, double, int, double[], double[], double[], double[], StringBuilder)
+  */
   @Override
   public int swe_houses_ex2(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps,
                              double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
-    throw new NotImplementedException("swe_houses_ex2");
+    final int retc = swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusps, ascmc);
+    if (retc == SweConst.ERR || (null == cusp_speed && null == ascmc_speed)) {
+      return retc;
+    }
+
+    final double dt = SweHouse.HOUSE_SPEED_DT;
+    final double[] cm = new double[cusps.length], cp = new double[cusps.length];
+    final double[] am = new double[ascmc.length], ap = new double[ascmc.length];
+
+    if (swe_houses(tjd_ut - dt, iflag, geolat, geolon, hsys, cm, am) == SweConst.ERR
+        || swe_houses(tjd_ut + dt, iflag, geolat, geolon, hsys, cp, ap) == SweConst.ERR) {
+      return retc;   // positions are valid, speeds are not available here
+    }
+
+    SweHouse.differentiate(hsys, cusps, ascmc, cm, am, cp, ap, dt, cusp_speed, ascmc_speed);
+    return retc;
   }
 
+  /**
+  * The ARMC form of {@link #swe_houses_ex2}. Here the speeds are differentiated over the
+  * ARMC, exactly as swehouse.c does: one second of time advances the ARMC by
+  * <code>ARMCS / 86400</code> degrees.
+  *
+  * @param cusp_speed may be null
+  * @param ascmc_speed may be null
+  */
   @Override
   public int swe_houses_armc_ex2(double armc, double geolat, double eps, int hsys, double[] cusps,
                                   double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
-    throw new NotImplementedException("swe_houses_armc_ex2");
+    final int retc = swe_houses_armc(armc, geolat, eps, hsys, cusps, ascmc);
+    if (retc == SweConst.ERR || (null == cusp_speed && null == ascmc_speed)) {
+      return retc;
+    }
+
+    final double dt = SweHouse.HOUSE_SPEED_DT;
+    final double darmc = dt * SweHouse.ARMCS;
+    final double[] cm = new double[cusps.length], cp = new double[cusps.length];
+    final double[] am = new double[ascmc.length], ap = new double[ascmc.length];
+
+    if (swe_houses_armc(armc - darmc, geolat, eps, hsys, cm, am) == SweConst.ERR
+        || swe_houses_armc(armc + darmc, geolat, eps, hsys, cp, ap) == SweConst.ERR) {
+      return retc;
+    }
+
+    SweHouse.differentiate(hsys, cusps, ascmc, cm, am, cp, ap, dt, cusp_speed, ascmc_speed);
+    return retc;
   }
 
   @Override
