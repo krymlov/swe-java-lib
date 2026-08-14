@@ -88,21 +88,12 @@ public interface ISweEnumSequence<E extends ISweEnumSequence<E>> extends ISweEnu
     /**
      * Returns value of this sequence - absolute position from this one
      */
-    default E follow(int ordinal) {
+    default E follow(final int steps) {
         final int first = first().ordinal();
-        final int last = last().ordinal();
+        final int count = last().ordinal() - first + 1;
 
-        ordinal += ordinal();
-
-        if (ordinal < first) ordinal = last;
-        else if (ordinal > last) {
-            ordinal %= last;
-            if (0 == first && ordinal > 0) {
-                ordinal -= 1;
-            }
-        }
-
-        return all()[ordinal];
+        final int offset = ((ordinal() + steps - first) % count + count) % count;
+        return all()[first + offset];
     }
 
 }
