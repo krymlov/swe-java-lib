@@ -17,7 +17,25 @@ import static swisseph.SweConst.*;
  * @version 1.0, 2020-05
  */
 public interface ISweObjectsOptions extends Serializable, Cloneable {
-    int DEFAULT_SS_RISE_SET_FLAGS = SE_BIT_HINDU_RISING;
+    /**
+     * Sunrise/sunset definition: the centre of the solar disc geometrically on the horizon,
+     * refraction ignored.
+     * <p>
+     * Deliberately <b>not</b> {@code SE_BIT_HINDU_RISING}, which is these same two bits plus
+     * {@code SE_BIT_GEOCTR_NO_ECL_LAT} - that third bit drops the observer's parallax and
+     * computes the rising as if seen from the centre of the Earth. It is a convention of Indian
+     * panchangas rather than a more accurate result, and it shifts sunrise by ~0.6 s (measured
+     * at 81&deg;08'E for 1970: 00:32:21.2 UT geocentric against 00:32:21.8 UT topocentric).
+     * Everything derived from sunrise inherits that shift magnified by its own speed - 0.6 s is
+     * three arcminutes of Vighati Lagna, which crosses a whole sign in two minutes.
+     * <p>
+     * Jagannatha Hora offers four sunrise definitions and is set to this one, so matching it
+     * keeps every sunrise-derived point (Gulika, Maandi, the Kalavela upagrahas, the time
+     * lagnas) directly comparable. Changed 2026-08-16 on the author's decision; pass
+     * {@code riseSetFlags(SE_BIT_HINDU_RISING)} to a {@code SweObjectsOptions.Builder} to get
+     * the geocentric panchanga convention back.
+     */
+    int DEFAULT_SS_RISE_SET_FLAGS = SE_BIT_DISC_CENTER | SE_BIT_NO_REFRACTION;
 
     int DEFAULT_SS_MAIN_FLAGS =
             SEFLG_SIDEREAL |        // sidereal zodiac
