@@ -67,6 +67,13 @@ public interface IModuloUtils {
      * @return a value in [0, mod) - mod is never returned
      */
     static double modulo(final double mod, final double d) {
+        // NaN has to survive. Every comparison against it is false, so without this guard the
+        // closing ternary took its else branch and turned "undetermined" into a perfectly
+        // in-range 0 - which downstream reads as 0 degrees, i.e. the first rasi, the first
+        // naksatra, the first tithi. A caller that marks a quantity as unknown by writing NaN
+        // (real consumers do, for a date with no time) got Aries instead of an empty answer.
+        if (Double.isNaN(d)) return d;
+
         double rem = d % mod;
         if (Math.abs(rem) < MODULO_TOLERANCE) return d0;
         if (rem < d0) rem += mod;
