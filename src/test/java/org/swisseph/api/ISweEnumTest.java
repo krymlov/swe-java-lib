@@ -162,9 +162,29 @@ class ISweEnumTest {
 
     // ============================================================== guards
 
+    /**
+     * A negative position names nothing, so since 2026-08-22 it is answered like any other failed
+     * lookup - with the family's reserved NIL rather than with an exception. That is the whole
+     * point of declaring one: a caller that cannot name a member gets an object it can test with
+     * {@link ISweEnum#isNil()} instead of having to catch something.
+     */
     @Test
-    void aNegativeIndexIsRejected() {
+    void aNegativeIndexAnswersNilRatherThanThrowing() {
         final Member[] values = withNil(12);
+
+        assertTrue(ISweEnum.byIndex(-1, values).isNil(), "byIndex(-1)");
+        assertSame(ISweEnum.nil(values), ISweEnum.byIndex(Integer.MIN_VALUE, values));
+    }
+
+    /**
+     * A family that declares no reserved member still throws - it has nothing truthful to answer
+     * with, and returning some real member would be a wrong answer rather than a missing one.
+     */
+    @Test
+    void aNegativeIndexStillThrowsWhenTheFamilyHasNoNil() {
+        final Member[] values = withoutNil(7);
+
+        assertNull(ISweEnum.nil(values), "this fixture deliberately has no NIL member");
         assertThrows(IllegalArgumentException.class, () -> ISweEnum.byIndex(-1, values));
     }
 

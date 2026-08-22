@@ -82,21 +82,44 @@ public interface ISweEnum extends Serializable {
     }
 
     /**
-     * @return the enum value with the given FID
-     * @throws IllegalArgumentException if not found
+     * The family's reserved {@link #isNil() NIL} member, or {@code null} if it declares none.
+     * <p>
+     * This is what every lookup below answers with when it finds nothing valid. Three families
+     * deliberately have no reserved member - {@code EGraha}, {@code ELagna} and the alias leaves
+     * such as {@code GrahaGuru}, which are several names for one real value - and for those a
+     * failed lookup still throws, because there is nothing truthful to return.
      */
-    static <T extends ISweEnum> T byFid(final int fid, final T[] values) {
-        for (T val : values) if (val.fid() == fid) return val;
-        throw new IllegalArgumentException("No Enum found with FID: " + fid);
+    static <T extends ISweEnum> T nil(final T[] values) {
+        if (null != values) for (T val : values) if (val.isNil()) return val;
+        return null;
     }
 
     /**
-     * @return the enum value with the given UID
-     * @throws IllegalArgumentException if not found
+     * @return the family's NIL when there is one, otherwise throws
+     */
+    static <T extends ISweEnum> T nilOrFail(final T[] values, final String what, final Object key) {
+        final T nil = nil(values);
+        if (null != nil) return nil;
+        throw new IllegalArgumentException("No Enum found with " + what + ": " + key
+                + ", and this family declares no NIL member to answer with");
+    }
+
+    /**
+     * @return the enum value with the given FID, or the family's {@link #nil(ISweEnum[]) NIL}
+     * @throws IllegalArgumentException only if the family declares no NIL member
+     */
+    static <T extends ISweEnum> T byFid(final int fid, final T[] values) {
+        if (null != values) for (T val : values) if (val.fid() == fid) return val;
+        return nilOrFail(values, "FID", fid);
+    }
+
+    /**
+     * @return the enum value with the given UID, or the family's {@link #nil(ISweEnum[]) NIL}
+     * @throws IllegalArgumentException only if the family declares no NIL member
      */
     static <T extends ISweEnum> T byUid(final int uid, final T[] values) {
-        for (T val : values) if (val.uid() == uid) return val;
-        throw new IllegalArgumentException("No Enum found with UID: " + uid);
+        if (null != values) for (T val : values) if (val.uid() == uid) return val;
+        return nilOrFail(values, "UID", uid);
     }
 
     /**
@@ -122,13 +145,12 @@ public interface ISweEnum extends Serializable {
      * @throws IllegalArgumentException if the index is negative or the array is empty
      */
     static <T extends ISweEnum> T byIndex(final int index, final T[] values) {
-        if (0 > index) {
-            throw new IllegalArgumentException("No Enum found with IDX: " + index);
-        }
-
         if (null == values || 0 == values.length) {
             throw new IllegalArgumentException("No values to look an index up in");
         }
+
+        // a negative position names nothing, so it is answered like any other failed lookup
+        if (0 > index) return nilOrFail(values, "IDX", index);
 
         if (!values[0].isNil()) {
             // no reserved member - the whole array is the cycle
@@ -143,20 +165,24 @@ public interface ISweEnum extends Serializable {
     }
 
     /**
-     * @return the enum value with the given code
-     * @throws IllegalArgumentException if not found
+     * @return the enum value with the given code, or the family's {@link #nil(ISweEnum[]) NIL}
+     * @throws IllegalArgumentException only if the family declares no NIL member
      */
     static <T extends ISweEnum> T byCode(final String code, final T[] values) {
-        for (T val : values) if (val.code().equals(code)) return val;
-        throw new IllegalArgumentException("No Enum found with CODE: " + code);
+        if (null != values && null != code) for (T val : values) {
+            if (code.equals(val.code())) return val;
+        }
+        return nilOrFail(values, "CODE", code);
     }
 
     /**
-     * @return the enum value with the given name
-     * @throws IllegalArgumentException if not found
+     * @return the enum value with the given name, or the family's {@link #nil(ISweEnum[]) NIL}
+     * @throws IllegalArgumentException only if the family declares no NIL member
      */
     static <T extends ISweEnum> T byName(final String name, final T[] values) {
-        for (T val : values) if (val.name().equals(name)) return val;
-        throw new IllegalArgumentException("No Enum found with NAME: " + name);
+        if (null != values && null != name) for (T val : values) {
+            if (name.equals(val.name())) return val;
+        }
+        return nilOrFail(values, "NAME", name);
     }
 }
