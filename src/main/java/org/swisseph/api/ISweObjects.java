@@ -56,6 +56,39 @@ public interface ISweObjects extends ISweContext, Serializable {
     int CUSPS_COUNT = 14;
 
     /**
+     * What {@link #signs()} and {@link #houses()} hold for an object that has not been built.
+     * <p>
+     * Both arrays are 1-based - signs and bhavas run 1..12 - so zero is the natural "no answer
+     * yet", and {@code houses[id] != 0} is what every {@code buildXxx()} uses as its
+     * already-built sentinel. It was never named, and that is how it caused trouble: a caller
+     * reading {@code signs()[LG]} on a chart built with {@code buildAscendant = false} gets 0 and,
+     * unless it checks, feeds it into arithmetic that produces a <b>plausible wrong answer</b>
+     * rather than a failure. {@code Ashtakavarga} hit the loud version of this
+     * ({@code signs[LG] - 1} indexed an array at -1); the bhava columns of the upagraha and
+     * special-lagna rows hit the silent one, reporting a real-looking bhava computed from a
+     * lagna that does not exist.
+     *
+     * @see #isCalculated(int)
+     */
+    int NOT_CALCULATED = 0;
+
+    /**
+     * Whether the given object id has actually been built on this chart.
+     * <p>
+     * Read off {@link #signs()} rather than {@link #houses()} because a sign is set for every
+     * object a build touches, while a house is not meaningful for a chart built without an
+     * ascendant.
+     *
+     * @param objectId one of {@link #LG}..{@link #PL}
+     */
+    default boolean isCalculated(final int objectId) {
+        if (objectId < LG || objectId > LAST_OBJECT_ID) return false;
+
+        final int sign = signs()[objectId];
+        return sign > NOT_CALCULATED && sign <= 12;
+    }
+
+    /**
      * Number of planets + ascendant
      */
     int OBJECTS_COUNT = LAST_OBJECT_ID + 1;
