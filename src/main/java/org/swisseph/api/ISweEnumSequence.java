@@ -61,6 +61,44 @@ public interface ISweEnumSequence<E extends ISweEnumSequence<E>> extends ISweEnu
     E[] all();
 
     /**
+     * The name meant for a human reader.
+     *
+     * <h2>Where the value comes from</h2>
+     * A concrete family in this workspace declares its display name as a <b>second enum
+     * constant</b> for the same value - {@code RasiMesha{R1, MES}}, {@code LagnaJanma{L0, JL}},
+     * {@code GrahaGuru{G3, GU, GURU, Ju, Jupiter}} - and the report used to reach it with
+     * {@link #following()}, i.e. a sequence-navigation operation used as a presentation accessor.
+     * This method is that lookup under its own name; the strings it returns are exactly the ones
+     * {@code following()} produced, so nothing rendered changes.
+     *
+     * <h2>Why it is not simply {@code following().name()}</h2>
+     * Because that is only right for an <b>alias family</b>, where every constant is a different
+     * name for one value. On a registry - {@code ERasi}, {@code EGraha} - the constants are
+     * different values, and {@code ERasi.MESHA.following()} is Vrishabha, which is a neighbour
+     * and not a label. The two are told apart by the thing that actually distinguishes them: the
+     * members of an alias family all carry the same {@link #code()}.
+     * <p>
+     * Reading the second declaration rather than the next one also makes the answer stable. Every
+     * registry hands out the first alias, so the two agree at every call site today, but a caller
+     * holding {@code GrahaGuru.GURU} would get {@code "Ju"} from {@code following()} and
+     * {@code "GU"} from here - the same label whichever alias it is asked of.
+     * <p>
+     * A family with nothing but its own code - a single constant, or a registry - answers
+     * {@link #code()}, which is what {@link ISweEnum#label()} does. Override this to give a real
+     * display name; it is also the natural hook for a {@code ResourceBundle} later.
+     */
+    @Override
+    default String label() {
+        final E[] all = all();
+        if (all.length < 2) return code();
+
+        final String code = code();
+        for (E value : all) if (!code.equals(value.code())) return code;
+
+        return all[1].name();
+    }
+
+    /**
      * The first value of this sequence, <b>skipping the reserved {@link ISweEnum#isNil() NIL}
      * member</b>.
      * <p>
