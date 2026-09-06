@@ -281,6 +281,55 @@ public abstract class TransitCalculator {
    * @see swisseph.TCPlanet
    * @see swisseph.TCPlanetPlanet
    */
+   /**
+    * The first instant at or after {@code jdUT} at which the value this calculator measures is
+    * clear of its own offset by more than {@code tolerance} - i.e. unambiguously <b>past</b> the
+    * transit rather than sitting on it.
+    * <p>
+    * A crossing is found to within an ULP of a julian day, which is as close as a double can
+    * name it, and the value recomputed there lands a few 1e-9 of a degree either side of the
+    * target. Which side is chance; what it <i>means</i> is not. For a graha moving forwards, a
+    * longitude a hair below the boundary means "has not arrived"; for one moving backwards the
+    * same number means "has just arrived, at the top of the segment below". A consumer given
+    * only that longitude cannot tell the two apart - the direction of travel is the missing
+    * fact, and stepping forward in time is the one operation that carries it, because later in
+    * time is further along the way the graha is actually going, whichever way that is.
+    * <p>
+    * So this does not decide anything about the boundary. It hands back a moment at which the
+    * question no longer arises.
+    *
+    * @param tolerance how far the value must be clear of the offset, in the calculator's own
+    *                  unit - degrees for a longitude transit
+    * @return the settled instant, or {@code jdUT} unchanged if the value will not leave the
+    *         offset within a day, which is what a graha turning retrograde on the boundary does
+    */
+   public static double settleTransitUT(
+           TransitCalculator tc,
+           double jdUT,
+           double tolerance) {
+     final boolean calcUT = (tc instanceof TCHouses);
+     final double offset = tc.getOffset();
+
+     // 1e-7 of a day is about 8.6 ms - enough for the Moon at the first try, and doubling
+     // reaches a slow graha in a handful of steps rather than guessing a constant per graha
+     for (double step = 1e-7; step <= 1.; step += step) {
+       final double jd = jdUT + step;
+       final double value = tc.calc(jd + (calcUT ? 0 : tc.deltaT(jd)));
+       if (tc.distanceFrom(offset, value) > tolerance) return jd;
+     }
+
+     return jdUT;
+   }
+
+   /**
+    * How far a value stands from an offset, the shorter way round when this calculator rolls
+    * over at 360 degrees.
+    */
+   protected double distanceFrom(final double offset, final double value) {
+     final double distance = Math.abs(value - offset);
+     return rollover ? Math.min(distance, rolloverVal - distance) : distance;
+   }
+
    public static double getTransitUT(
            TransitCalculator tc,
            double jdUT,

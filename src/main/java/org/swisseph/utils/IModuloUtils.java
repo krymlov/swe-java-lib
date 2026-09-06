@@ -44,6 +44,12 @@ public interface IModuloUtils {
 
     /**
      * Reduces a given double value modulo 30.
+     * <p>
+     * This is plain arithmetic and stays that way: it is also used to ask <i>how close</i> a
+     * graha is to a sign boundary, which is symmetric and must not snap. For the degree of a
+     * graha <i>within</i> its rasi - the value rendered beside a snapped sign - use
+     * {@link #segmentDegree(double, double)}, or {@code IRasi.rasiDegree} which is that.
+     *
      * @return a value in [0, 30) - 30. is never returned
      */
     static double fix30(final double d) {
@@ -118,6 +124,23 @@ public interface IModuloUtils {
         final double snapped = snapToSegment(length, longitude);
         if (Double.isNaN(snapped)) return -1;
         return (int) (snapped / length);
+    }
+
+    /**
+     * The position within its own segment, measured from the same snapped value
+     * {@link #segment(double, double)} takes the index from.
+     * <p>
+     * The two are the integer and the fractional part of one answer and have to agree. Plain
+     * {@code modulo(length, longitude)} is the half that does not snap, and at an ingress it
+     * reported the graha at 29&deg;59'59.99" <i>of the sign the index had already moved on
+     * from</i> - a position that does not exist. Every "how far through" reading in the jyotisa
+     * layer - the degree in the rasi, the progress through a naksatra, tithi, karana or nitya
+     * yoga - is this quantity.
+     *
+     * @return NaN if the input is NaN, otherwise a value in [0, length)
+     */
+    static double segmentDegree(final double length, final double longitude) {
+        return modulo(length, snapToSegment(length, longitude));
     }
 
     /**

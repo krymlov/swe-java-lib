@@ -16,6 +16,7 @@ import static org.swisseph.api.ISweConstants.NAKSHATRA_PADA_LENGTH;
 import static org.swisseph.api.ISweConstants.RASI_LENGTH;
 import static org.swisseph.utils.IModuloUtils.SEGMENT_TOLERANCE;
 import static org.swisseph.utils.IModuloUtils.segment;
+import static org.swisseph.utils.IModuloUtils.segmentDegree;
 import static org.swisseph.utils.IModuloUtils.snapToSegment;
 
 /**
@@ -37,6 +38,37 @@ class SegmentBoundaryTest {
 
     /** the worst residual measured over 600 real ingresses */
     static final double WORST_MEASURED_RESIDUAL = 3.25e-9;
+
+    @Test
+    @DisplayName("the degree within the segment snaps with the index, not against it")
+    void theDegreeWithinTheSegmentSnapsWithTheIndex() {
+        // The index and the degree are the two halves of one answer. The index snapped from the
+        // start; the degree did not, so at an ingress the chart said "Mesha 29 59'59.99"" - the
+        // sign it had entered, at a degree in the sign it had left. Measured on real ingresses:
+        // 40 of 84.
+        for (double boundary : new double[]{0., 30., 60., 180., 270., 330., 360.}) {
+            final double justBelow = boundary - 1e-9;
+            assertEquals(0., segmentDegree(RASI_LENGTH, justBelow), 0.,
+                    "a hair below " + boundary + " is the start of the next rasi, degree 0");
+            assertEquals(segment(RASI_LENGTH, justBelow) * RASI_LENGTH
+                            + segmentDegree(RASI_LENGTH, justBelow),
+                    snapToSegment(RASI_LENGTH, justBelow), 0.,
+                    "index * length + degree has to rebuild the snapped longitude");
+        }
+
+        // away from a boundary nothing moves, and the two halves still rebuild the input
+        final double ordinary = 137.4237;
+        assertEquals(17.4237, segmentDegree(RASI_LENGTH, ordinary), 1e-12);
+        assertEquals(ordinary, segment(RASI_LENGTH, ordinary) * RASI_LENGTH
+                + segmentDegree(RASI_LENGTH, ordinary), 1e-12);
+
+        // and it holds for every segment length the jyotisa layer divides by
+        assertEquals(0., segmentDegree(NAKSHATRA_LENGTH, NAKSHATRA_LENGTH - 1e-9), 0.);
+        assertEquals(0., segmentDegree(NAKSHATRA_PADA_LENGTH, NAKSHATRA_PADA_LENGTH - 1e-9), 0.);
+
+        // NaN stays NaN: an indeterminable longitude must not become a real degree
+        assertTrue(Double.isNaN(segmentDegree(RASI_LENGTH, Double.NaN)));
+    }
 
     @Test
     @DisplayName("a longitude a hair below a boundary belongs to the segment that starts there")
