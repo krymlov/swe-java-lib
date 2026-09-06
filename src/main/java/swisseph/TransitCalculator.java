@@ -307,18 +307,28 @@ public abstract class TransitCalculator {
            TransitCalculator tc,
            double jdUT,
            double tolerance) {
-     final boolean calcUT = (tc instanceof TCHouses);
      final double offset = tc.getOffset();
 
      // 1e-7 of a day is about 8.6 ms - enough for the Moon at the first try, and doubling
      // reaches a slow graha in a handful of steps rather than guessing a constant per graha
      for (double step = 1e-7; step <= 1.; step += step) {
        final double jd = jdUT + step;
-       final double value = tc.calc(jd + (calcUT ? 0 : tc.deltaT(jd)));
-       if (tc.distanceFrom(offset, value) > tolerance) return jd;
+       if (tc.distanceFrom(offset, valueAtUT(tc, jd)) > tolerance) return jd;
      }
 
      return jdUT;
+   }
+
+   /**
+    * The value this calculator measures, at an instant given as UT.
+    * <p>
+    * The transit machinery works in ET; this is the one conversion a caller outside this package
+    * would otherwise have to repeat, and repeating it is how the search came to disagree with
+    * {@code swe_solcross_ut()} once before.
+    */
+   public static double valueAtUT(TransitCalculator tc, double jdUT) {
+     final boolean calcUT = (tc instanceof TCHouses);
+     return tc.calc(jdUT + (calcUT ? 0 : tc.deltaT(jdUT)));
    }
 
    /**
