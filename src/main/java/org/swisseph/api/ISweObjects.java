@@ -13,6 +13,7 @@ import java.io.Serializable;
 
 import static org.swisseph.api.ISweConstants.*;
 import static org.swisseph.utils.IModuloUtils.snapToSegment;
+import static swisseph.SweConst.SE_SIDM_FAGAN_BRADLEY;
 import static swisseph.SweConst.*;
 
 /**
@@ -310,10 +311,20 @@ public interface ISweObjects extends ISweContext, Serializable {
         }
 
         if (null != sweOptions) {
-            ISweAyanamsa ayanamsa = sweOptions.ayanamsa();
+            final ISweAyanamsa ayanamsa = sweOptions.ayanamsa();
             if (ayanamsa != null && ayanamsa.sidereal()) {
                 swissEph.swe_set_sid_mode(ayanamsa.fid(), sweOptions
                         .initialJulianDay(), sweOptions.initialAyanamsa());
+            } else {
+                // A tropical chart has no ayanamsa, but swed.sidd is thread-local sticky state:
+                // skipping the call left whatever the previous chart on this thread had set. It
+                // reads back through swe_get_ayanamsa_ex(), which does not care that the caller
+                // has since gone tropical. Reset to the library default instead.
+                //
+                // Explicitly SE_SIDM_FAGAN_BRADLEY, not ayanamsa.fid(): AY_NONE reports -255,
+                // and swe_set_sid_mode() clamps a negative mode to 0 - which is the same thing,
+                // but by accident of an undocumented clamp rather than by intent.
+                swissEph.swe_set_sid_mode(SE_SIDM_FAGAN_BRADLEY, d0, d0);
             }
         }
 
