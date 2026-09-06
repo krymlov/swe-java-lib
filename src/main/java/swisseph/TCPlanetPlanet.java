@@ -633,7 +633,17 @@ public class TCPlanetPlanet extends TransitCalculator {
             }
             return ((xx1[idx] % rolloverVal) - (xx2[idx] % rolloverVal) + rolloverVal) % rolloverVal;
         } else if ( calcYoga ) {
-            return xx1[idx] + xx2[idx];
+            // A nitya yoga is (sun + moon) mod 360 - twenty seven parts of 13 20' over one
+            // circle - and this used to hand back the raw sum. That runs to 720 and drops by
+            // 360 whenever either body crosses 0, while the search treats the value as living
+            // in [0, 360): rollover is true here and rolloverVal is 360, and the clauses in
+            // checkResult test things like "val > 0.9 * rolloverVal and lastVal < 20", which
+            // are meaningless for a number that large and mis-fire at the drop.
+            //
+            // Measured on a 100-event listing: four events came back on no yoga boundary at
+            // all - up to 0.66 degrees out and twenty hours from the real crossing - roughly
+            // one per lunar month, which is how often the Moon crosses 0.
+            return rollover ? (xx1[idx] + xx2[idx]) % rolloverVal : xx1[idx] + xx2[idx];
         }
         return xx1[idx] - xx2[idx];
     }
