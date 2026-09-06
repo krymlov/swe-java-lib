@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import static java.lang.Double.isNaN;
 import static org.swisseph.api.ISweConstants.*;
+import static org.swisseph.utils.IModuloUtils.segment;
 import static org.swisseph.api.ISweJulianDate.IDXD_DELTAT;
 import static org.swisseph.api.ISweJulianDate.IDXD_ETIME;
 import static swisseph.SweConst.*;
@@ -242,7 +243,7 @@ public class SweObjects implements ISweObjects {
         }
 
         longitudes[LG] = ascmc[SE_ASC];
-        signs[LG] = (int) (ascmc[SE_ASC] / d30) + i1;
+        signs[LG] = segment(d30, ascmc[SE_ASC]) + i1;
 
         // the ascendant is house 1 in every system whose first cusp is the ascendant,
         // but Meridian, Horizontal and Morinus start house 1 elsewhere (the equatorial
@@ -268,7 +269,7 @@ public class SweObjects implements ISweObjects {
         latitudes[objId] = dres[1];
         longitudes[objId] = dres[0];
         retrogrades[objId] = dres[3] < d0;
-        signs[objId] = (int) (dres[0] / d30) + i1;
+        signs[objId] = segment(d30, dres[0]) + i1;
 
         if (i0 != signs[LG]) {
             houses[objId] = calculatePlanetHouse(objId);
@@ -293,7 +294,7 @@ public class SweObjects implements ISweObjects {
             retrogrades[KE] = retrogrades[RA];
             longitudes[KE] = (longitudes[RA] + d180) % d360;
 
-            signs[KE] = (int) (longitudes[KE] / d30) + i1;
+            signs[KE] = segment(d30, longitudes[KE]) + i1;
             houses[KE] = calculatePlanetHouse(KE);
         }
 
