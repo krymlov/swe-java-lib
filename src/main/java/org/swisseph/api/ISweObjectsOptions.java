@@ -101,6 +101,20 @@ public interface ISweObjectsOptions extends Serializable, Cloneable {
         return DEFAULT_SS_RISE_SET_FLAGS;
     }
 
+    /**
+     * Which ephemeris the chart is built from - the {@code SEFLG_SWIEPH} / {@code SEFLG_MOSEPH}
+     * / {@code SEFLG_JPLEPH} bits of {@link #mainFlags()}, and nothing else.
+     * <p>
+     * It exists because several Swiss Ephemeris entry points take the ephemeris flag on its own
+     * rather than the full calculation flags - {@code swe_rise_trans()} and the four eclipse
+     * functions. Those call sites used to pass a literal {@code SEFLG_SWIEPH}, so a chart
+     * configured for Moshier or JPL got its planets and houses from the ephemeris it asked for
+     * and its sunrise, sunset and eclipses from a different one. Everything derived from
+     * sunrise - Gulika, Maandi, the Kalavela upagrahas, the time lagnas - inherited the mix.
+     */
+    default int epheFlags() {
+        return mainFlags() & SEFLG_EPHMASK;
+    }
     default double initialAyanamsa() {
         return d0;
     }

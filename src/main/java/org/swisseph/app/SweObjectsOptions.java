@@ -11,8 +11,8 @@ import org.swisseph.api.ISweHouseSystem;
 import org.swisseph.api.ISweObjectsOptions;
 
 import static org.swisseph.api.ISweConstants.CH_VS;
+import static org.swisseph.api.ISweConstants.d0;
 import static org.swisseph.app.SweAyanamsa.*;
-import static org.swisseph.app.SweHouseSystem.WHOLE_SIGN;
 import static swisseph.SweConst.SEFLG_SIDEREAL;
 import static swisseph.SweConst.SE_SIDM_USER;
 
@@ -256,9 +256,7 @@ public class SweObjectsOptions implements ISweObjectsOptions {
          * Reference date (Julian day) if sid_mode is SE_SIDM_USER
          */
         public Builder initialJulianDay(double initJulianDay) {
-            if (ayanamsa.fid() == SE_SIDM_USER) {
-                this.initialJulianDay = initJulianDay;
-            }
+            this.initialJulianDay = initJulianDay;
             return this;
         }
 
@@ -266,18 +264,25 @@ public class SweObjectsOptions implements ISweObjectsOptions {
          * Initial ayanamsha if sid_mode is SE_SIDM_USER
          */
         public Builder initialAyanamsa(double initAyanamsa) {
-            if (ayanamsa.fid() == SE_SIDM_USER) {
-                this.initialAyanamsa = initAyanamsa;
-            }
+            this.initialAyanamsa = initAyanamsa;
             return this;
         }
 
         public ISweObjectsOptions build() {
             final boolean sidereal = null != ayanamsa && ayanamsa.sidereal();
 
+            // t0 and ayan_t0 only mean anything for SE_SIDM_USER, and the test belongs here
+            // rather than in the setters: guarding inside initialJulianDay()/initialAyanamsa()
+            // made the builder order-dependent, so initialJulianDay(x).ayanamsa(user) silently
+            // dropped x while ayanamsa(user).initialJulianDay(x) kept it. That is the same
+            // defect already fixed once here for ayanamsa() and SEFLG_SIDEREAL.
+            final boolean userDefined = sidereal && ayanamsa.fid() == SE_SIDM_USER;
+            final double t0 = userDefined ? initialJulianDay : d0;
+            final double ayanT0 = userDefined ? initialAyanamsa : d0;
+
             return new SweObjectsOptions(ayanamsa, houseSystem, trueNode,
                     sidereal(mainFlags, sidereal), sidereal(houseFlags, sidereal),
-                    sidereal(calcFlags, sidereal), initialJulianDay, initialAyanamsa,
+                    sidereal(calcFlags, sidereal), t0, ayanT0,
                     riseSetFlags, sidereal(transitFlags, sidereal));
         }
 

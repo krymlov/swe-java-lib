@@ -12,6 +12,7 @@ import org.swisseph.app.SweRuntimeException;
 import java.io.Serializable;
 
 import static org.swisseph.api.ISweConstants.*;
+import static org.swisseph.utils.IModuloUtils.snapToSegment;
 import static swisseph.SweConst.*;
 
 /**
@@ -246,7 +247,12 @@ public interface ISweObjects extends ISweContext, Serializable {
         final ISweHouseSystem houseSystem = sweOptions().houseSystem();
 
         if (SE_HSYS_WHOLE_SIGN == houseSystem.fid()) {
-            final double longitude = longitudes()[objId];
+            // The same snap signs[] is built with. Without it the two halves of this number
+            // disagree at a sign boundary: the house comes from the snapped sign, while
+            // `longitude % 30` still sees 29.99999999 and reports the graha as 99.999% through
+            // the house it has just entered. Measured at real ingresses before this line was
+            // added: fraction 0.99999999 for four of five grahas.
+            final double longitude = snapToSegment(d30, longitudes()[objId]);
             final int house = ((signs()[objId] - signs()[LG] + i12) % i12) + i1;
             return house + (longitude % d30) / d30;
         }
