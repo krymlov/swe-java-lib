@@ -74,6 +74,34 @@ public class SweObjects implements ISweObjects {
 
     public SweObjects(ISwissEph swissEph, ISweJulianDate sweJulianDate, ISweGeoLocation sweLocation,
                       ISweObjectsOptions sweOptions, boolean buildAscendant) {
+        this(swissEph, sweJulianDate, sweLocation, sweOptions, buildAscendant, true);
+    }
+
+    /**
+     * The only way to build a chart that does <b>not</b> throw on a failure, when the ascendant
+     * is built here.
+     * <p>
+     * {@link #throwSweError(boolean)} is a setter, so it cannot be reached until the constructor
+     * has returned - and the four-argument constructor builds the ascendant before that. A
+     * caller doing
+     *
+     * <pre>
+     *   objects = new SweObjects(...);      // throws HERE, on a polar Placidus chart
+     *   objects.throwSweError(false);       // never reached
+     * </pre>
+     *
+     * gets the exception it asked not to get. Passing the flag in is what closes that window;
+     * the alternative is to construct with {@code buildAscendant = false}, set the flag, and
+     * call {@link #buildAscendant()} afterwards.
+     *
+     * @param throwSweError whether a Swiss Ephemeris failure throws {@link SweRuntimeException}
+     *                      or is reported through {@link #sweError()} and the
+     *                      {@link ISweObjects#NOT_CALCULATED} sentinels
+     */
+    public SweObjects(ISwissEph swissEph, ISweJulianDate sweJulianDate, ISweGeoLocation sweLocation,
+                      ISweObjectsOptions sweOptions, boolean buildAscendant,
+                      boolean throwSweError) {
+        this.throwSweError = throwSweError;
         this.location = sweLocation;
         this.options = sweOptions;
 

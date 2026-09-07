@@ -266,8 +266,15 @@ public interface ISweObjects extends ISweContext, Serializable {
                 trueObliquity(), houseSystem.fid(), xpin, sweError());
 
         if (house < d1) {
-            throw new SweRuntimeException("Cannot determine the house of object " + objId
-                    + " in house system " + houseSystem.code() + ": " + sweError());
+            // honours throwSweError() like every other failure path: with it off the answer is
+            // the NOT_CALCULATED sentinel and the reason is in sweError(). It used to throw
+            // unconditionally, so a chart built with the flag deliberately off still threw from
+            // here - and from trueObliquity() below, which this line reaches through.
+            if (throwSweError()) {
+                throw new SweRuntimeException("Cannot determine the house of object " + objId
+                        + " in house system " + houseSystem.code() + ": " + sweError());
+            }
+            return NOT_CALCULATED;
         }
 
         return house;
@@ -293,7 +300,13 @@ public interface ISweObjects extends ISweContext, Serializable {
                 SE_ECL_NUT, sweOptions().mainFlags() & SEFLG_EPHMASK, xx, sweError());
 
         if (ERR == result) {
-            throw new SweRuntimeException("Cannot obtain the obliquity: " + sweError());
+            // as above: with throwSweError() off this answers 0, which swe_house_pos() then
+            // rejects, so the house position comes back as NOT_CALCULATED rather than as a
+            // number computed from a mean obliquity that was never obtained
+            if (throwSweError()) {
+                throw new SweRuntimeException("Cannot obtain the obliquity: " + sweError());
+            }
+            return d0;
         }
 
         return xx[0];
