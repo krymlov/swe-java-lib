@@ -19,6 +19,52 @@ import static swisseph.SweConst.ODEGREE_CHAR;
 public interface IDegreeUtils {
 
     /**
+     * The same as {@link #toDMSms(double)}, but kept <b>inside the segment the value belongs
+     * to</b> - a sign, a naksatra, a pada.
+     * <p>
+     * A retrograde ingress enters at the <i>top</i> of its segment: Rahu reaches Vrishabha at
+     * 59.99999986, and that hair is far under the hundredth of an arcsecond rendered here, so
+     * plain rounding carries it to {@code 60°00'00.00"} - the start of the sign <i>above</i>.
+     * A whole backward listing then reads R11 at 330, R12 at 360, R1 at 30, R2 at 60, every row
+     * naming the boundary of its neighbour and none of them a position in the sign it is
+     * labelled with.
+     * <p>
+     * Truncating to the last whole hundredth keeps it where it belongs - {@code 59°59'59.99"} -
+     * and costs 0.01", four orders below what Swiss Ephemeris itself claims. It happens
+     * <b>only</b> when rounding would carry across a boundary, so every other value renders
+     * exactly as before.
+     *
+     * @param length the segment width - 30 for a rasi, 13°20' for a naksatra; 0 for a family
+     *               that is a point rather than a range, which renders unchanged
+     */
+    static StringBuilder toDMSmsWithin(final double ddeg, final double length) {
+        return toDMSms(keepWithin(ddeg, length, d1 / d360000));
+    }
+
+    /**
+     * {@link #toDMS(double, boolean, boolean)} rounded to the whole second, and kept inside its
+     * own segment the way {@link #toDMSmsWithin(double, double)} is - so the top of a sign reads
+     * {@code 29°59'59"} rather than {@code 30°00'00"}.
+     */
+    static StringBuilder toDMSWithin(final double ddeg, final double length) {
+        return toDMS(keepWithin(ddeg, length, d1 / d3600), false, true);
+    }
+
+    /**
+     * The value, stepped back to the last whole {@code unit} when rounding to that unit would
+     * carry it onto the next segment boundary. Everything else is returned untouched.
+     */
+    static double keepWithin(final double ddeg, final double length, final double unit) {
+        if (length > d0) {
+            final double rem = ddeg % length;
+            if (rem > d0 && length - rem < unit / d2) {
+                return Math.floor(ddeg / unit) * unit;
+            }
+        }
+        return ddeg;
+    }
+
+    /**
      * The method is intended to convert latitude DD 49.758665 to DMS like 49°45'31"N
      */
     static StringBuilder toLAT(final double ddeg) {
