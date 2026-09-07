@@ -34,11 +34,22 @@ public interface IDegreeUtils {
      * <b>only</b> when rounding would carry across a boundary, so every other value renders
      * exactly as before.
      *
+     * <b>Both ends of the segment</b>: the value is first snapped up when it is only a rounding
+     * artefact short of the next boundary - which is where the transit search was actually
+     * aiming, and what {@link IModuloUtils#snapToSegment(double, double)} does for the index -
+     * and only then kept from rounding onto that boundary from below. Doing one without the
+     * other renders the two halves of the same answer against different boundaries: the author's
+     * {@code (RA) = 300°00'00.00" -> Rasi= MAK ... | 30°00'00.00"} had a longitude naming
+     * the sign above and a degree naming no position in any sign at all.
+     *
      * @param length the segment width - 30 for a rasi, 13°20' for a naksatra; 0 for a family
-     *               that is a point rather than a range, which renders unchanged
+     *               that is a point rather than a range, which renders unchanged. Where a row
+     *               names several at once - a rasi, a naksatra and a pada - pass the
+     *               <b>pada</b>: every rasi and naksatra boundary is a multiple of 3°20',
+     *               so the finest length satisfies all three
      */
     static StringBuilder toDMSmsWithin(final double ddeg, final double length) {
-        return toDMSms(keepWithin(ddeg, length, d1 / d360000));
+        return toDMSms(keepWithin(IModuloUtils.snapToSegment(length, ddeg), length, d1 / d360000));
     }
 
     /**
@@ -47,7 +58,8 @@ public interface IDegreeUtils {
      * {@code 29°59'59"} rather than {@code 30°00'00"}.
      */
     static StringBuilder toDMSWithin(final double ddeg, final double length) {
-        return toDMS(keepWithin(ddeg, length, d1 / d3600), false, true);
+        return toDMS(keepWithin(IModuloUtils.snapToSegment(length, ddeg), length, d1 / d3600),
+                false, true);
     }
 
     /**

@@ -18,6 +18,8 @@ import static org.swisseph.utils.IModuloUtils.SEGMENT_TOLERANCE;
 import static org.swisseph.utils.IModuloUtils.segment;
 import static org.swisseph.utils.IModuloUtils.segmentDegree;
 import static org.swisseph.utils.IModuloUtils.snapToSegment;
+import static org.swisseph.utils.IDegreeUtils.toDMSms;
+import static org.swisseph.utils.IDegreeUtils.toDMSmsWithin;
 
 /**
  * A transit search exists to find the moment a graha is <b>on</b> a segment boundary. Recomputing
@@ -144,5 +146,67 @@ class SegmentBoundaryTest {
         assertEquals(11, segment(RASI_LENGTH, -15.));
         assertEquals(0, segment(RASI_LENGTH, -1e-9), "just below zero is the start of Mesha");
         assertEquals(2, segment(RASI_LENGTH, -300. - 1e-9));
+    }
+
+    @Test
+    @DisplayName("a rendered position stays inside the segment it is labelled with, both ends")
+    void aRenderedPositionStaysInsideItsSegment() {
+        // The author's report, straight out of Kundali.toString():
+        //
+        //   (RA) = 300°00'00.00" -> Rasi= MAK (0.0  %) | 30°00'00.00"
+        //
+        // 300 is the start of Kumbha, not a position in Makara, and 30 is a degree in no sign at
+        // all. Rahu is retrograde, so it enters Makara at the TOP of it - measured 299.999999859,
+        // which is a hair more than SEGMENT_TOLERANCE below the boundary, so the snap correctly
+        // leaves it in Makara and only the rendering carried it across.
+        final double rahu = 299.999999859055;
+
+        assertEquals("299°59'59.99\"", toDMSmsWithin(rahu, NAKSHATRA_PADA_LENGTH).toString(),
+                "the longitude has to stay in the sign the row names");
+        assertEquals("29°59'59.99\"",
+                toDMSmsWithin(segmentDegree(RASI_LENGTH, rahu), NAKSHATRA_PADA_LENGTH).toString(),
+                "and so does the degree within it - 30 is not a position in a sign");
+
+        // the other end of the same segment: a value the snap DOES move belongs to the sign
+        // above, and must render as its boundary rather than being truncated back down
+        final double snapped = 300. - SEGMENT_TOLERANCE / 2.;
+        assertEquals("300°00'00.00\"", toDMSmsWithin(snapped, NAKSHATRA_PADA_LENGTH).toString(),
+                "inside the tolerance the value IS the boundary, and truncating it would put it "
+                        + "back in the sign the snap just took it out of");
+        assertEquals(0., segmentDegree(RASI_LENGTH, snapped), 0.);
+    }
+
+    @Test
+    @DisplayName("the pada length covers the rasi and the naksatra boundaries too")
+    void thePadaLengthCoversEveryBoundaryARowNames() {
+        // A report row names a rasi, a naksatra AND a pada at once. 30 is 9 padas and 13°20' is
+        // 4, so every boundary of either is a multiple of 3°20' - the finest length satisfies all
+        // three, and the coarser ones do not: the rasi length leaves a naksatra boundary alone
+        // and the naksatra length leaves a rasi boundary alone.
+        final double belowNaksatra = NAKSHATRA_LENGTH - 3e-7;
+        final double belowRasi = RASI_LENGTH - 3e-7;
+
+        assertEquals("13°19'59.99\"", toDMSmsWithin(belowNaksatra, NAKSHATRA_PADA_LENGTH).toString());
+        assertEquals("29°59'59.99\"", toDMSmsWithin(belowRasi, NAKSHATRA_PADA_LENGTH).toString());
+
+        assertEquals("13°20'00.00\"", toDMSmsWithin(belowNaksatra, RASI_LENGTH).toString(),
+                "the rasi length cannot see a naksatra boundary");
+        assertEquals("30°00'00.00\"", toDMSmsWithin(belowRasi, NAKSHATRA_LENGTH).toString(),
+                "nor the naksatra length a rasi boundary");
+    }
+
+    @Test
+    @DisplayName("every other value renders exactly as it did before")
+    void anOrdinaryValueRendersUnchanged() {
+        // The clamp fires only within half a rendered unit of a boundary, so nothing else may
+        // move - which is why no golden file changed when this was introduced.
+        int moved = 0;
+        for (int i = 0; i < 500000; i++) {
+            final double v = i * (360. / 500000.);
+            if (!toDMSms(v).toString().equals(toDMSmsWithin(v, NAKSHATRA_PADA_LENGTH).toString())) {
+                moved++;
+            }
+        }
+        assertEquals(0, moved, "sampled degrees whose rendering changed");
     }
 }
