@@ -149,12 +149,26 @@ public class SwetestEpochsCrossCheckTest extends AbstractTest {
     // =====================================================================  4
 
     /**
+     * Every real sidereal mode Swiss Ephemeris 2.10.03 defines, sid0 (Fagan/Bradley) through
+     * sid46 (Lahiri ICRC) - the full {@link SweAyanamsa} range excluding AY_USER (needs a
+     * caller-supplied reference date, covered separately by
+     * {@code userAyanamsaReferenceValuesAreOrderIndependent}) and AY_NONE (tropical, covered
+     * by the tropical-zodiac tests). Each mode is paired with one of the ten epochs above
+     * (cycling through them) rather than crossed with all ten, since the thing under test -
+     * whether the ayanamsa's own arithmetic and its effect on every body agree with swetest -
+     * does not depend on which epoch it runs at; spreading them keeps the calendar/ephemeris
+     * boundary years exercised without a 47x10 cross product.
+     * <p>
      * The reported ayanamsa follows the true/apparent choice of the planets, so swetest is
      * run with -true here as well.
      */
     @ParameterizedTest(name = "sid{0} in {1}")
-    @CsvSource({"0,1000", "1,1000", "3,1500", "5,1800", "7,1900", "16,1950",
-            "21,1999", "23,2027", "27,2035", "1,2066", "3,2099", "5,2099"})
+    @CsvSource({"0,1000", "1,1500", "2,1800", "3,1900", "4,1950", "5,1999", "6,2027", "7,2035",
+            "8,2066", "9,2099", "10,1000", "11,1500", "12,1800", "13,1900", "14,1950", "15,1999",
+            "16,2027", "17,2035", "18,2066", "19,2099", "20,1000", "21,1500", "22,1800", "23,1900",
+            "24,1950", "25,1999", "26,2027", "27,2035", "28,2066", "29,2099", "30,1000", "31,1500",
+            "32,1800", "33,1900", "34,1950", "35,1999", "36,2027", "37,2035", "38,2066", "39,2099",
+            "40,1000", "41,1500", "42,1800", "43,1900", "44,1950", "45,1999", "46,2027"})
     void ayanamsaValuesAcrossTypesAndEpochs(int sid, int year) {
         assumeTrue(available());
         final SweAyanamsa ayanamsa = ayanamsaOf(sid);
@@ -192,6 +206,20 @@ public class SwetestEpochsCrossCheckTest extends AbstractTest {
         assumeTrue(available());
         if (NIL == hsys) return;
         assertCuspsMatch(1999, KYIV, hsys, sidereal(SweAyanamsa.LAHIRI, hsys, false), "-sid1");
+    }
+
+    /**
+     * The sidereal test above shares its zodiac with the ayanamsa - a bug in how the library
+     * applies a sidereal shift to cusps could hide behind a bug that shifts swetest's own
+     * ayanamsa the same way. Tropical needs no such shift at all, so it is the cleaner check
+     * of the house-system math on its own, across every system.
+     */
+    @ParameterizedTest(name = "{0} tropical cusps at Kyiv 1999")
+    @EnumSource(SweHouseSystem.class)
+    void tropicalHouseCuspsAcrossHouseSystems(SweHouseSystem hsys) {
+        assumeTrue(available());
+        if (NIL == hsys) return;
+        assertCuspsMatch(1999, KYIV, hsys, tropical(hsys, false));
     }
 
     private void assertCuspsMatch(int year, double[] place, SweHouseSystem hsys,
@@ -312,11 +340,38 @@ public class SwetestEpochsCrossCheckTest extends AbstractTest {
         assumeTrue(available());
         if (NIL == hsys || WHOLE_SIGN == hsys) return;   // whole sign is not swe_house_pos based
 
-        final char letter = (char) hsys.fid();
-        final Map<String, Double> ref = values(date(1999), NOON, "-p" + BODIES, "-true", "-fPj",
-                house(KYIV[0], KYIV[1], letter), "-hsy" + letter + "1");
+        // Deliberately no -sid here. A house *position* is the object's place relative to
+        // the cusps, and both shift by the same ayanamsa in a sidereal chart - the plain
+        // tropical swetest output is already the number a correctly-built sidereal chart
+        // must agree with. Passing -sid1 to swetest here is not "more correct": measured,
+        // it makes swetest's own -fPj answer differently (0.7-0.9 degrees, house-system
+        // dependent, not the ~24 degree ayanamsa) - a discrepancy in swetest's own sidereal
+        // -fPj path, not in this library, and not this test's concern.
+        assertHousePositionsMatch(hsys, sidereal(SweAyanamsa.LAHIRI, hsys, false));
+    }
 
-        final ISweObjects o = chart(1999, KYIV, sidereal(SweAyanamsa.LAHIRI, hsys, false));
+    /** the tropical counterpart - no ayanamsa shift can hide a house-position bug here */
+    @ParameterizedTest(name = "{0} tropical house positions")
+    @EnumSource(SweHouseSystem.class)
+    void tropicalHousePositionsAcrossHouseSystems(SweHouseSystem hsys) {
+        assumeTrue(available());
+        if (NIL == hsys || WHOLE_SIGN == hsys) return;
+        assertHousePositionsMatch(hsys, tropical(hsys, false));
+    }
+
+    private void assertHousePositionsMatch(SweHouseSystem hsys, ISweObjectsOptions options,
+                                            String... zodiac) {
+        final char letter = (char) hsys.fid();
+        final String[] extra = new String[zodiac.length + 5];
+        extra[0] = "-p" + BODIES;
+        extra[1] = "-true";
+        extra[2] = "-fPj";
+        extra[3] = house(KYIV[0], KYIV[1], letter);
+        extra[4] = "-hsy" + letter + "1";
+        System.arraycopy(zodiac, 0, extra, 5, zodiac.length);
+        final Map<String, Double> ref = values(date(1999), NOON, extra);
+
+        final ISweObjects o = chart(1999, KYIV, options);
         for (int i = 0; i < BODY_NAMES.length; i++) {
             final Double expected = ref.get(BODY_NAMES[i]);
             assertNotNull(expected, hsys + ": " + BODY_NAMES[i] + " missing");
