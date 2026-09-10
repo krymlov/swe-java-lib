@@ -8641,7 +8641,29 @@ if (false) {
       if (null != serr) { serr.setLength(0); serr.append("daya must be a double[1] or longer"); }
       return SweConst.ERR;
     }
-    double ay = swe_get_ayanamsa(tjd_et);
+    if (!swed.ayana_is_set) {
+      swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
+    }
+    double ay;
+    if (swed.sidd.sid_mode == SweConst.SE_SIDM_TRUE_CITRA) {
+      // True Citra is Spica's own computed longitude, so - unlike the generic precession-based
+      // modes swe_get_ayanamsa() falls back to below - it responds to SEFLG_TRUEPOS/NOABERR/
+      // NOGDEFL. Upstream's swi_get_ayanamsa_ex() (sweph.c) threads exactly these three through
+      // to its own swe_fixstar() call ("iflag_true"); swe_get_ayanamsa(double) always asks for
+      // the star's SEFLG_NONUT (apparent) position, which is right for a plain, no-flag call but
+      // left a caller asking for SEFLG_TRUEPOS (swetest's -true) silently still getting the
+      // apparent one. Measured: 4.8412" out at 1 Jan 2000, moving every sidereal longitude built
+      // from it by the same amount - not a star-catalog difference as first assumed, since
+      // swe_fixstar() itself agrees with the native library to 2e-10 arcsec either way; see
+      // swe-jni-demo's SwissEphEngineComparisonTest.
+      final double[] x = new double[6];
+      final int starFlags = (iflag & SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_NONUT
+              | (iflag & (SweConst.SEFLG_TRUEPOS | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL));
+      swe_fixstar(new StringBuilder("Spica"), tjd_et, starFlags, x, serr);
+      ay = sl.swe_degnorm(x[0] - 180);
+    } else {
+      ay = swe_get_ayanamsa(tjd_et);
+    }
     if ((iflag & SweConst.SEFLG_NONUT) == 0) {
       final double[] nutlo = new double[2];
       sl.swi_nutation(tjd_et, iflag, nutlo);

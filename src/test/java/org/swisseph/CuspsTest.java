@@ -160,7 +160,16 @@ public class CuspsTest extends AbstractTest {
             assertEquals(0., cuspSpeed[0], 0., hsys.name() + " cuspSpeed[0] is unused");
 
             for (int h = 1; h < CUSPS_COUNT - 1; h++) {
-                assertNotEquals(0., cuspSpeed[h], hsys.name() + " cusp " + h + " has no speed");
+                // Whole sign is the one system where a zero speed is correct, not missing:
+                // upstream's CalcH never assigns cusps 2/3/5/6/8/9/11/12 a speed of their own
+                // for 'W' (see SweHouse.differentiate()'s own javadoc), so only 1/4/7/10 (the
+                // ascendant/MC pair and their opposites) carry a real rate.
+                if (WHOLE_SIGN == hsys && 1 != h && 4 != h && 7 != h && 10 != h) {
+                    assertEquals(0., cuspSpeed[h], 0., hsys.name() + " cusp " + h
+                            + " should have no speed of its own");
+                } else {
+                    assertNotEquals(0., cuspSpeed[h], hsys.name() + " cusp " + h + " has no speed");
+                }
             }
         }
     }

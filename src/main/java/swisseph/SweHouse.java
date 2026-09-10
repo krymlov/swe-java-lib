@@ -117,10 +117,16 @@ final class SweHouse {
   * halved, so the derivative becomes one-sided over the half that is still continuous. That
   * is what swehouse.c does with its <code>hp1 = h</code> / <code>hm1 = h</code>.
   * <p>
-  * <b>Snapped systems.</b> Whole sign cusps sit on sign boundaries, so as a function of
-  * time they are a staircase: differencing gives zero almost everywhere and a spike at each
-  * step. Upstream reports the rate of the underlying ascendant for every cusp instead
-  * (<code>cusp_speed[i] = ac_speed</code> in CalcH), and so does this.
+  * <b>Whole sign.</b> Upstream's {@code CalcH} (swehouse.c) never differentiates whole sign's
+  * cusps at all - its {@code case 'W'} sets no {@code cusp_speed} of its own, so eight of the
+  * twelve keep the array's initial zero (cusps 2, 3, 5, 6, 8, 9, 11, 12), and only cusp 1 and
+  * cusp 10 keep the ordinary pre-switch default ({@code cusp_speed[1] = ac_speed},
+  * {@code cusp_speed[10] = mc_speed}) that every house system starts from; cusps 4 and 7 then
+  * pick those same two values up via the generic opposite-cusp mirroring every non-Gauquelin,
+  * non-Sunshine, non-APC system gets afterward ({@code cusp_speed[hsy != 'G' ...]} block). This
+  * reproduces exactly that - not a central-difference approximation of it - so the pure-Java
+  * port matches the native library's reported whole sign speeds bit for bit rather than only
+  * being self-consistent with its own (differenced) positions.
   *
   * @param hsys the house system, needed to recognise the snapped ones
   * @param c0 cusps at the requested moment, a0 the matching ascmc
@@ -149,7 +155,21 @@ final class SweHouse {
     final int ito = cuspsCount(hsys);
     final char ihs = Character.toUpperCase((char) hsys);
 
-    if (ihs == 'W' || ihs == 'N') {   // whole sign: a staircase, report the ascendant's rate
+    if (ihs == 'W') {
+      // Matches CalcH exactly: cusps 2/3/5/6/8/9/11/12 are never assigned a speed of their
+      // own for 'W' and stay at the array's initial zero; 1 and 10 keep the pre-switch
+      // default (ac_speed/mc_speed), and 4/7 inherit it through the opposite-cusp mirror.
+      final double mcSpeed = SwissLib.swe_difdeg2n(ap[1], am[1]) / (2. * dt);
+      for (int i = 1; i <= ito && i < cusp_speed.length; i++) {
+        cusp_speed[i] = 0.;
+      }
+      if (1 < cusp_speed.length) cusp_speed[1] = ascSpeed;
+      if (7 < cusp_speed.length) cusp_speed[7] = ascSpeed;
+      if (4 < cusp_speed.length) cusp_speed[4] = mcSpeed;
+      if (10 < cusp_speed.length) cusp_speed[10] = mcSpeed;
+      return;
+    }
+    if (ihs == 'N') {   // equal with house 1 = 0 Aries: CalcH's own branch isn't ported, kept as-is
       for (int i = 1; i <= ito && i < cusp_speed.length; i++) {
         cusp_speed[i] = ascSpeed;
       }
@@ -187,6 +207,26 @@ final class SweHouse {
 
 
   static final double VERY_SMALL=1E-10;
+
+  /**
+   * {@code swe_house_pos()}'s Koch branch rejects a point as "circumpolar" when its computed
+   * {@code dfac} falls outside {@code [0, 2]} - and for a point exactly ON the MC or the IC,
+   * {@code dfac} is analytically exactly 0 or 2 (the eastern-arc and western-arc formulas both
+   * collapse to that, since {@code adp == admc} for the MC itself, by the same identity
+   * {@code demc = atand(sind(armc) * tand(eps))} the surrounding code already uses). Upstream's
+   * C carries this identical unguarded check (swehouse.c, the Koch branch) - it is not a defect
+   * introduced by this port, but the two engines' independently-rounded {@code atand}/{@code
+   * tand}/{@code sind} chains do not cancel to bit-identical zero, so which side of the boundary
+   * a mathematically-exact 0 lands on is a coin flip that can differ between them. Measured: for
+   * a real chart's own MC/IC, this flipped negative here while the native library's own rounding
+   * happened to land non-negative, so {@code swe_house_pos(armc, geolat, eps, 'K', mcXpin, ...)}
+   * returned house 0 ("Koch house position failed in circumpolar area") instead of house 10 -
+   * see {@code swe-jni-demo}'s {@code SwissEphEngineComparisonTest} for the reproduction. A tiny
+   * tolerance, matching {@link #VERY_SMALL}'s own purpose in this file, treats a boundary case
+   * as valid (and lets the existing {@code swe_degnorm} arithmetic answer it, off by a fraction
+   * of an arcsecond at worst) instead of discarding it outright.
+   */
+  static final double DFAC_TOLERANCE=1E-9;
 
 // Hmmm? Never used anywhere...
 //  public double degtocs(double x) {
@@ -1741,14 +1781,14 @@ final class SweHouse {
             xp[0] = SwissLib.swe_degnorm((dfac - 1) * 90);
             xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
             /* eastern object has longer SA than midheaven */
-            if (dfac > 2 || dfac < 0)
+            if (dfac > 2 + DFAC_TOLERANCE || dfac < -DFAC_TOLERANCE)
               is_invalid = true; /* if this is omitted, funny things happen */
           } else {
             dfac = (mdd + 180 + adp + admc) / samc;
             xp[0] = SwissLib.swe_degnorm((dfac + 1) * 90);
             xp[0] = SwissLib.swe_degnorm(xp[0] + MILLIARCSEC);
             /* western object has longer SA than midheaven */
-            if (dfac > 2 || dfac < 0)
+            if (dfac > 2 + DFAC_TOLERANCE || dfac < -DFAC_TOLERANCE)
               is_invalid = true; /* if this is omitted, funny things happen */
           }
         }
