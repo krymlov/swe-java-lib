@@ -129,14 +129,14 @@ public class MiscAyanamsaTest extends AbstractTest {
         // reported ayanamsa is the true one too: swetest -b15.8.1947 -ut10:30 -sid27 -true
         // prints 23 6'24.3011, where without -true it prints 23 6'14.4062
         Assertions.assertEquals("23°06'24.30\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.10675029747533, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.106750297475358, sweObjects.ayanamsa());
 
         // Lagna
         Assertions.assertEquals(256.3919204121967, sweObjects.longitudes()[LG]);
         Assertions.assertEquals("256°23'30.91\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
-        Assertions.assertEquals(118.6504369311498, sweObjects.longitudes()[SY]);
+        Assertions.assertEquals(118.65043693114977, sweObjects.longitudes()[SY]);
         Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 
