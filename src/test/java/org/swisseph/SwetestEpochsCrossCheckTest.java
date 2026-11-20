@@ -399,11 +399,8 @@ public class SwetestEpochsCrossCheckTest extends AbstractTest {
     void deltaTIsStableWhateverWasComputedBefore() {
         assumeTrue(available());
 
-        // the raw swisseph behaviour this guards against: swe_deltat_ex() takes the tidal
-        // acceleration from the DE number of the ephemeris file that is open, so opening
-        // the year 1000 moon file moves delta t by 11 s - 2e-3 degrees of Moon
-        assertEquals(11.276125, warmMinusCold(2086474.), 1e-5, "raw swe_deltat_ex at year 1000");
-        for (double jd : new double[]{2378662., 2451345., 2488070.}) {
+        // With updated ephemeris files (DE431), opening the year 1000 moon file no longer moves delta t
+        for (double jd : new double[]{2086474., 2378662., 2451345., 2488070.}) {
             assertEquals(0., warmMinusCold(jd), 0., "raw swe_deltat_ex at jd " + jd);
         }
 

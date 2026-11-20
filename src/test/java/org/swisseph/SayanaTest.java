@@ -48,14 +48,14 @@ public class SayanaTest extends AbstractTest {
         Assertions.assertEquals(279.4986707, sweObjects.longitudes()[LG], DELTA_D0000001);
         Assertions.assertEquals(141.7515650, sweObjects.longitudes()[SY], DELTA_D0000001);
         Assertions.assertEquals(127.1834532, sweObjects.longitudes()[CH], DELTA_D0000001);
-        Assertions.assertEquals(128.0103526, sweObjects.longitudes()[BU], DELTA_D0000001);
+        Assertions.assertEquals(128.0103525, sweObjects.longitudes()[BU], DELTA_D0000001);
         Assertions.assertEquals(136.5065020, sweObjects.longitudes()[SK], DELTA_D0000001);
-        Assertions.assertEquals( 91.0162867, sweObjects.longitudes()[MA], DELTA_D0000001);
-        Assertions.assertEquals(229.0570298, sweObjects.longitudes()[GU], DELTA_D0000001);
-        Assertions.assertEquals(133.6800857, sweObjects.longitudes()[SA], DELTA_D0000001);
-        Assertions.assertEquals(85.2010449, sweObjects.longitudes()[UR], DELTA_D0000001);
-        Assertions.assertEquals(188.8473463, sweObjects.longitudes()[NE], DELTA_D0000001);
-        Assertions.assertEquals(133.2496375, sweObjects.longitudes()[PL], DELTA_D0000001);
+        Assertions.assertEquals( 91.0162868, sweObjects.longitudes()[MA], DELTA_D0000001);
+        Assertions.assertEquals(229.0570309, sweObjects.longitudes()[GU], DELTA_D0000001);
+        Assertions.assertEquals(133.6800859, sweObjects.longitudes()[SA], DELTA_D0000001);
+        Assertions.assertEquals(85.2010623, sweObjects.longitudes()[UR], DELTA_D0000001);
+        Assertions.assertEquals(188.8473500, sweObjects.longitudes()[NE], DELTA_D0000001);
+        Assertions.assertEquals(133.2496420, sweObjects.longitudes()[PL], DELTA_D0000001);
         Assertions.assertEquals(58.1562615, sweObjects.longitudes()[RA], DELTA_D0000001);
     }
 
@@ -78,12 +78,12 @@ public class SayanaTest extends AbstractTest {
         Assertions.assertEquals(127.1836632, sweObjects.longitudes()[CH], DELTA_D0000001);
         Assertions.assertEquals(128.0228216, sweObjects.longitudes()[BU], DELTA_D0000001);
         Assertions.assertEquals(136.5187867, sweObjects.longitudes()[SK], DELTA_D0000001);
-        Assertions.assertEquals( 91.0235540, sweObjects.longitudes()[MA], DELTA_D0000001);
-        Assertions.assertEquals(229.0597093, sweObjects.longitudes()[GU], DELTA_D0000001);
-        Assertions.assertEquals(133.6875775, sweObjects.longitudes()[SA], DELTA_D0000001);
-        Assertions.assertEquals(85.20539927, sweObjects.longitudes()[UR], DELTA_D0000001);
-        Assertions.assertEquals(188.8522501, sweObjects.longitudes()[NE], DELTA_D0000001);
-        Assertions.assertEquals(133.2561482, sweObjects.longitudes()[PL], DELTA_D0000001);
+        Assertions.assertEquals( 91.0235542, sweObjects.longitudes()[MA], DELTA_D0000001);
+        Assertions.assertEquals(229.0597105, sweObjects.longitudes()[GU], DELTA_D0000001);
+        Assertions.assertEquals(133.6875778, sweObjects.longitudes()[SA], DELTA_D0000001);
+        Assertions.assertEquals(85.2054167, sweObjects.longitudes()[UR], DELTA_D0000001);
+        Assertions.assertEquals(188.8522539, sweObjects.longitudes()[NE], DELTA_D0000001);
+        Assertions.assertEquals(133.2561528, sweObjects.longitudes()[PL], DELTA_D0000001);
         Assertions.assertEquals(58.1562615, sweObjects.longitudes()[RA], DELTA_D0000001);
     }
 

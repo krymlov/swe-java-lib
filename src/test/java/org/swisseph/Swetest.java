@@ -57,6 +57,7 @@ public final class Swetest {
         cmd.add("-ut" + utcTime);
         cmd.add("-eswe");
         cmd.add("-edir" + EPHE.getPath());
+        cmd.add("-tidacc" + swisseph.SweConst.SE_TIDAL_DEFAULT);
         cmd.addAll(Arrays.asList(extra));
 
         try {

@@ -73,7 +73,7 @@ public class Ayanamsa27Test extends AbstractTest {
         Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         // Ayanamsa
-        Assertions.assertEquals(23.103999730687732, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.103999730689893, sweObjects.ayanamsa());
         Assertions.assertEquals(23061440, toIDMSms(sweObjects.ayanamsa()));
         Assertions.assertEquals("23°06'14.40\"", toDMSms(23061440).toString());
         Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());

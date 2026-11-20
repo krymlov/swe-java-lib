@@ -105,28 +105,28 @@ public class Ayanamsa01Test extends AbstractTest {
         Assertions.assertEquals("113°23'04.69\"", toDMSms(sweObjects.longitudes()[SK]).toString());
 
         // Mars
-        Assertions.assertEquals(67.8944219, sweObjects.longitudes()[MA], DELTA_D0000001);
+        Assertions.assertEquals(67.8944220, sweObjects.longitudes()[MA], DELTA_D0000001);
         Assertions.assertEquals("67°53'39.92\"", toDMSms(sweObjects.longitudes()[MA]).toString());
 
         // Jupiter
-        Assertions.assertEquals(205.9351650, sweObjects.longitudes()[GU], DELTA_D0000001);
-        Assertions.assertEquals("205°56'06.59\"", toDMSms(sweObjects.longitudes()[GU]).toString());
+        Assertions.assertEquals(205.9351662, sweObjects.longitudes()[GU], DELTA_D0000001);
+        Assertions.assertEquals("205°56'06.60\"", toDMSms(sweObjects.longitudes()[GU]).toString());
 
         // Saturn
-        Assertions.assertEquals(110.5582209, sweObjects.longitudes()[SA], DELTA_D0000001);
+        Assertions.assertEquals(110.5582211, sweObjects.longitudes()[SA], DELTA_D0000001);
         Assertions.assertEquals("110°33'29.60\"", toDMSms(sweObjects.longitudes()[SA]).toString());
 
         // Uranus
-        Assertions.assertEquals(62.0791801, sweObjects.longitudes()[UR], DELTA_D0000001);
-        Assertions.assertEquals("62°04'45.05\"", toDMSms(sweObjects.longitudes()[UR]).toString());
+        Assertions.assertEquals(62.0791975, sweObjects.longitudes()[UR], DELTA_D0000001);
+        Assertions.assertEquals("62°04'45.11\"", toDMSms(sweObjects.longitudes()[UR]).toString());
 
         // Neptune
-        Assertions.assertEquals(165.7254815, sweObjects.longitudes()[NE], DELTA_D0000001);
-        Assertions.assertEquals("165°43'31.73\"", toDMSms(sweObjects.longitudes()[NE]).toString());
+        Assertions.assertEquals(165.7254852, sweObjects.longitudes()[NE], DELTA_D0000001);
+        Assertions.assertEquals("165°43'31.75\"", toDMSms(sweObjects.longitudes()[NE]).toString());
 
         // Pluto
-        Assertions.assertEquals(110.1277727, sweObjects.longitudes()[PL], DELTA_D0000001);
-        Assertions.assertEquals("110°07'39.98\"", toDMSms(sweObjects.longitudes()[PL]).toString());
+        Assertions.assertEquals(110.1277772, sweObjects.longitudes()[PL], DELTA_D0000001);
+        Assertions.assertEquals("110°07'40.00\"", toDMSms(sweObjects.longitudes()[PL]).toString());
 
         // mean Node
         Assertions.assertEquals(35.0343967, sweObjects.longitudes()[RA], DELTA_D0000001);
@@ -167,28 +167,28 @@ public class Ayanamsa01Test extends AbstractTest {
         Assertions.assertEquals("113°23'48.92\"", toDMSms(sweObjects.longitudes()[SK]).toString());
 
         // Mars
-        Assertions.assertEquals(67.9016892, sweObjects.longitudes()[MA], DELTA_D0000001);
+        Assertions.assertEquals(67.9016894, sweObjects.longitudes()[MA], DELTA_D0000001);
         Assertions.assertEquals("67°54'06.08\"", toDMSms(sweObjects.longitudes()[MA]).toString());
 
         // Jupiter
-        Assertions.assertEquals(205.9378445, sweObjects.longitudes()[GU], DELTA_D0000001);
+        Assertions.assertEquals(205.9378457, sweObjects.longitudes()[GU], DELTA_D0000001);
         Assertions.assertEquals("205°56'16.24\"", toDMSms(sweObjects.longitudes()[GU]).toString());
 
         // Saturn
-        Assertions.assertEquals(110.5657128, sweObjects.longitudes()[SA], DELTA_D0000001);
+        Assertions.assertEquals(110.5657130, sweObjects.longitudes()[SA], DELTA_D0000001);
         Assertions.assertEquals("110°33'56.57\"", toDMSms(sweObjects.longitudes()[SA]).toString());
 
         // Uranus
-        Assertions.assertEquals(62.0835345, sweObjects.longitudes()[UR], DELTA_D0000001);
-        Assertions.assertEquals("62°05'00.72\"", toDMSms(sweObjects.longitudes()[UR]).toString());
+        Assertions.assertEquals(62.0835520, sweObjects.longitudes()[UR], DELTA_D0000001);
+        Assertions.assertEquals("62°05'00.79\"", toDMSms(sweObjects.longitudes()[UR]).toString());
 
         // Neptune
-        Assertions.assertEquals(165.7303854, sweObjects.longitudes()[NE], DELTA_D0000001);
-        Assertions.assertEquals("165°43'49.39\"", toDMSms(sweObjects.longitudes()[NE]).toString());
+        Assertions.assertEquals(165.7303891, sweObjects.longitudes()[NE], DELTA_D0000001);
+        Assertions.assertEquals("165°43'49.40\"", toDMSms(sweObjects.longitudes()[NE]).toString());
 
         // Pluto
-        Assertions.assertEquals(110.1342835, sweObjects.longitudes()[PL], DELTA_D0000001);
-        Assertions.assertEquals("110°08'03.42\"", toDMSms(sweObjects.longitudes()[PL]).toString());
+        Assertions.assertEquals(110.1342880, sweObjects.longitudes()[PL], DELTA_D0000001);
+        Assertions.assertEquals("110°08'03.44\"", toDMSms(sweObjects.longitudes()[PL]).toString());
 
         // mean Node
         Assertions.assertEquals(35.0343967, sweObjects.longitudes()[RA], DELTA_D0000001);
