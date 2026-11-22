@@ -8521,7 +8521,7 @@ if (false) {
             isec = new IntObj(), isgn = new IntObj();
     final DblObj dfrc = new DblObj();
 
-    SwissLib.swe_split_deg(dDeg, roundFlag, ihour, imin, isec, dfrc, isgn);
+    SwissLib.swe_split_deg(dDeg, roundFlag, swed.sidd.sid_mode, ihour, imin, isec, dfrc, isgn);
 
     iDegMinSec[0]=ihour.val;
     iDegMinSec[1]=imin.val;

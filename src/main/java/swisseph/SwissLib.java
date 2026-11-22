@@ -2051,12 +2051,14 @@ int pn = 0;
     double tsid = 0, tjd_et;
     double dlon, xs[] = new double[6], xobl[] = new double[6], dhour, nutlo[] = new double[2];
     double dlt = SwephData.AUNIT / SwephData.CLIGHT / 86400.0;
-    double t, t2, t3, t4, t5, t6;
-    eps *= SwissData.RADTODEG;
-    nut *= SwissData.RADTODEG;
+    double t, t2, t3;
+    // eps and nut arrive in degrees, as swe_sidtime0() documents and every caller passes them
+    // (swephlib.c 2.10.03 uses them as is). The 2.01.00 port converted them with RADTODEG a
+    // second time, which scrambled the equation of the equinoxes outside 1850-2050: the
+    // pure-Java lagna was 8"-240" off swetest there (fixed 2026-11-22).
     tjd_et = tjd_ut + SweDate.getDeltaT(tjd_ut);
     t = (tjd_et - SwephData.J2000) / 365250.0;
-    t2 = t * t; t3 = t * t2; t4 = t * t3; t5 = t * t4; t6 = t * t5;
+    t2 = t * t; t3 = t * t2;
     /* mean longitude of earth J2000 */
     dlon = 100.46645683 + (1295977422.83429 * t - 2.04411 * t2 - 0.00523 * t3) / 3600.0;
     /* light time sun-earth */
@@ -2287,10 +2289,12 @@ int pn = 0;
   /* sidtime_long_term() is not used between the following two dates */
   static final double SIDT_LTERM_T0 = 2396758.5;  /* 1 Jan 1850  */
   static final double SIDT_LTERM_T1 = 2469807.5;  /* 1 Jan 2050  */
-  //static final double SIDT_LTERM_OFS0 =  (0.09081674334 / 3600);
-  //static final double SIDT_LTERM_OFS1 =  (0.337962821868 / 3600);
-  static final double SIDT_LTERM_OFS0 = ( 0.032828635 / 15.0);
-  static final double SIDT_LTERM_OFS1 = (-0.065393299 / 15.0);
+  // the step that joins sidtime_long_term() to the short-term formula at T0 and T1, in hours.
+  // swephlib.c 2.10.03 values; the 2.01.00 ones (0.032828635 / 15.0 and -0.065393299 / 15.0)
+  // matched the double-converted eps/nut and left a flat -116.82" before 1850 and +240.40"
+  // after 2050 once that was fixed (2026-11-22).
+  static final double SIDT_LTERM_OFS0 = (0.000378172 / 15.0);
+  static final double SIDT_LTERM_OFS1 = (0.001385646 / 15.0);
   /**
   * This calculates the sidereal time from a Julian day number, the
   * obliquity of the eclipse and the nutation (in degrees). You might
@@ -2337,8 +2341,10 @@ int pn = 0;
     }
     secs *= 86400.0;
     tu = (jd0 - SwephData.J2000)/36525.0; /* UT1 in centuries after J2000 */
-    if (sidt_model == SweConst.SEMOD_SIDT_IERS_CONV_2010) {
-      /*  ERA-based expression for for Greenwich Sidereal Time (GST) based 
+    // swephlib.c 2.10.03: the long-term model uses the ERA expression between T0 and T1 too.
+    // The 2.01.00 port fell through to the IAU 2006 GMST polynomial here, 0.0025" off.
+    if (sidt_model == SweConst.SEMOD_SIDT_IERS_CONV_2010 || sidt_model == SweConst.SEMOD_SIDT_LONGTERM) {
+      /*  ERA-based expression for for Greenwich Sidereal Time (GST) based
        *  on the IAU 2006 precession */
       jdrel = tjd - SwephData.J2000;
       tt = (tjd + SweDate.getDeltaT(tjd) - SwephData.J2000) / 36525.0;
@@ -2545,18 +2551,35 @@ SweDate sd = new SweDate(jd);
   public static void swe_split_deg(double ddeg, int roundflag, IntObj ideg,
                             IntObj imin, IntObj isec, DblObj dsecfr,
                             IntObj isgn) {
+    swe_split_deg(ddeg, roundflag, 0, ideg, imin, isec, dsecfr, isgn);
+  }
+
+  /**
+  * {@link #swe_split_deg(double, int, IntObj, IntObj, IntObj, DblObj, IntObj)} with the
+  * sidereal mode that swephlib.c reads from swed.sidd.sid_mode: with
+  * SE_SPLIT_DEG_NAKSHATRA, the True Sheoran mode shifts 0 Aries to 3°20' Ashvini.
+  * Ported from swephlib.c 2.10.03 (2026-11-22). The 2.01.00 port had no
+  * SE_SPLIT_DEG_NAKSHATRA, returned sign 12 for a value rounded up to 360°, and did not
+  * clear the seconds, minutes and second fraction that the rounding flags discard.
+  */
+  public static void swe_split_deg(double ddeg, int roundflag, int sidMode, IntObj ideg,
+                            IntObj imin, IntObj isec, DblObj dsecfr,
+                            IntObj isgn) {
     double dadd = 0;
     isgn.val = 1;
     if (ddeg < 0) {
       isgn.val = -1;
       ddeg = -ddeg;
+    } else if ((roundflag & SweConst.SE_SPLIT_DEG_NAKSHATRA)!=0) {
+      split_deg_nakshatra(ddeg, roundflag, sidMode, ideg, imin, isec, dsecfr, isgn);
+      return;
     }
     if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_DEG)!=0) {
       dadd = 0.5;
     } else if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_MIN)!=0) {
-      dadd = 0.5 / 60;
+      dadd = 0.5 / 60.0;
     } else if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_SEC)!=0) {
-      dadd = 0.5 / 3600;
+      dadd = 0.5 / 3600.0;
     }
     if ((roundflag & SweConst.SE_SPLIT_DEG_KEEP_DEG)!=0) {
       if ((int) (ddeg + dadd) - (int) ddeg > 0) {
@@ -2570,6 +2593,8 @@ SweDate sd = new SweDate(jd);
     ddeg += dadd;
     if ((roundflag & SweConst.SE_SPLIT_DEG_ZODIACAL)!=0) {
       isgn.val = (int) (ddeg / 30);
+      if (isgn.val == 12) // 360° = 0°
+        isgn.val = 0;
       ddeg = ddeg % 30;
     }
     ideg.val = (int) ddeg;
@@ -2579,8 +2604,62 @@ SweDate sd = new SweDate(jd);
     isec.val = (int) (ddeg * 3600);
     if ((roundflag & (SweConst.SE_SPLIT_DEG_ROUND_DEG | SweConst.SE_SPLIT_DEG_ROUND_MIN | SweConst.SE_SPLIT_DEG_ROUND_SEC))==0) {
       dsecfr.val = ddeg * 3600 - isec.val;
+    } else {
+      dsecfr.val = 0;
     }
+    if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_DEG)!=0)
+      imin.val = 0;
+    if ((roundflag & (SweConst.SE_SPLIT_DEG_ROUND_DEG | SweConst.SE_SPLIT_DEG_ROUND_MIN))!=0)
+      isec.val = 0;
   }  /* end split_deg */
+
+  /* swephlib.c 2.10.03 split_deg_nakshatra(); isgn returns the nakshatra index 0..26 */
+  private static void split_deg_nakshatra(double ddeg, int roundflag, int sidMode, IntObj ideg,
+                            IntObj imin, IntObj isec, DblObj dsecfr, IntObj inak) {
+    double dadd = 0;
+    double dnakshsize = 13.33333333333333;
+    double ddeghelp = ddeg % dnakshsize;
+    inak.val = 1;
+    if (ddeg < 0) {
+      inak.val = -1;
+      ddeg = 0;
+    }
+    // Sheoran "Vedic" ayanamsha: 0 Aries = 3°20 Ashvini
+    if ((sidMode & SweConst.SE_SIDM_TRUE_SHEORAN) == SweConst.SE_SIDM_TRUE_SHEORAN)
+      ddeg = swe_degnorm(ddeg + 3.33333333333333);
+    if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_DEG)!=0) {
+      dadd = 0.5;
+    } else if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_MIN)!=0) {
+      dadd = 0.5 / 60;
+    } else if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_SEC)!=0) {
+      dadd = 0.5 / 3600;
+    }
+    if ((roundflag & SweConst.SE_SPLIT_DEG_KEEP_DEG)!=0) {
+      if ((int) (ddeghelp + dadd) - (int) ddeghelp > 0)
+        dadd = 0;
+    } else if ((roundflag & SweConst.SE_SPLIT_DEG_KEEP_SIGN)!=0) {
+      if (ddeghelp + dadd >= dnakshsize)
+        dadd = 0;
+    }
+    ddeg += dadd;
+    inak.val = (int) (ddeg / dnakshsize);
+    if (inak.val == 27) inak.val = 0; // with rounding up from 359.9999
+    ddeg = ddeg % dnakshsize;
+    ideg.val = (int) ddeg;
+    ddeg -= ideg.val;
+    imin.val = (int) (ddeg * 60);
+    ddeg -= imin.val / 60.0;
+    isec.val = (int) (ddeg * 3600);
+    if ((roundflag & (SweConst.SE_SPLIT_DEG_ROUND_DEG | SweConst.SE_SPLIT_DEG_ROUND_MIN | SweConst.SE_SPLIT_DEG_ROUND_SEC))==0) {
+      dsecfr.val = ddeg * 3600 - isec.val;
+    } else {
+      dsecfr.val = 0;
+    }
+    if ((roundflag & SweConst.SE_SPLIT_DEG_ROUND_DEG)!=0)
+      imin.val = 0;
+    if ((roundflag & (SweConst.SE_SPLIT_DEG_ROUND_DEG | SweConst.SE_SPLIT_DEG_ROUND_MIN))!=0)
+      isec.val = 0;
+  }  /* end split_deg_nakshatra */
 
   public static double swi_kepler(double E, double M, double ecce) {
     double dE = 1, E0;

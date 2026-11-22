@@ -177,8 +177,8 @@ public class CuspsTest extends AbstractTest {
     /**
      * The speeds must be consistent with the positions the same engine reports: differencing
      * its own cusps has to reproduce the speed it hands back. This is the property that can
-     * actually be verified - see {@link #nativeCuspSpeedsDisagreeWithNativeCuspPositions}
-     * for why it is not checked against the native library instead.
+     * actually be verified - and since the 2026-11-22 DLL
+     * the native library passes it too, see {@link #nativeCuspSpeedsAgreeWithNativeCuspPositions}.
      */
     @Test
     void cuspSpeedsAgreeWithTheDerivativeOfTheCuspPositions() {
@@ -207,18 +207,16 @@ public class CuspsTest extends AbstractTest {
     }
 
     /**
-     * Pins a difference between the engines rather than a requirement. For the cusps that are
-     * neither the ascendant nor the MC, the speed the <b>native</b> library reports is not the
-     * derivative of the cusp positions the native library itself returns: differencing them
-     * over 1, 10 and 60 seconds converges on a different value, and that value is what this
-     * port produces. Koch cusp 2 on 1 Jan 2000 at Machilipatnam: reported 326.66 deg/day,
-     * measured 340.34.
-     * <p>
-     * So the two engines are compared on cusps 1, 4, 7 and 10 - where they do agree - and the
-     * rest is left to {@link #cuspSpeedsAgreeWithTheDerivativeOfTheCuspPositions}.
+     * The <b>native</b> cusp speeds are the derivative of the native cusp positions, for every
+     * cusp. Until 2026-11-22 this pinned the opposite: the DLL built from the older
+     * {@code swehouse.c} reported, for the cusps that are neither the ascendant nor the MC, a
+     * speed that differencing its own positions did not reproduce (Koch cusp 2 on 1 Jan 2000 at
+     * Machilipatnam: reported 326.66 deg/day, measured 340.34). The DLL rebuilt from the
+     * {@code swisseph-2026} sources reports 340.3439 against a measured 340.3440 - the value this
+     * port has always produced.
      */
     @Test
-    void nativeCuspSpeedsDisagreeWithNativeCuspPositions() {
+    void nativeCuspSpeedsAgreeWithNativeCuspPositions() {
         double jdUT = new SweDate(2000, 1, 1, 12.).getJulDay();
         double dt = 60. / 86400.;
         int hsys = KOCH.fid();
@@ -233,16 +231,11 @@ public class CuspsTest extends AbstractTest {
         getSwephExp().swe_houses_ex(jdUT - dt, SEFLG_SWIEPH, GEO_LAT, GEO_LON, hsys, cm, am);
         getSwephExp().swe_houses_ex(jdUT + dt, SEFLG_SWIEPH, GEO_LAT, GEO_LON, hsys, cp, ap);
 
-        // the angles: native's analytic speed is the derivative of its own position
-        for (int h : new int[]{1, 4, 7, 10}) {
+        // every cusp, not only the angles: native's speed is the derivative of its own position
+        for (int h = 1; h < CUSPS_COUNT - 1; h++) {
             double d = ((cp[h] - cm[h]) % 360. + 540.) % 360. - 180.;
-            assertEquals(d / (2. * dt), cs[h], 0.5, "native cusp " + h);
+            assertEquals(d / (2. * dt), cs[h], 0.5, "native Koch cusp " + h);
         }
-        // the intermediate cusps: it is not
-        double d2 = ((cp[2] - cm[2]) % 360. + 540.) % 360. - 180.;
-        assertTrue(Math.abs(d2 / (2. * dt) - cs[2]) > 5.,
-                "native Koch cusp 2 unexpectedly agrees now: reported " + cs[2]
-                        + ", measured " + d2 / (2. * dt));
     }
 
     @Test

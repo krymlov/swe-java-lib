@@ -109,7 +109,7 @@ public class MiscAyanamsaTest extends AbstractTest {
 
         // Ayanamsa
         Assertions.assertEquals("23°06'27.40\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.10761141107298, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.10761141107335, sweObjects.ayanamsa());
 
         // Lagna
         Assertions.assertEquals(256.392357441707, sweObjects.longitudes()[LG], DELTA_D0000001);
@@ -129,14 +129,14 @@ public class MiscAyanamsaTest extends AbstractTest {
         // reported ayanamsa is the true one too: swetest -b15.8.1947 -ut10:30 -sid27 -true
         // prints 23 6'24.3011, where without -true it prints 23 6'14.4062
         Assertions.assertEquals("23°06'24.30\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.10675029747626, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.10675029747584, sweObjects.ayanamsa());
 
         // Lagna
-        Assertions.assertEquals(256.39192041219616, sweObjects.longitudes()[LG]);
+        Assertions.assertEquals(256.3919204121962, sweObjects.longitudes()[LG]);
         Assertions.assertEquals("256°23'30.91\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
-        Assertions.assertEquals(118.650436955981, sweObjects.longitudes()[SY]);
+        Assertions.assertEquals(118.65043694837225, sweObjects.longitudes()[SY]);
         Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 

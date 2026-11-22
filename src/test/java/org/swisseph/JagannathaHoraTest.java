@@ -42,14 +42,14 @@ public class JagannathaHoraTest extends AbstractTest {
 
         // Ayanamsa
         Assertions.assertEquals("23°06'37.30\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.110361977859554, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.1103619778593, sweObjects.ayanamsa());
 
         // Lagna
-        Assertions.assertEquals(256.39192041219616, sweObjects.longitudes()[LG]);
+        Assertions.assertEquals(256.3919204121962, sweObjects.longitudes()[LG]);
         Assertions.assertEquals("256°23'30.91\"", toDMSms(sweObjects.longitudes()[LG]).toString());
 
         // Sun
-        Assertions.assertEquals(118.650436955981, sweObjects.longitudes()[SY]);
+        Assertions.assertEquals(118.65043694837225, sweObjects.longitudes()[SY]);
         Assertions.assertEquals("118°39'01.57\"", toDMSms(sweObjects.longitudes()[SY]).toString());
     }
 }
