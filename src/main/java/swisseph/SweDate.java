@@ -1000,6 +1000,8 @@ public class SweDate implements Serializable {
       case 421: TID_ACC = SweConst.SE_TIDAL_DE421; break; 
       case 430: TID_ACC = SweConst.SE_TIDAL_DE430; break;
       case 431: TID_ACC = SweConst.SE_TIDAL_DE431; break;
+      case 440: TID_ACC = SweConst.SE_TIDAL_DE441; break; /* as swephlib.c */
+      case 441: TID_ACC = SweConst.SE_TIDAL_DE441; break;
       default: TID_ACC = SweConst.SE_TIDAL_DEFAULT; break;
 //      case 200: tid_acc.set(SweConst.SE_TIDAL_DE200); break;
 //      case 403: tid_acc.set(SweConst.SE_TIDAL_DE403); break;

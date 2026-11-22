@@ -1044,7 +1044,13 @@ public interface SweConst {
      * SE_DELTAT_AUTOMATIC in swephexp.h.
      */
     double SE_DELTAT_AUTOMATIC = (-1E-10);
-    double SE_TIDAL_DEFAULT = SE_TIDAL_DE431;
+    /**
+     * DE441, the DE number of the ephemeris files this library ships (all four files in
+     * ephe/ report 441). Was DE431 (-25.80): with DE441 files that pinned delta t 47 s and
+     * the Moon 26" away from swetest at year 0. Upstream swephexp.h made the same switch on
+     * 2026-11-21 (swisseph f9bb558).
+     */
+    double SE_TIDAL_DEFAULT = SE_TIDAL_DE441;
     double SE_TIDAL_AUTOMATIC = 999999;
     double SE_TIDAL_MOSEPH = SE_TIDAL_DE404;
     double SE_TIDAL_SWIEPH = SE_TIDAL_DEFAULT;

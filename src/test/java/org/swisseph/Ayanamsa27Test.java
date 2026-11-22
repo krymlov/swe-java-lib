@@ -69,11 +69,11 @@ public class Ayanamsa27Test extends AbstractTest {
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild(); // - SEFLG_TRUEPOS
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
-        Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
+        Assertions.assertEquals(28.109603 /* DE441; was 28.108929 under DE431 */, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
+        Assertions.assertEquals(2432412.937825343, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         // Ayanamsa
-        Assertions.assertEquals(23.103999730689893, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.103999730689686, sweObjects.ayanamsa());
         Assertions.assertEquals(23061440, toIDMSms(sweObjects.ayanamsa()));
         Assertions.assertEquals("23°06'14.40\"", toDMSms(23061440).toString());
         Assertions.assertEquals("23°06'14.40\"", toDMSms(sweObjects.ayanamsa()).toString());

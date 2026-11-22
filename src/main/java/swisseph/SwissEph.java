@@ -1003,8 +1003,9 @@ if(path == null) return;
     if (sip.sid_mode == SweConst.SE_SIDM_TRUE_REVATI) {
       star.append(",zePsc"); /* Revati */
       swe_fixstar(star, tjd_et, SweConst.SEFLG_NONUT, x, null);
-      return sl.swe_degnorm(x[0]);
-      /*return swe_degnorm(x[0] - 359.83333333334);*/
+      /* as sweph.c 2.10.03: zeta Psc at 359 deg 50'. This port had x[0] (0 deg), a constant
+       * 10' off the native engine in every True Revati position (found 2026-11-22) */
+      return sl.swe_degnorm(x[0] - 359.8333333333);
     }
     if (sip.sid_mode == SweConst.SE_SIDM_TRUE_PUSHYA) {
       star.append(",deCnc"); /* Pushya = Asellus Australis */
@@ -4937,7 +4938,13 @@ fname="";
       } else {
       /* traditional algorithm */
         sl.swi_cartpol_sp(pdp.xreturn, 6, pdp.xreturn, 0);
-        pdp.xreturn[0] -= swe_get_ayanamsa(pdp.teval) * SwissData.DEGTORAD;
+        /* as sweph.c: a star-based ayanamsa computes the earth/sun, which
+         * may be this very pdp, so the current values are saved and restored */
+        final double[] xxsv = new double[24];
+        System.arraycopy(pdp.xreturn, 0, xxsv, 0, 24);
+        final double aya = swi_get_ayanamsa_nonut(pdp.teval, iflag, serr);
+        System.arraycopy(xxsv, 0, pdp.xreturn, 0, 24);
+        pdp.xreturn[0] -= aya * SwissData.DEGTORAD;
         sl.swi_polcart_sp(pdp.xreturn, 0, pdp.xreturn, 6);
       }
     }
@@ -6743,7 +6750,7 @@ int refepyOffs;
          * sidereal code together */
         } else {
           sl.swi_cartpol_sp(ndp.xreturn, 6, ndp.xreturn, 0);
-          ndp.xreturn[0] -= swe_get_ayanamsa(ndp.teval) * SwissData.DEGTORAD;
+          ndp.xreturn[0] -= swi_get_ayanamsa_nonut(ndp.teval, iflag, null) * SwissData.DEGTORAD;
           sl.swi_polcart_sp(ndp.xreturn, 0, ndp.xreturn, 6);
         }
       } else if ((iflag & SweConst.SEFLG_J2000)!=0) {
@@ -6891,8 +6898,8 @@ int refepyOffs;
         sl.swi_cartpol_sp(ndp.xreturn, 18, ndp.xreturn, 12);
       } else {
       /* traditional algorithm */
-        sl.swi_cartpol_sp(ndp.xreturn, 6, ndp.xreturn, 0); 
-        ndp.xreturn[0] -= swe_get_ayanamsa(ndp.teval) * SwissData.DEGTORAD;
+        sl.swi_cartpol_sp(ndp.xreturn, 6, ndp.xreturn, 0);
+        ndp.xreturn[0] -= swi_get_ayanamsa_nonut(ndp.teval, iflag, null) * SwissData.DEGTORAD;
         sl.swi_polcart_sp(ndp.xreturn, 0, ndp.xreturn, 6); 
         sl.swi_cartpol_sp(ndp.xreturn, 18, ndp.xreturn, 12);
       }
@@ -7667,7 +7674,7 @@ if (false) {
       /* traditional algorithm */
       } else {
         sl.swi_cartpol_sp(x, x);
-        x[0] -= swe_get_ayanamsa(tjd) * SwissData.DEGTORAD;
+        x[0] -= swi_get_ayanamsa_nonut(tjd, iflag, null) * SwissData.DEGTORAD;
         sl.swi_polcart_sp(x, x);
       }
     }
@@ -8632,6 +8639,43 @@ if (false) {
     return swe_fixstar_mag(star, mag, serr);
   }
 
+  /**
+   * The ayanamsa without nutation, as upstream's swi_get_ayanamsa_ex(tjd_et, iflag) returns it
+   * (sweph.c): the value swe_get_ayanamsa_ex() adds nutation to, and the value swe_calc()
+   * subtracts in the traditional sidereal algorithm.
+   * <p>
+   * The star-based modes (True Citra, True Revati, True Pushya) are a star's own computed
+   * longitude, so - unlike the precession-based modes swe_get_ayanamsa(double) falls back to -
+   * they respond to SEFLG_TRUEPOS/NOABERR/NOGDEFL, which upstream threads through to its
+   * swe_fixstar() call ("iflag_true"). swe_get_ayanamsa(double) always asks for the star's
+   * SEFLG_NONUT (apparent) position: right for a plain call, wrong for a caller asking for
+   * SEFLG_TRUEPOS (swetest's -true).
+   * <p>
+   * History: the 2026-09-10 fix threaded the flags into swe_get_ayanamsa_ex() only (4.8412"
+   * out at 1 Jan 2000 before it); swe_calc(SEFLG_SIDEREAL) kept calling swe_get_ayanamsa(t)
+   * and so left every True Citra sidereal longitude 20.1-20.2" off the reported ayanamsa
+   * (measured 2026-11-22, etc/difference.txt). Both now go through here. swe_fixstar() itself
+   * agrees with the native library to 2e-10 arcsec either way.
+   */
+  double swi_get_ayanamsa_nonut(double tjd_et, int iflag, StringBuilder serr) {
+    if (!swed.ayana_is_set) {
+      swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
+    }
+    final String star;
+    final double offset;
+    switch (swed.sidd.sid_mode) {
+      case SweConst.SE_SIDM_TRUE_CITRA:  star = "Spica";  offset = 180; break;
+      case SweConst.SE_SIDM_TRUE_REVATI: star = ",zePsc"; offset = 359.8333333333; break;
+      case SweConst.SE_SIDM_TRUE_PUSHYA: star = ",deCnc"; offset = 106; break;
+      default: return swe_get_ayanamsa(tjd_et);
+    }
+    final double[] x = new double[6];
+    final int starFlags = (iflag & SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_NONUT
+            | (iflag & (SweConst.SEFLG_TRUEPOS | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL));
+    swe_fixstar(new StringBuilder(star), tjd_et, starFlags, x, serr);
+    return sl.swe_degnorm(x[0] - offset);
+  }
+
   @Override
   public int swe_get_ayanamsa_ex(double tjd_et, int iflag, double[] daya, StringBuilder serr) {
     // The port only has the older swe_get_ayanamsa(), which is the SEFLG_NONUT form; the ex
@@ -8644,26 +8688,7 @@ if (false) {
     if (!swed.ayana_is_set) {
       swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
     }
-    double ay;
-    if (swed.sidd.sid_mode == SweConst.SE_SIDM_TRUE_CITRA) {
-      // True Citra is Spica's own computed longitude, so - unlike the generic precession-based
-      // modes swe_get_ayanamsa() falls back to below - it responds to SEFLG_TRUEPOS/NOABERR/
-      // NOGDEFL. Upstream's swi_get_ayanamsa_ex() (sweph.c) threads exactly these three through
-      // to its own swe_fixstar() call ("iflag_true"); swe_get_ayanamsa(double) always asks for
-      // the star's SEFLG_NONUT (apparent) position, which is right for a plain, no-flag call but
-      // left a caller asking for SEFLG_TRUEPOS (swetest's -true) silently still getting the
-      // apparent one. Measured: 4.8412" out at 1 Jan 2000, moving every sidereal longitude built
-      // from it by the same amount - not a star-catalog difference as first assumed, since
-      // swe_fixstar() itself agrees with the native library to 2e-10 arcsec either way; see
-      // swe-jni-demo's SwissEphEngineComparisonTest.
-      final double[] x = new double[6];
-      final int starFlags = (iflag & SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_NONUT
-              | (iflag & (SweConst.SEFLG_TRUEPOS | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL));
-      swe_fixstar(new StringBuilder("Spica"), tjd_et, starFlags, x, serr);
-      ay = sl.swe_degnorm(x[0] - 180);
-    } else {
-      ay = swe_get_ayanamsa(tjd_et);
-    }
+    double ay = swi_get_ayanamsa_nonut(tjd_et, iflag, serr);
     if ((iflag & SweConst.SEFLG_NONUT) == 0) {
       final double[] nutlo = new double[2];
       sl.swi_nutation(tjd_et, iflag, nutlo);

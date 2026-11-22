@@ -77,12 +77,12 @@ public class Ayanamsa01Test extends AbstractTest {
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild(); // - SEFLG_TRUEPOS
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
-        Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
+        Assertions.assertEquals(28.109603 /* DE441; was 28.108929 under DE431 */, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
+        Assertions.assertEquals(2432412.937825343, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         // Ayanamsa
         Assertions.assertEquals("23°07'18.71\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.12186478492945, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.121864784929915, sweObjects.ayanamsa());
 
         // Lagna
         Assertions.assertEquals(256.3768059, sweObjects.longitudes()[LG], DELTA_D0000001);
@@ -93,7 +93,7 @@ public class Ayanamsa01Test extends AbstractTest {
         Assertions.assertEquals("118°37'46.92\"", toDMSms(sweObjects.longitudes()[SY]).toString());
 
         // Moon
-        Assertions.assertEquals(104.0615885, sweObjects.longitudes()[CH], DELTA_D0000001);
+        Assertions.assertEquals(104.0615886, sweObjects.longitudes()[CH], DELTA_D0000001);
         Assertions.assertEquals("104°03'41.72\"", toDMSms(sweObjects.longitudes()[CH]).toString());
 
         // Mercury
@@ -139,12 +139,12 @@ public class Ayanamsa01Test extends AbstractTest {
                 GEO_LUCKNOW, LAHIRI_AYANAMSA).completeBuild(); // + SEFLG_TRUEPOS
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
-        Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
+        Assertions.assertEquals(28.109603 /* DE441; was 28.108929 under DE431 */, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
+        Assertions.assertEquals(2432412.937825343, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         // Ayanamsa
         Assertions.assertEquals("23°07'18.71\"", toDMSms(sweObjects.ayanamsa()).toString());
-        Assertions.assertEquals(23.12186478492945, sweObjects.ayanamsa());
+        Assertions.assertEquals(23.121864784929915, sweObjects.ayanamsa());
 
         // Lagna
         Assertions.assertEquals(256.3768059, sweObjects.longitudes()[LG], DELTA_D0000001);
@@ -155,7 +155,7 @@ public class Ayanamsa01Test extends AbstractTest {
         Assertions.assertEquals("118°38'07.16\"", toDMSms(sweObjects.longitudes()[SY]).toString());
 
         // Moon
-        Assertions.assertEquals(104.0617984, sweObjects.longitudes()[CH], DELTA_D0000001);
+        Assertions.assertEquals(104.0617986, sweObjects.longitudes()[CH], DELTA_D0000001);
         Assertions.assertEquals("104°03'42.47\"", toDMSms(sweObjects.longitudes()[CH]).toString());
 
         // Mercury

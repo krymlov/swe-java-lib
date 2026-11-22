@@ -5711,7 +5711,7 @@ final class Swecl {
         } else {
         /* traditional algorithm */
         sl.swi_cartpol_sp(pldat.xreturn, 6, pldat.xreturn, 0);
-        pldat.xreturn[0] -= sw.swe_get_ayanamsa(tjd_et) * SwissData.DEGTORAD;
+        pldat.xreturn[0] -= sw.swi_get_ayanamsa_nonut(tjd_et, iflag, null) * SwissData.DEGTORAD;
         sl.swi_polcart_sp(pldat.xreturn, 0, pldat.xreturn, 6);
         }
       }

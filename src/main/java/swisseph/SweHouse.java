@@ -635,7 +635,10 @@ final class SweHouse {
     int ito;
     char ihs = Character.toUpperCase((char)hsys);
     char ihs2 = ihs;
-    ay = sw.swe_get_ayanamsa(tjde);
+    // With iflag, as upstream: a star-based ayanamsa (True Citra) must see SEFLG_TRUEPOS, or
+    // every sidereal cusp is the 20" aberration off (found 2026-11-22, see SwissEph
+    // .swi_get_ayanamsa_nonut()).
+    ay = sw.swi_get_ayanamsa_nonut(tjde, iflag, null);
     if (ihs == 'G') {
       ito = 36;
     } else {

@@ -42,12 +42,12 @@ public class SayanaTest extends AbstractTest {
                 GEO_LUCKNOW, sweObjectsOptions).completeBuild();
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
-        Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
+        Assertions.assertEquals(28.109603 /* DE441; was 28.108929 under DE431 */, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
+        Assertions.assertEquals(2432412.937825343, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         Assertions.assertEquals(279.4986707, sweObjects.longitudes()[LG], DELTA_D0000001);
         Assertions.assertEquals(141.7515650, sweObjects.longitudes()[SY], DELTA_D0000001);
-        Assertions.assertEquals(127.1834532, sweObjects.longitudes()[CH], DELTA_D0000001);
+        Assertions.assertEquals(127.1834534, sweObjects.longitudes()[CH], DELTA_D0000001);
         Assertions.assertEquals(128.0103525, sweObjects.longitudes()[BU], DELTA_D0000001);
         Assertions.assertEquals(136.5065020, sweObjects.longitudes()[SK], DELTA_D0000001);
         Assertions.assertEquals( 91.0162868, sweObjects.longitudes()[MA], DELTA_D0000001);
@@ -70,12 +70,12 @@ public class SayanaTest extends AbstractTest {
                 GEO_LUCKNOW, tropicalZodiac).completeBuild();
 
         Assertions.assertEquals(2432412.9375, sweObjects.sweJulianDate().julianDay());
-        Assertions.assertEquals(28.108929, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
-        Assertions.assertEquals(2432412.937825335, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
+        Assertions.assertEquals(28.109603 /* DE441; was 28.108929 under DE431 */, sweObjects.sweJulianDate().deltaT() * d86400, DELTA_D000001);
+        Assertions.assertEquals(2432412.937825343, sweObjects.sweJulianDate().epheTime(), DELTA_D0000001);
 
         Assertions.assertEquals(279.4986707, sweObjects.longitudes()[LG], DELTA_D0000001);
         Assertions.assertEquals(141.7571872, sweObjects.longitudes()[SY], DELTA_D0000001);
-        Assertions.assertEquals(127.1836632, sweObjects.longitudes()[CH], DELTA_D0000001);
+        Assertions.assertEquals(127.1836634, sweObjects.longitudes()[CH], DELTA_D0000001);
         Assertions.assertEquals(128.0228216, sweObjects.longitudes()[BU], DELTA_D0000001);
         Assertions.assertEquals(136.5187867, sweObjects.longitudes()[SK], DELTA_D0000001);
         Assertions.assertEquals( 91.0235542, sweObjects.longitudes()[MA], DELTA_D0000001);
