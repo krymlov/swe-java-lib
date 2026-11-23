@@ -75,6 +75,9 @@
 */
 package swisseph;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
 * This class initiates the calculation of solar and lunar eclipses, of
 * sun risetime and time of sunset, and lastly the calculation of the
@@ -4040,6 +4043,8 @@ final class Swecl {
                   {-26.86, 0, 0, 0},
                   {-12.55, 0, 0, 0},
                   /* IAU 1986 */
+                  /* Mercury to Neptune are kept as place holders;
+                   * the formulas of Mallama/Hilton 2018 are in swe_pheno() */
                   {-0.42, 3.80, -2.73, 2.00},
                   {-4.40, 0.09, 2.39, -0.65},
                   {- 1.52, 1.60, 0, 0},   /* Mars */
@@ -4077,9 +4082,10 @@ final class Swecl {
     double xx[]=new double[6], xx2[]=new double[6], xxs[]=new double[6],
            lbr[]=new double[6], lbr2[]=new double[6], dt = 0, dd;
     double fac;
-    double T, in, om, sinB, u1, u2, du;
+    double T, in, om, sinB;
     double ph1, ph2, me[]=new double[2];
-    int iflagp, epheflag;
+    int iflagp, epheflag, retflag, epheflag2;
+    String serr2 = "";
     iflag &= ~(SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX);
     /* function calls for Pluto with asteroid number 134340
      * are treated as calls for Pluto as main body SE_PLUTO */
@@ -4109,9 +4115,18 @@ final class Swecl {
     /*
      * geocentric planet
      */
-    if (sw.swe_calc(tjd, ipl, iflag | SweConst.SEFLG_XYZ, xx, serr) ==
+    if ((retflag = sw.swe_calc(tjd, ipl, iflag | SweConst.SEFLG_XYZ, xx, serr)) ==
                                                                  SweConst.ERR) {
       return SweConst.ERR;
+    }
+    /* check epheflag and adjust iflag */
+    epheflag2 = retflag & SweConst.SEFLG_EPHMASK;
+    if (epheflag != epheflag2) {
+      iflag &= ~epheflag;
+      iflagp &= ~epheflag;
+      iflag |= epheflag2;
+      iflagp |= epheflag2;
+      epheflag = epheflag2;
     }
     if (sw.swe_calc(tjd, ipl, iflag, lbr, serr) == SweConst.ERR) {
       return SweConst.ERR;
@@ -4155,7 +4170,9 @@ final class Swecl {
     /*
      * apparent diameter of disk
      */
-    if (ipl < SwephData.NDIAM) {
+    if (ipl < 0) {  // JAVA: the C reads outside of pla_diam[] (SE_ECL_NUT)
+      dd = 0;
+    } else if (ipl < SwephData.NDIAM) {
       dd = SwephData.pla_diam[ipl];
     } else if (ipl > SweConst.SE_AST_OFFSET) {
       dd = swed.ast_diam * 1000;        /* km -> m */
@@ -4171,7 +4188,7 @@ final class Swecl {
      * apparent magnitude
      */
     if (ipl > SweConst.SE_AST_OFFSET ||
-        (ipl < NMAG_ELEM && mag_elem[ipl][0] < 99)) {
+        (ipl >= 0 && ipl < NMAG_ELEM && mag_elem[ipl][0] < 99)) {
       if (ipl == SweConst.SE_SUN) {
         /* ratio apparent diameter : average diameter */
         fac = attr[3] / (SMath.asin(SwephData.pla_diam[SweConst.SE_SUN] / 2.0 /
@@ -4179,35 +4196,113 @@ final class Swecl {
         fac *= fac;
         attr[4] = mag_elem[ipl][0] - 2.5 * log10(fac);
       } else if (ipl == SweConst.SE_MOON) {
-        /*attr[4] = -21.62 + 5 * log10(384410497.8 / EARTH_RADIUS) / log10(10) + 0.026 * fabs(attr[0]) + 0.000000004 * pow(attr[0], 4);*/
-        attr[4] = -21.62 + 5 * log10(lbr[2] * SwephData.AUNIT / SwephData.EARTH_RADIUS) / log10(10) + 0.026 * SMath.abs(attr[0]) + 0.000000004 * SMath.pow(attr[0], 4);
-        /*printf("1 = %f, 2 = %f\n", mag, mag2);*/
+        double a = attr[0];
+        if (a <= 147.1385465) {
+          /* formula according to Allen, C.W., 1976, Astrophysical Quantities */
+          attr[4] = -21.62 + 0.026 * SMath.abs(a) + 0.000000004 * SMath.pow(a, 4);
+          attr[4] += 5 * log10(lbr[2] * lbr2[2] * SweConst.AUNIT / SwephData.EARTH_RADIUS);
+        } else {
+          /* using the cube phase angle proposed by Samaha (Samaha, A.E.; Asaad,
+           * A. S. and Mikhail, J. S. (1969).
+           * Visibility of the New Moon, Bulletin of Observatory Helwan, 84), and VR
+           * adjusted the stitch phase (align Allen's and Samaha's magnitude)
+           * of 147.14degrees.
+           */
+          attr[4] = -4.5444 - (2.5 * log10(SMath.pow(180 - a, 3)));
+          attr[4] += 5 * log10(lbr[2] * lbr2[2] * SweConst.AUNIT / SwephData.EARTH_RADIUS);
+        }
+      /* Mercury to Neptune, see: A. Mallama, J.Hilton,
+       * "Computing Apparent Planetary Magnitudes for The Astronomical Almanac" (2018)
+       * https://arxiv.org/ftp/arxiv/papers/1808/1808.01973.pdf */
+      } else if (ipl == SweConst.SE_MERCURY) {
+        double a = attr[0];
+        double a2 = a * a, a3 = a2 * a, a4 = a3 * a, a5 = a4 * a, a6 = a5 * a;
+        attr[4] = -0.613 + a * 6.3280E-02 - a2 * 1.6336E-03 + a3 * 3.3644E-05 - a4 * 3.4265E-07 + a5 * 1.6893E-09 - a6 * 3.0334E-12;
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
+      } else if (ipl == SweConst.SE_VENUS) {
+        double a = attr[0];
+        double a2 = a * a, a3 = a2 * a, a4 = a3 * a;
+        if (a <= 163.7) {
+          attr[4] = -4.384 - a * 1.044E-03 + a2 * 3.687E-04 - a3 * 2.814E-06 + a4 * 8.938E-09;
+        } else {
+          attr[4] = 236.05828 - a * 2.81914E+00 + a2 * 8.39034E-03;
+        }
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
+        if (attr[0] > 179.0) {
+          // JAVA: BigDecimal rounds the exact binary value, as the C's %.1f does
+          serr2 = "magnitude value for Venus at phase angle i="
+              + new BigDecimal(attr[0]).setScale(1, RoundingMode.HALF_EVEN)
+              + " is bad; formula is valid only for i < 179.0";
+        }
+      } else if (ipl == SweConst.SE_MARS) {
+        double a = attr[0];
+        double a2 = a * a;
+        /* With the following formulae, the terms +L(lambda_e)+L(LS) have been omitted.
+         * They are "the magnitude corrections for the longitude of the sub-Earth
+         * meridian of the illuminated disk and the longitude of the vernal
+         * equinox, respectively".
+         * The apparent magnitude of Mars changes considerably within hours,
+         * depending on the surface that is seen.
+         * Note that the maximum phase angle of mars as seen from earth is
+         * about 45 deg.
+         * The deviation of this simplified solution from Horizons is
+         * smaller than 0.1m.
+         */
+        if (a <= 50.0) {
+          attr[4] = -1.601 + a * 0.02267 - a2 * 0.0001302;
+        } else {  // irrelevant to earth-centered observation
+          attr[4] = -0.367 - a * 0.02573 + a2 * 0.0003445;
+        }
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
+      } else if (ipl == SweConst.SE_JUPITER) {
+        /* the phase angle of Jupiter never exceeds 12 deg. */
+        double a = attr[0];
+        double a2 = a * a;
+        attr[4] = -9.395 - a * 3.7E-04 + a2 * 6.16E-04;
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
       } else if (ipl == SweConst.SE_SATURN) {
-        /* rings are considered according to Meeus, German, p. 329ff. */
+        double a = attr[0];
+        double sinB2;
         T = (tjd - dt - SwephData.J2000) / 36525.0;
         in = (28.075216 - 0.012998 * T + 0.000004 * T * T) * SwissData.DEGTORAD;
         om = (169.508470 + 1.394681 * T + 0.000412 * T * T) * SwissData.DEGTORAD;
-        sinB = SMath.abs(SMath.sin(in) * SMath.cos(lbr[1] * SwissData.DEGTORAD)
+        // B is "mean tilt of the ring plane to the Earth and Sun (If the Earth
+        // and Sun are on opposite sides of the ring plane B = 0)" according to Hilton:
+        // https://syrte.obspm.fr/astro/journees2019/journees_pdf/SessionV_1/HiltonStewart_final.pdf
+        // Mallama does not provide B. We derive it from
+        // Meeus, p. 301ff. (German version 329ff.)
+        // There are small differences from Horizons < 0.02m.
+        sinB = (SMath.sin(in) * SMath.cos(lbr[1] * SwissData.DEGTORAD)
                       * SMath.sin(lbr[0] * SwissData.DEGTORAD - om)
                       - SMath.cos(in) * SMath.sin(lbr[1] * SwissData.DEGTORAD));
-        u1 = SMath.atan2(SMath.sin(in) * SMath.tan(lbr2[1] * SwissData.DEGTORAD)
-                               + SMath.cos(in) * SMath.sin(lbr2[0] *
-                                                          SwissData.DEGTORAD - om),
-                          SMath.cos(lbr2[0] * SwissData.DEGTORAD - om)) *
-                                                                 SwissData.RADTODEG;
-        u2 = SMath.atan2(SMath.sin(in) * SMath.tan(lbr[1] * SwissData.DEGTORAD)
-                        + SMath.cos(in) * SMath.sin(lbr[0] * SwissData.DEGTORAD - om),
-                          SMath.cos(lbr[0] * SwissData.DEGTORAD - om)) *
-                                                                 SwissData.RADTODEG;
-        du = sl.swe_degnorm(u1 - u2);
-        if (du > 10) {
-          du = 360 - du;
+        sinB2 = (SMath.sin(in) * SMath.cos(lbr2[1] * SwissData.DEGTORAD)
+                      * SMath.sin(lbr2[0] * SwissData.DEGTORAD - om)
+                      - SMath.cos(in) * SMath.sin(lbr2[1] * SwissData.DEGTORAD));
+        sinB = SMath.abs(SMath.sin((SMath.asin(sinB) + SMath.asin(sinB2)) / 2.0));
+        attr[4] = -8.914 - 1.825 * sinB + 0.026 * a - 0.378 * sinB * SMath.pow(2.7182818, -2.25 * a);
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
+      } else if (ipl == SweConst.SE_URANUS) {
+        // This is a simplified solution ignoring the term depending on
+        // sub-Earth latitude. The difference from Horizons is +-0.03m.
+        double a = attr[0];
+        double a2 = a * a;
+        double fi_ = 0; // sub-Earth latitude in deg; ignored here
+        attr[4] = -7.110 - 8.4E-04 * fi_ + a * 6.587E-3 + a2 * 1.045E-4;
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
+        // instead of the term with fi_, we do subtract the 0.05m.
+        // the remaining error is +-0.03m
+        attr[4] -= 0.05;
+      } else if (ipl == SweConst.SE_NEPTUNE) {
+        if (tjd < 2444239.5) {
+          attr[4] = -6.89;
+        } else if (tjd <= 2451544.5) {
+          attr[4] = -6.89 - 0.0055 * (tjd - 2444239.5) / 365.25;
+          // Mallama has 0.0054, but that would make the curve discontinuos
+          // Nevertheless, JPL Horizons has 0.0054 and the discontinuity
+        } else {
+          attr[4] = -7.00;
         }
-        attr[4] = 5 * log10(lbr2[2] * lbr[2])
-                    + mag_elem[ipl][1] * sinB
-                    + mag_elem[ipl][2] * sinB * sinB
-                    + mag_elem[ipl][3] * du
-                    + mag_elem[ipl][0];
+        attr[4] += 5 * log10(lbr2[2] * lbr[2]);
       } else if (ipl < SweConst.SE_CHIRON) {
         attr[4] = 5 * log10(lbr2[2] * lbr[2])
                     + mag_elem[ipl][1] * attr[0] /100.0
@@ -4269,7 +4364,11 @@ final class Swecl {
       attr[5] = SMath.acos(sl.swi_dot_prod_unit(xm, xx)) / SwissData.DEGTORAD;
       }
     }
-    return SweConst.OK;
+    if (!serr2.isEmpty() && serr != null) {
+      serr.setLength(0);
+      serr.append(serr2);
+    }
+    return iflag;
   }
 
   /**
@@ -4285,6 +4384,7 @@ final class Swecl {
   * attr[2]:&nbsp;&nbsp;&nbsp;elongation of planet.<BR>
   * attr[3]:&nbsp;&nbsp;&nbsp;apparent diameter of disc.<BR>
   * attr[4]:&nbsp;&nbsp;&nbsp;apparent magnitude.<BR>
+  * attr[5]:&nbsp;&nbsp;&nbsp;horizontal parallax (Moon only).<BR>
   * </CODE><P><B>Attention: attr must be a double[20]!</B>
   * @param iflag Which ephemeris is to be used (SEFLG_JPLEPH, SEFLG_SWIEPH,
   * SEFLG_MOSEPH).
@@ -4293,7 +4393,8 @@ final class Swecl {
   * details.
   * @param serr A StringBuilder containing a warning or error message, if
   * something fails.
-  * @return SweConst.OK (0) or SweConst.ERR (-1)
+  * @return The flags the calculation used (the ephemeris actually taken, TRUEPOS, J2000, NONUT,
+  * NOGDEFL, NOABERR, TOPOCTR), or SweConst.ERR (-1)
   * @see swisseph.SweConst#OK
   * @see swisseph.SweConst#ERR
   * @see swisseph.SweConst#SEFLG_JPLEPH

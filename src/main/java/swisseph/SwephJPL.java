@@ -764,7 +764,8 @@ final class SwephJPL {
       if (et < js.eh_ss[0] || et > js.eh_ss[1]) {
         if (serr != null) {
           serr.setLength(0);
-          serr.append("jd "+et+" outside JPL eph. range "+js.eh_ss[0]+" .. "+js.eh_ss[1]+";");
+          serr.append(String.format(java.util.Locale.ROOT, "jd %f outside JPL eph. range %.2f .. %.2f;",
+              et, js.eh_ss[0], js.eh_ss[1]));
         }
         throw new SwissephException(et, SwissephException.OUT_OF_TIME_RANGE,
             SwephData.BEYOND_EPH_LIMITS, serr);

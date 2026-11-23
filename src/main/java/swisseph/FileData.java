@@ -88,6 +88,8 @@ final class FileData {
   FilePtr fptr = null;/* ephemeris file pointer */
   double tfstart = 1;       /* file may be used from this date */
   double tfend = 0;         /*      through this date          */
+  double tnom0 = 0;         /* nominal range: dates for which swi_gen_filename() */
+  double tnom1 = 0;         /* names this file, [tnom0, tnom1) */
   int iflg;             /* byte reorder flag and little/bigendian flag */
   short npl;            /* how many planets in file */
   final int[] ipl = new int[SEI_FILE_NMAXPLAN]; /* planet numbers */
@@ -106,9 +108,17 @@ final class FileData {
     fptr=null;
     tfstart=1.0;
     tfend=0.0;
+    tnom0=0.0;
+    tnom1=0.0;
     iflg=0;
     npl=0;
     for(j=0; j<SEI_FILE_NMAXPLAN; j++) { ipl[j]=0; }
+  }
+
+  /** the part of an element record between two positions, as much of it as there is */
+  private static String field(StringBuilder s, int from, int to) {
+    final int end = Math.min(to, s.length());
+    return from < end ? s.substring(from, end) : "";
   }
 
 // Attention: read_const() has to be called from "swed.fidat[ifno]", where
@@ -227,12 +237,12 @@ final class FileData {
         /* save elements, they are required for swe_plan_pheno() */
         swed.astelem = s.toString();
         /* required for magnitude */
-        swed.ast_H = SwissLib.atof(s.substring(35 + i));
-        swed.ast_G = SwissLib.atof(s.substring(42 + i));
+        swed.ast_H = SwissEph.c_atof(field(s, 35 + i, s.length()));
+        swed.ast_G = SwissEph.c_atof(field(s, 42 + i, s.length()));
         if (swed.ast_G == 0) swed.ast_G = 0.15;
         /* diameter in kilometers, not always given: */
-        s2 = s.substring(51 + i, 58 + i);
-        swed.ast_diam = SwissLib.atof(s2);
+        s2 = field(s, 51 + i, 58 + i);
+        swed.ast_diam = SwissEph.c_atof(s2);
         if (swed.ast_diam == 0) {
           /* estimate the diameter from magnitude; assume albedo = 0.15 */
           swed.ast_diam = 1329/SMath.sqrt(0.15) * SMath.pow(10, -0.2 * swed.ast_H);
@@ -431,6 +441,13 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
         pdp.dqrot    = read8(fptr, SwephData.SEI_CURR_FPOS, freord, fendian);
         pdp.peri     = read8(fptr, SwephData.SEI_CURR_FPOS, freord, fendian);
         pdp.dperi    = read8(fptr, SwephData.SEI_CURR_FPOS, freord, fendian);
+        /* a segment still held from the previous file of this planet is not
+         * valid any more: its tseg0/tseg1 may still contain the next dates, and
+         * then it would be used instead of the new file; also, the new file may
+         * have another ncoe. This applies to all planets of the file, not only
+         * to the planet that caused the switch and not only to planets with a
+         * reference ellipse. */
+        pdp.segp = null;
         /* alloc space for chebyshew coefficients */
         /* if reference ellipse is used, read its coefficients */
         if ((pdp.iflg & SwephData.SEI_FLG_ELLIPSE)!=0) {
@@ -634,6 +651,12 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
     iseg = (int) ((tjd - pdp.tfstart) / pdp.dseg);
     /*if (tjd - pdp->tfstart < 0)
         return(NOT_AVAILABLE);*/
+    /* tjd == tfend passes the range check, but gives iseg == nndx, i.e. the
+     * index entry after the last segment, and garbage coefficients.
+     * Use the last segment, which ends at tfend. */
+    if (iseg >= pdp.nndx && pdp.nndx > 0) {
+      iseg = pdp.nndx - 1;
+    }
     pdp.tseg0 = pdp.tfstart + iseg * pdp.dseg;
     pdp.tseg1 = pdp.tseg0 + pdp.dseg;
     /* get file position of coefficients from file */

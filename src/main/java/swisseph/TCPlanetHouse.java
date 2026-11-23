@@ -488,13 +488,13 @@ public class TCPlanetHouse extends TransitCalculator {
     ///////////////////////////////////////////////////////////////////////////////
     /**
      * True when swe_calc() failed because the date is outside the ephemeris range. Swiss
-     * Ephemeris reports that as "jd <x> > Swiss Eph. upper limit <y>;" or the corresponding
+     * Ephemeris reports that as "... file (...): jd <x> > upper limit <y>;" or the corresponding
      * lower limit message, with the offending date in the text.
      */
     static boolean isOutOfEphemerisRange(StringBuilder serr) {
         if ( null == serr ) return false;
         String msg = serr.toString();
-        return msg.contains("Swiss Eph. upper limit") || msg.contains("Swiss Eph. lower limit")
+        return msg.contains(" > upper limit ") || msg.contains(" < lower limit ")
             || msg.contains("jplfile") && msg.contains("limit");
     }
 
@@ -517,7 +517,7 @@ public class TCPlanetHouse extends TransitCalculator {
         int ret = sw.swe_calc(jdET, planet, planetFlags, xx, serr);
         if ( ret < 0 ) {
             int type = SwissephException.UNDEFINED_ERROR;
-            // The message is "jd <x> > Swiss Eph. upper limit <y>;" (or "< ... lower limit ...");
+            // The message is "... file (...): jd <x> > upper limit <y>;" (or "< ... lower limit ...");
             // matching it as a literal only ever recognised one single julian day.
             if ( isOutOfEphemerisRange(serr) ) {
                 type = SwissephException.BEYOND_USER_TIME_LIMIT;

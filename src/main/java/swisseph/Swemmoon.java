@@ -733,9 +733,8 @@ final class Swemmoon {
     /* allow 0.2 day tolerance so that true node interval fits in */
     if (tjd < SwephData.MOSHLUEPH_START - 0.2 || tjd > SwephData.MOSHLUEPH_END + 0.2) {
       if (serr != null) {
-        s="jd "+tjd+" outside Moshier's Moon range "+
-          SwephData.MOSHLUEPH_START+" .. "+
-          SwephData.MOSHLUEPH_END+" ";
+        s = String.format(java.util.Locale.ROOT, "jd %f outside Moshier's Moon range %.2f .. %.2f ",
+          tjd, SwephData.MOSHLUEPH_START, SwephData.MOSHLUEPH_END);
         if (serr.length() + s.length() < SwissData.AS_MAXCH) {
           serr.append(s);
         }
@@ -1108,9 +1107,8 @@ final class Swemmoon {
     /* with elements from swi_moshmoon2(), which are fitted to jpl-ephemeris */
     if (J < SwephData.MOSHNDEPH_START || J > SwephData.MOSHNDEPH_END) {
       if (serr != null) {
-        s="jd "+J+" outside mean node range "+
-                SwephData.MOSHNDEPH_START+" .. "+
-                SwephData.MOSHNDEPH_END+" ";
+        s = String.format(java.util.Locale.ROOT, "jd %f outside mean node range %.2f .. %.2f ",
+                J, SwephData.MOSHNDEPH_START, SwephData.MOSHNDEPH_END);
         serr.append(s);
       }
       return SweConst.ERR;
@@ -1167,9 +1165,8 @@ final class Swemmoon {
     /* with elements from swi_moshmoon2(), which are fitted to jpl-ephemeris */
     if (J < SwephData.MOSHNDEPH_START || J > SwephData.MOSHNDEPH_END) {
       if (serr != null) {
-        s="jd "+J+" outside mean apogee range "+
-                SwephData.MOSHNDEPH_START+" .. "+
-                SwephData.MOSHNDEPH_END+" ";
+        s = String.format(java.util.Locale.ROOT, "jd %f outside mean apogee range %.2f .. %.2f ",
+                J, SwephData.MOSHNDEPH_START, SwephData.MOSHNDEPH_END);
         if (serr.length()+s.length() < SwissData.AS_MAXCH) {
           serr.append(s);
         }

@@ -790,7 +790,7 @@ err.println(np);
             // Hack, SwissEph does not yet return meaningful types in all cases...
             a.v.outOfTimeRange = true;
             // Hack, SwissEph does not yet return meaningful types in all cases...
-          } else if (swe.toString().indexOf("not found in the paths of:") > 0) {
+          } else if (swe.toString().indexOf("not found in PATH ") > 0) {
             a.v.outOfTimeRange = true;
           } else if (swe.toString().indexOf(" outside ") > 0 &&
                      swe.toString().indexOf(" range ") > 0 &&

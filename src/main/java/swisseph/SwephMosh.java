@@ -686,7 +686,7 @@ final class SwephMosh {
       if (ipl >= SweConst.SE_NFICT_ELEM) {
         if (serr != null) {
           serr.setLength(0);
-          serr.append("error no elements for fictitious body no ").append(ipl);
+          serr.append(String.format(java.util.Locale.ROOT, "error no elements for fictitious body no %7d", ipl));
         }
         return SweConst.ERR;
       }
@@ -929,7 +929,8 @@ final class SwephMosh {
       }
       if (!elem_found) {
         if (serr != null) {
-          serr.append(serri).append(" elements for planet ").append(ipl).append(" not found");
+          serr.setLength(0);
+          serr.append(serri).append(String.format(java.util.Locale.ROOT, " elements for planet %7d not found", ipl));
         }
 //      goto return_err;
         fp.close(); return SweConst.ERR;

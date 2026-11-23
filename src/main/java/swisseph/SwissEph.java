@@ -2075,6 +2075,7 @@ String slast_starname;
   * attr[2]:&nbsp;&nbsp;&nbsp;elongation of planet.<BR>
   * attr[3]:&nbsp;&nbsp;&nbsp;apparent diameter of disc.<BR>
   * attr[4]:&nbsp;&nbsp;&nbsp;apparent magnitude.<BR>
+  * attr[5]:&nbsp;&nbsp;&nbsp;horizontal parallax (Moon only).<BR>
   * </CODE></BLOCKQUOTE><P><B>Attention: attr must be a double[20]!</B><br>
   * <b>ATTENTION: This method possibly (re-)sets a global parameter used
   * in calculation of delta T. See SweDate.setGlobalTidalAcc(double).</b>
@@ -2087,7 +2088,8 @@ String slast_starname;
   * details.
   * @param serr A StringBuilder containing a warning or error message, if
   * something fails.
-  * @return SweConst.OK (0) or SweConst.ERR (-1)
+  * @return The flags the calculation used (the ephemeris actually taken, TRUEPOS, J2000, NONUT,
+  * NOGDEFL, NOABERR, TOPOCTR), or SweConst.ERR (-1)
   * @see SwissEph#swe_pheno_ut(double, int, int, double[], java.lang.StringBuilder)
   * @see SweConst#OK
   * @see SweConst#ERR
@@ -2113,6 +2115,7 @@ String slast_starname;
   * attr[2]:&nbsp;&nbsp;&nbsp;elongation of planet.<BR>
   * attr[3]:&nbsp;&nbsp;&nbsp;apparent diameter of disc.<BR>
   * attr[4]:&nbsp;&nbsp;&nbsp;apparent magnitude.<BR>
+  * attr[5]:&nbsp;&nbsp;&nbsp;horizontal parallax (Moon only).<BR>
   * </CODE></BLOCKQUOTE><P><B>Attention: attr must be a double[20]!</B><br>
   * <b>ATTENTION: This method possibly (re-)sets a global parameter used
   * in calculation of delta T. See SweDate.setGlobalTidalAcc(double).</b>
@@ -2125,7 +2128,8 @@ String slast_starname;
   * details.
   * @param serr A StringBuilder containing a warning or error message, if
   * something fails.
-  * @return SweConst.OK (0) or SweConst.ERR (-1)
+  * @return The flags the calculation used (the ephemeris actually taken, TRUEPOS, J2000, NONUT,
+  * NOGDEFL, NOABERR, TOPOCTR), or SweConst.ERR (-1)
   * @see SweConst#OK
   * @see SweConst#ERR
   * @see SweConst#SEFLG_JPLEPH
@@ -4430,6 +4434,33 @@ String slast_starname;
     return (SweConst.OK);
   }
 
+  /* nominal range of the ephemeris file that swi_gen_filename() names for
+   * tjd and ipli: the dates [tnom0, tnom1) for which it names the same file.
+   * planet, moon and main asteroid files cover NCTIES centuries each and
+   * overlap their neighbours by some days; the other files cover all dates.
+   * the century rule must be the same as in swi_gen_filename(). */
+  private static void gen_filename_range(double tjd, int ipli, FileData fdp) {
+    final int ncties = (int) SwephData.NCTIES;
+    if (ipli < 0 || ipli >= SwephData.SEI_NPLANETS || ipli == SwephData.SEI_ANYBODY) {
+      fdp.tnom0 = -1e30;
+      fdp.tnom1 = 1e30;
+      return;
+    }
+    final int jyear = SweDate.swe_revjul(tjd, tjd >= 2305447.5).year;
+    int icty = jyear / 100;
+    if (jyear < 0 && jyear % 100 != 0) {
+      icty -= 1;
+    }
+    while (icty % ncties != 0) {
+      icty--;
+    }
+    final int y0 = icty * 100;
+    final int y1 = y0 + ncties * 100;
+    /* swi_gen_filename() uses the gregorian calendar from 1600 on */
+    fdp.tnom0 = SweDate.getJulDay(y0, 1, 1, 0, y0 >= 1600);
+    fdp.tnom1 = SweDate.getJulDay(y1, 1, 1, 0, y1 >= 1600);
+  }
+
   /*
    * this function looks for an ephemeris file,
    * opens it, if not yet open,
@@ -4450,7 +4481,7 @@ String slast_starname;
   int sweph(double tjd, int ipli, int ifno, int iflag, double xsunb[],
             boolean do_save, double xpret[], StringBuilder serr) {
     int i, ipl, retc, subdirlen;
-    String s="", subdirnam, fname;
+    String s="", subdirnam, fname="";
     double t, tsv;
     double xemb[]=new double[6], xx[]=new double[6], xp[];
     PlanData pdp;
@@ -4489,8 +4520,12 @@ String slast_starname;
      ******************************/
     if (fdp.fptr != null) {
       /* if tjd is beyond file range, close old file.
-       * if new asteroid, close old file. */
+       * if new asteroid, close old file.
+       * if tjd is beyond the file's nominal range (in the overlap with the
+       * neighbouring file), close it too: otherwise the file used in the
+       * overlap would depend on the order of earlier calls. */
       if (tjd < fdp.tfstart || tjd > fdp.tfend
+        || tjd < fdp.tnom0 || tjd >= fdp.tnom1
         || (ipl == SwephData.SEI_ANYBODY && ipli != pdp.ibdy)) {
         try {
           fdp.fptr.close();
@@ -4568,16 +4603,27 @@ fname="";
       if (retc != SweConst.OK) {
         return(retc);
       }
+      gen_filename_range(tjd, ipli, fdp);
     }
     /* if first ephemeris file (J-3000), it might start a mars period
      * after -3000. if last ephemeris file (J3000), it might end a
      * 4000-day-period before 3000. */
     if (tjd < fdp.tfstart || tjd > fdp.tfend) {
       if (serr != null) {
-        if (tjd < fdp.tfstart) {
-          s="jd "+tjd+" < Swiss Eph. lower limit "+fdp.tfstart+";";
+        String sp = fname.substring(fname.lastIndexOf(SwissData.DIR_GLUE) + 1);
+        if (ipli > SweConst.SE_AST_OFFSET) {
+          s = "asteroid No. " + (ipli - SweConst.SE_AST_OFFSET) + " (" + sp + "): ";
+        } else if (ipli > SwephData.SEI_PLUTO) {
+          s = "asteroid eph. file (" + sp + "): ";
+        } else if (ipli != SwephData.SEI_MOON) {
+          s = "planets eph. file (" + sp + "): ";
         } else {
-          s="jd "+tjd+" > Swiss Eph. upper limit "+fdp.tfend+";";
+          s = "moon eph. file (" + sp + "): ";
+        }
+        if (tjd < fdp.tfstart) {
+          s += String.format(java.util.Locale.ROOT, "jd %f < lower limit %f;", tjd, fdp.tfstart);
+        } else {
+          s += String.format(java.util.Locale.ROOT, "jd %f > upper limit %f;", tjd, fdp.tfend);
         }
         if (serr.length()+s.length() < SwissData.AS_MAXCH) {
           serr.append(s);
@@ -4756,10 +4802,15 @@ fname="";
         }
       }
     }
-    s="SwissEph file '"+fname+"' not found in the paths of: ";
-    for (int n=0;n<cpos.length;n++) {
-      if (cpos[n]!=null && !"".equals(cpos[n])) { s+="'"+cpos[n]+"', "; }
+    // swe_set_ephe_path() of the C keeps the path with a directory separator at its end, the
+    // port keeps it as given; the text is the C's, because swe_pheno() and others return it.
+    s="SwissEph file '"+fname+"' not found in PATH '"+ephepath;
+    if (!ephepath.isEmpty() && !ephepath.endsWith(SwissData.DIR_GLUE)) {
+      s+=SwissData.DIR_GLUE;
     }
+    s+="'";
+    /* s must not be longer then AS_MAXCH */
+    if (s.length() >= SwissData.AS_MAXCH) { s=s.substring(0, SwissData.AS_MAXCH-1); }
     if (serr != null) {
       serr.setLength(0);
       serr.append(s);
@@ -7167,9 +7218,8 @@ int refepyOffs;
 // TM - temporary inclusion for version 2.00.00 to give an end date to -pg / -pc //
     if (tjd < SwephData.MOSHLUEPH_START || tjd > SwephData.MOSHLUEPH_END) {
       if (serr != null) {
-        String s="jd "+tjd+" outside Moshier's Moon range "+
-          SwephData.MOSHLUEPH_START+" .. "+
-          SwephData.MOSHLUEPH_END+" ";
+        String s = String.format(java.util.Locale.ROOT, "jd %f outside Moshier's Moon range %.2f .. %.2f ",
+          tjd, SwephData.MOSHLUEPH_START, SwephData.MOSHLUEPH_END);
         if (serr.length() + s.length() < SwissData.AS_MAXCH) {
           serr.append(s);
         }
@@ -8947,11 +8997,11 @@ int refepyOffs;
   }
 
   /**
-  * C atof() as far as a version number needs it: leading blanks, a sign, the digits with at
-  * most one point, anything after them ignored ("2.10.03" is 2.10). SwissLib.atof() throws on a
-  * second point.
+  * C atof() as far as a version number or the element record of an asteroid file needs it:
+  * leading blanks, a sign, the digits with at most one point, anything after them ignored
+  * ("2.10.03" is 2.10). SwissLib.atof() throws on a second point and takes -1.12 for 0.
   */
-  private static double c_atof(String s) {
+  static double c_atof(String s) {
     int i = 0, n = s.length();
     while (i < n && Character.isWhitespace(s.charAt(i))) i++;
     final int start = i;
