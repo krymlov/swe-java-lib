@@ -196,11 +196,41 @@ final class SweHouse {
 
   /**
   * swe_houses_ex() of swephexp.h: houses for a date, with flags (SEFLG_SIDEREAL,
-  * SEFLG_RADIANS, SEFLG_NONUT). The plain swe_houses() of the C is iflag == 0.
+  * SEFLG_RADIANS, SEFLG_NONUT). The plain swe_houses() of the C is swe_houses_noflags().
   */
   int swe_houses(double tjd_ut, int iflag, double geolat, double geolon, int hsys,
                  double[] cusp, double[] ascmc) {
     return swe_houses_ex2(tjd_ut, iflag, geolat, geolon, hsys, cusp, ascmc, null, null, null);
+  }
+
+  /**
+  * The plain swe_houses() of swehouse.c, by hand (the generator starts at swe_houses_ex2). The
+  * same cusps as swe_houses_ex2() with iflag 0, but delta t is taken with iflag -1, the default
+  * tidal acceleration, which leaves the one saved for the ephemeris alone.
+  */
+  int swe_houses_noflags(double tjd_ut, double geolat, double geolon, int hsys,
+                         double[] cusp, double[] ascmc) {
+    int i, retc = 0;
+    double armc, eps; double[] nutlo = new double[2];
+    double tjde = tjd_ut + sw.swe_deltat_ex(tjd_ut, -1, null);
+    eps = sl.swi_epsiln(tjde, 0) * SwissData.RADTODEG;
+    sl.swi_nutation(tjde, 0, nutlo);
+    for (i = 0; i < 2; i++)
+      nutlo[i] *= SwissData.RADTODEG;
+    armc = SwissLib.swe_degnorm(sl.swe_sidtime0(tjd_ut, eps + nutlo[1], nutlo[0]) * 15 + geolon);
+    if (Character.toUpperCase((char) hsys) == 'I') {	// compute sun declination for sunshine houses
+      int flags = SweConst.SEFLG_SPEED | SweConst.SEFLG_EQUATORIAL;
+      double[] xp = new double[6];
+      int result = sw.swe_calc_ut(tjd_ut, SweConst.SE_SUN, flags, xp, null);
+      if (result < 0) {
+        // in case of failure, Porphyry houses
+        swe_houses_armc_ex2(armc, geolat, eps + nutlo[1], 'O', cusp, ascmc, null, null, null);
+        return SweConst.ERR;
+      }
+      ascmc[9] = xp[1];	// declination in ascmc[9];
+    }
+    retc = swe_houses_armc_ex2(armc, geolat, eps + nutlo[1], hsys, cusp, ascmc, null, null, null);
+    return retc;
   }
 
   /** As above, with ascmc written from ascmc[aOffs] on. */

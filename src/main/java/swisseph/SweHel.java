@@ -708,7 +708,7 @@ private double sunRA_ralast;
       iflag |= SweConst.SEFLG_NONUT | SweConst.SEFLG_TRUEPOS;
     if (Angle < 5) iflag = iflag | SweConst.SEFLG_TOPOCTR;
     if (Angle == 7) Angle = 0;
-    tjd_tt = JDNDaysUT + DeltaT(JDNDaysUT, 0) / D2S;
+    tjd_tt = JDNDaysUT + sw.swe_deltat_ex(JDNDaysUT, epheflag, serr);
     Planet = DeterObject(ObjectName);
     if (Planet != -1) {
       if (sw.swe_calc(tjd_tt, Planet, iflag, x, serr) == SweConst.ERR)
@@ -763,7 +763,7 @@ private double sunRA_ralast;
     if ((helflag & SweConst.SE_HELFLAG_HIGH_PRECISION) == 0)
       iflag |= SweConst.SEFLG_NONUT | SweConst.SEFLG_TRUEPOS;
     iflag = iflag | SweConst.SEFLG_TOPOCTR;
-    tjd_tt = JDNDaysUT + DeltaT(JDNDaysUT, 0) / D2S;
+    tjd_tt = JDNDaysUT + sw.swe_deltat_ex(JDNDaysUT, epheflag, serr);
     Planet = DeterObject(ObjectName);
     if (Planet != -1) {
       if (sw.swe_calc(tjd_tt, Planet, iflag, x, serr) == SweConst.ERR)
@@ -2346,7 +2346,7 @@ darr[30] = darr[26] + darr[27] + darr[28] + darr[29];
 //          goto swe_heliacal_err;
             return goto_swe_heliacal_err1(serr, serr_ret, retval);
           /* determine time compensation to get Sun's altitude at heliacal rise */
-          tjd_tt = tret[0] + DeltaT(tret[0], 0) / D2S;
+          tjd_tt = tret[0] + sw.swe_deltat_ex(tret[0], epheflag, serr);
           if ((retval = sw.swe_calc(tjd_tt, SweConst.SE_SUN, iflag, x, serr)) == SweConst.ERR)
 //          goto swe_heliacal_err;
             return goto_swe_heliacal_err1(serr, serr_ret, retval);
@@ -2362,7 +2362,7 @@ darr[30] = darr[26] + darr[27] + darr[28] + darr[29];
           if (TypeEvent == 2 || TypeEvent== 3) Tdelta = -Tdelta;
           /* determine appr.time when sun is at the wanted Sun's altitude */
           JDNarcvisUT = tret[0] - Tdelta / 24;
-          tjd_tt = JDNarcvisUT + DeltaT(JDNarcvisUT, 0) / D2S;
+          tjd_tt = JDNarcvisUT + sw.swe_deltat_ex(JDNarcvisUT, epheflag, serr);
           /* determine Sun's position */
           if ((retval = sw.swe_calc(tjd_tt, SweConst.SE_SUN, iflag, x, serr)) == SweConst.ERR)
 //          goto swe_heliacal_err;
@@ -2461,7 +2461,7 @@ darr[30] = darr[26] + darr[27] + darr[28] + darr[29];
       do {
         OudeDatum = JDNarcvisUT;
         JDNarcvisUT = JDNarcvisUT - direct;
-        tjd_tt = JDNarcvisUT + DeltaT(JDNarcvisUT, 0) / D2S;
+        tjd_tt = JDNarcvisUT + sw.swe_deltat_ex(JDNarcvisUT, epheflag, serr);
         if (Planet != -1) {
           if ((retval = sw.swe_calc(tjd_tt, Planet, iflag, x, serr)) == SweConst.ERR)
 //          goto swe_heliacal_err;

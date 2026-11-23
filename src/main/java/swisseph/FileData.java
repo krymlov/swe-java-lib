@@ -284,7 +284,8 @@ lng = 0;
        * DE number of JPL ephemeris which this file is based on *
        **********************************************************/
       sweph_denum = read4(fptr, fpos, false, freord, fendian);
-      swed.jpldenum = sweph_denum;
+      // The C does not copy it into swed.jpldenum, which belongs to the JPL file alone: with
+      // it there, swe_deltat_ex(tjd, 0) took the .se1 file's DE441 where the C takes DE431.
       /*************************************
        * start and end epoch of file       *
        *************************************/

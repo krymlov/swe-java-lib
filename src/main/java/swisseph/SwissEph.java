@@ -341,9 +341,20 @@ public class SwissEph implements ISwissEph {
                          StringBuilder serr) {
     double deltat;
     int retval = SweConst.OK;
-    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);  
-    deltat = SweDate.getDeltaT(tjd_ut);
+    int epheflag = 0;
+    iflag = plaus_iflag(iflag, ipl, tjd_ut, serr);
+    epheflag = iflag & SweConst.SEFLG_EPHMASK;
+    if (epheflag == 0) {
+      epheflag = SweConst.SEFLG_SWIEPH;
+      iflag |= SweConst.SEFLG_SWIEPH;
+    }
+    deltat = swe_deltat_ex(tjd_ut, iflag, serr);
     retval = swe_calc(tjd_ut + deltat, ipl, iflag, xx, serr);
+    /* if ephe required is not ephe returned, adjust delta t: */
+    if ((retval & SweConst.SEFLG_EPHMASK) != epheflag) {
+      deltat = swe_deltat_ex(tjd_ut, retval, null);
+      retval = swe_calc(tjd_ut + deltat, ipl, iflag, xx, null);
+    }
     return retval;
   }
   /**
@@ -455,12 +466,26 @@ public class SwissEph implements ISwissEph {
      * or vice-versa.
      */
     epheflag = iflag & SweConst.SEFLG_EPHMASK;
-    if ((epheflag & SweConst.SEFLG_DEFAULTEPH)!=0) {
-      epheflag = 0;
+    if ((epheflag & SweConst.SEFLG_MOSEPH) != 0) {
+      epheflag = SweConst.SEFLG_MOSEPH;
+    } else if ((epheflag & SweConst.SEFLG_JPLEPH) != 0) {
+      epheflag = SweConst.SEFLG_JPLEPH;
+    } else {
+      epheflag = SweConst.SEFLG_SWIEPH;
     }
-    if (swe_calc_epheflag_sv != epheflag && ipl != SweConst.SE_ECL_NUT) {
+    if (swe_calc_epheflag_sv != epheflag) {
       free_planets();
-      swe_calc_epheflag_sv = epheflag;
+      /* close and free ephemeris files */
+      if (ipl != SweConst.SE_ECL_NUT) {  /* because file will not be reopened with this ipl */
+        if (swed.jpl_file_is_open) {
+          sj.swi_close_jpl_file();
+          swed.jpl_file_is_open = false;
+        }
+        for (i = 0; i < SwephData.SEI_NEPHFILES; i++) {
+          swed.fidat[i].clearData();   /* closes fptr, zeroes sweph_denum */
+        }
+        swe_calc_epheflag_sv = epheflag;
+      }
     }
     /* high precision speed prevails fast speed */
     if ((iflag & SweConst.SEFLG_SPEED3)!=0 && (iflag & SweConst.SEFLG_SPEED)!=0) {
@@ -613,35 +638,18 @@ public class SwissEph implements ISwissEph {
 
   private void free_planets() {
     int i;
-    try {
-      /* free planets data space */
-      for(i=0;i<SwephData.SEI_NPLANETS;i++) {
-        swed.pldat[i].clearData();
-      }
-      for (i=0; i <= SweConst.SE_NPLANETS; i++) {/* "<=" is correct! see decl.*/
-        swed.savedat[i].clearData();
-      }
-      /* clear node data space */
-      for(i=0;i<SwephData.SEI_NNODE_ETC;i++) {
-        swed.nddat[i].clearData();
-      }
-      swed.oec.clearData();
-      swed.oec2000.clearData();
-      swed.nut.clearData();
-      swed.nut2000.clearData();
-      swed.nutv.clearData();
-      /* close JPL file */
-      sj.swi_close_jpl_file();
-      swed.jpl_file_is_open=false;
-      swed.jpldenum = 0;
-      /* close fixed stars */
-      if (swed.fixfp!=null) {
-        swed.fixfp.close();
-        swed.fixfp=null;
-      }
-    } catch (java.io.IOException e) {
-// NBT
+    /* free planets data space */
+    for(i=0;i<SwephData.SEI_NPLANETS;i++) {
+      swed.pldat[i].clearData();
     }
+    for (i=0; i <= SweConst.SE_NPLANETS; i++) {/* "<=" is correct! see decl.*/
+      swed.savedat[i].clearData();
+    }
+    /* clear node data space */
+    for(i=0;i<SwephData.SEI_NNODE_ETC;i++) {
+      swed.nddat[i].clearData();
+    }
+    /* as sweph.c 2.10.03: plan data only; swe_close() closes the files itself */
   }
 
   /* closes all open files, frees space of planetary data, 
@@ -690,6 +698,7 @@ public class SwissEph implements ISwissEph {
     swed.topd.clearData();
     swed.sidd.clearData();
     swed.timeout = 0;
+    swe_calc_epheflag_sv = 0;   /* swed.last_epheflag */
     swed.dpsi = null;
     swed.deps = null;
   }
@@ -1081,7 +1090,12 @@ if(path == null) return;
   */
   @Override
   public double swe_get_ayanamsa_ut(double tjd_ut) {
-    return swe_get_ayanamsa(tjd_ut + SweDate.getDeltaT(tjd_ut));
+    return swe_get_ayanamsa(tjd_ut + swe_deltat_ex(tjd_ut, swi_guess_ephe_flag(), null));
+  }
+
+  /** swi_guess_ephe_flag() of swephlib.c: the JPL ephemeris if its file is open, else Swiss Eph */
+  int swi_guess_ephe_flag() {
+    return swed.jpl_file_is_open ? SweConst.SEFLG_JPLEPH : SweConst.SEFLG_SWIEPH;
   }
 
   /**
@@ -1478,9 +1492,15 @@ String slast_starname;
   public int swe_fixstar_ut(StringBuilder star, double tjd_ut, int iflag,
                             double[] xx, StringBuilder serr) {
     iflag = fixstarUtFlags(iflag, tjd_ut, serr);
-    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);
-    return swe_fixstar(star, tjd_ut + SweDate.getDeltaT(tjd_ut),
-                       iflag, xx, serr);
+    final int epheflag = iflag & SweConst.SEFLG_EPHMASK;
+    double deltat = swe_deltat_ex(tjd_ut, iflag, serr);
+    int retflag = swe_fixstar(star, tjd_ut + deltat, iflag, xx, serr);
+    /* if ephe required is not ephe returned, adjust delta t: */
+    if (retflag != SweConst.ERR && (retflag & SweConst.SEFLG_EPHMASK) != epheflag) {
+      deltat = swe_deltat_ex(tjd_ut, retflag, null);
+      retflag = swe_fixstar(star, tjd_ut + deltat, iflag, xx, null);
+    }
+    return retflag;
   }
 
   /** sweph.c swe_fixstar_ut() / swe_fixstar2_ut(): plaus_iflag(), then Swiss Eph by default */
@@ -3017,7 +3037,8 @@ String slast_starname;
   */
   @Override
   public int swe_houses(double tjd_ut, double geolat, double geolon, int hsys, double[] cusps, double[] ascmc) {
-    return swe_houses(tjd_ut, 0, geolat, geolon, hsys, cusps, ascmc);
+    /* swe_houses() of swehouse.c 2.10.03: delta t with iflag -1, no ephemeris flag */
+    return getSweHouse().swe_houses_noflags(tjd_ut, geolat, geolon, hsys, cusps, ascmc);
   }
 
   SweHouse getSweHouse() {
@@ -8290,7 +8311,7 @@ int refepyOffs;
      * compute UT from ET. this UT will be slightly different
      * from the user's UT, but this difference is extremely small.
      */
-    delt = SweDate.getDeltaT(tjd);
+    delt = swe_deltat_ex(tjd, iflag, serr);
     tjd_ut = tjd - delt;
     if (swed.oec.teps == tjd && swed.nut.tnut == tjd) {
       eps = swed.oec.eps;
@@ -8395,14 +8416,17 @@ int refepyOffs;
     double t, dt, x[] = new double[6];
     double sidt = sl.swe_sidtime(tjd_ut);
     int iflag = SweConst.SEFLG_EQUATORIAL;
+    iflag = plaus_iflag(iflag, -1, tjd_ut, serr);
     if (swed.jpl_file_is_open)
       iflag |= SweConst.SEFLG_JPLEPH;
     t = tjd_ut + 0.5;
     dt = t - SMath.floor(t);
     sidt -= dt * 24;
     sidt *= 15;
-    if ((retval = swe_calc_ut(tjd_ut, SweConst.SE_SUN, iflag, x, serr)) == SweConst.ERR)
+    if ((retval = swe_calc_ut(tjd_ut, SweConst.SE_SUN, iflag, x, serr)) == SweConst.ERR) {
+      E[0] = 0;
       return SweConst.ERR;
+    }
     dt = sl.swe_degnorm(sidt - x[0] - 180);
     if (dt > 180)
       dt -= 360;
@@ -8551,12 +8575,17 @@ int refepyOffs;
 
     @Override
     public double swe_deltat(double tjd) {
-        return SweDate.calc_deltaT(tjd);
+        /* with default tidal acceleration/default ephemeris */
+        return swe_deltat_ex(tjd, swi_guess_ephe_flag(), null);
     }
 
+    /**
+     * swe_deltat_ex() of swephlib.c 2.10.03: delta t with the tidal acceleration of the
+     * ephemeris iflag names (-1: the default one). See SweDate.swe_deltat_ex().
+     */
     @Override
     public double swe_deltat_ex(double tjd, int iflag, StringBuilder serr) {
-        return SweDate.calc_deltaT(tjd);
+        return SweDate.swe_deltat_ex(this, tjd, iflag, serr);
     }
     
     @Override
@@ -8959,8 +8988,15 @@ int refepyOffs;
   @Override
   public int swe_fixstar2_ut(StringBuilder star, double tjd_ut, int iflag, double[] xx, StringBuilder serr) {
     iflag = fixstarUtFlags(iflag, tjd_ut, serr);
-    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);
-    return swe_fixstar2(star, tjd_ut + SweDate.getDeltaT(tjd_ut), iflag, xx, serr);
+    final int epheflag = iflag & SweConst.SEFLG_EPHMASK;
+    double deltat = swe_deltat_ex(tjd_ut, iflag, serr);
+    int retflag = swe_fixstar2(star, tjd_ut + deltat, iflag, xx, serr);
+    /* if ephe required is not ephe returned, adjust delta t: */
+    if (retflag != SweConst.ERR && (retflag & SweConst.SEFLG_EPHMASK) != epheflag) {
+      deltat = swe_deltat_ex(tjd_ut, retflag, null);
+      retflag = swe_fixstar2(star, tjd_ut + deltat, iflag, xx, null);
+    }
+    return retflag;
   }
 
   @Override
@@ -9157,7 +9193,22 @@ int refepyOffs;
 
   @Override
   public int swe_get_ayanamsa_ex_ut(double tjd_ut, int iflag, double[] daya, StringBuilder serr) {
-    return swe_get_ayanamsa_ex(tjd_ut + SweDate.getDeltaT(tjd_ut), iflag, daya, serr);
+    double deltat;
+    int retflag = SweConst.OK;
+    int epheflag = iflag & SweConst.SEFLG_EPHMASK;
+    if (epheflag == 0) {
+      epheflag = SweConst.SEFLG_SWIEPH;
+      iflag |= SweConst.SEFLG_SWIEPH;
+    }
+    deltat = swe_deltat_ex(tjd_ut, iflag, serr);
+    // swe... includes nutation, unless SEFLG_NONUT
+    retflag = swe_get_ayanamsa_ex(tjd_ut + deltat, iflag, daya, serr);
+    /* if ephe required is not ephe returned, adjust delta t: */
+    if ((retflag & SweConst.SEFLG_EPHMASK) != epheflag) {
+      deltat = swe_deltat_ex(tjd_ut, retflag, serr);
+      retflag = swe_get_ayanamsa_ex(tjd_ut + deltat, iflag, daya, serr);
+    }
+    return retflag;
   }
 
   @Override

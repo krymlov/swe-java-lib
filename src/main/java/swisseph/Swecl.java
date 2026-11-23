@@ -690,7 +690,7 @@ final class Swecl {
     iflag = SweConst.SEFLG_SPEED | SweConst.SEFLG_EQUATORIAL | ifl;
     iflag2 = iflag | SweConst.SEFLG_RADIANS;
     iflag  = iflag | SweConst.SEFLG_XYZ;
-    deltat = SweDate.getDeltaT(tjd_ut);
+    deltat = sw.swe_deltat_ex(tjd_ut, ifl, serr);
     tjd = tjd_ut + deltat;
     /* moon in cartesian coordinates */
     if ((retc = sw.swe_calc(tjd, SweConst.SE_MOON, iflag, rm, serr)) == SweConst.ERR) {
@@ -1022,7 +1022,7 @@ final class Swecl {
     geopos[0] = geolon;
     geopos[1] = geolat;
     geopos[2] = geohgt;
-    te = tjd_ut + SweDate.getDeltaT(tjd_ut);
+    te = tjd_ut + sw.swe_deltat_ex(tjd_ut, ifl, serr);
     sw.swe_set_topo(geolon, geolat, geohgt);
     if (calc_planet_star(te, ipl, starname, iflag, ls, serr) == SweConst.ERR) {
       return SweConst.ERR;
@@ -1359,9 +1359,9 @@ final class Swecl {
         find_maximum(dc[0], dc[1], dc[2], dt, dtint, dctr);
         tjd += dtint.val + dt;
       }
-      tjds = tjd - SweDate.getDeltaT(tjd);
-      tjds = tjd - SweDate.getDeltaT(tjds);
-      tjds = tjd = tjd - SweDate.getDeltaT(tjds);
+      tjds = tjd - sw.swe_deltat_ex(tjd, ifl, serr);
+      tjds = tjd - sw.swe_deltat_ex(tjds, ifl, serr);
+      tjds = tjd = tjd - sw.swe_deltat_ex(tjds, ifl, serr);
       if ((retflag = eclipse_where(tjd, SweConst.SE_SUN, null, ifl, geopos, dcore, serr)) ==
                                                                  SweConst.ERR) {
         return retflag;
@@ -1546,7 +1546,7 @@ final class Swecl {
       k = 2;
       for (i = 0; i < 2; i++) {
         j = i + k;
-        tt = tret[j] + SweDate.getDeltaT(tret[j]);
+        tt = tret[j] + sw.swe_deltat_ex(tret[j], ifl, serr);
         if (sw.swe_calc(tt, SweConst.SE_SUN, iflag, ls, serr) == SweConst.ERR) {
           return SweConst.ERR;
         }
@@ -1571,7 +1571,7 @@ final class Swecl {
             dt > 0.01;
             j++, dt /= 3) {
           for (i = 0, t = tjd; i <= 1; i++, t -= dt) {
-            tt = t + SweDate.getDeltaT(t);
+            tt = t + sw.swe_deltat_ex(t, ifl, serr);
             if (sw.swe_calc(tt, SweConst.SE_SUN, iflag, ls, serr) ==
                                                                  SweConst.ERR) {
               return SweConst.ERR;
@@ -1811,7 +1811,7 @@ final class Swecl {
         find_maximum(dc[0], dc[1], dc[2], dt, dtint, dctr);
         tjd += dtint.val + dt;
       }
-      tjd -= SweDate.getDeltaT(tjd);
+      tjd -= sw.swe_deltat_ex(tjd, ifl, serr);
       tjds = tjd;
       if ((retflag = eclipse_where(tjd, ipl, starname, ifl, geopos, dcore, serr)) == SweConst.ERR)
         return retflag;
@@ -2033,7 +2033,7 @@ final class Swecl {
       k = 2;
       for (i = 0; i < 2; i++) {
         j = i + k;
-        tt = tret[j] + SweDate.getDeltaT(tret[j]);
+        tt = tret[j] + sw.swe_deltat_ex(tret[j], ifl, serr);
         if (calc_planet_star(tt, ipl, starname, iflag, ls, serr) == SweConst.ERR)
             return SweConst.ERR;
         if (sw.swe_calc(tt, SweConst.SE_MOON, iflag, lm, serr) == SweConst.ERR)
@@ -2054,7 +2054,7 @@ final class Swecl {
              dt > 0.01;
              j++, dt /= 3) {
           for (i = 0, t = tjd; i <= 1; i++, t -= dt) {
-            tt = t + SweDate.getDeltaT(t);
+            tt = t + sw.swe_deltat_ex(t, ifl, serr);
             if (calc_planet_star(tt, ipl, starname, iflag, ls, serr) == SweConst.ERR)
               return SweConst.ERR;
             if (sw.swe_calc(tt, SweConst.SE_MOON, iflag, lm, serr) == SweConst.ERR)
@@ -2413,8 +2413,8 @@ final class Swecl {
         }
         continue;
       }
-      tret[0] = tjd - SweDate.getDeltaT(tjd);
-      tret[0] = tjd - SweDate.getDeltaT(tret[0]);
+      tret[0] = tjd - sw.swe_deltat_ex(tjd, ifl, serr);
+      tret[0] = tjd - sw.swe_deltat_ex(tret[0], ifl, serr);
       if ((backward!=0 && tret[0] >= tjd_start - 0.0001)
         || (backward==0 && tret[0] <= tjd_start + 0.0001)) {
         if (backward!=0) {
@@ -2499,8 +2499,8 @@ final class Swecl {
             tret[j] += dt1.val;
           }
         }
-        tret[2] -= SweDate.getDeltaT(tret[2]);
-        tret[3] -= SweDate.getDeltaT(tret[3]);
+        tret[2] -= sw.swe_deltat_ex(tret[2], ifl, serr);
+        tret[3] -= sw.swe_deltat_ex(tret[3], ifl, serr);
       }
       /* contacts 1 and 4 */
       dc[1] = rsplusrm - dctrmin;
@@ -2563,8 +2563,8 @@ final class Swecl {
           tret[j] += dt1.val;
         }
       }
-      tret[1] -= SweDate.getDeltaT(tret[1]);
-      tret[4] -= SweDate.getDeltaT(tret[4]);
+      tret[1] -= sw.swe_deltat_ex(tret[1], ifl, serr);
+      tret[4] -= sw.swe_deltat_ex(tret[4], ifl, serr);
       /*
        * visibility of eclipse phases
        */
@@ -2800,8 +2800,8 @@ final class Swecl {
 //    goto next_try;
         continue;
       }
-      tret[0] = tjd - SweDate.getDeltaT(tjd);
-      tret[0] = tjd - SweDate.getDeltaT(tret[0]);
+      tret[0] = tjd - sw.swe_deltat_ex(tjd, ifl, serr);
+      tret[0] = tjd - sw.swe_deltat_ex(tret[0], ifl, serr);
       if ((backward!=0 && tret[0] >= tjd_start - 0.0001) 
           || (backward==0 && tret[0] <= tjd_start + 0.0001)) {
         /* t = tjd + direction;*/
@@ -2877,8 +2877,8 @@ final class Swecl {
             tret[j] += dt1.val;
           }
         }
-        tret[2] -= SweDate.getDeltaT(tret[2]);
-        tret[3] -= SweDate.getDeltaT(tret[3]);
+        tret[2] -= sw.swe_deltat_ex(tret[2], ifl, serr);
+        tret[3] -= sw.swe_deltat_ex(tret[3], ifl, serr);
       }
       /* contacts 1 and 4 */
       dc[1] = rsplusrm - dctrmin;
@@ -2931,8 +2931,8 @@ final class Swecl {
           tret[j] += dt1.val;
         }
       }
-      tret[1] -= SweDate.getDeltaT(tret[1]);
-      tret[4] -= SweDate.getDeltaT(tret[4]);
+      tret[1] -= sw.swe_deltat_ex(tret[1], ifl, serr);
+      tret[4] -= sw.swe_deltat_ex(tret[4], ifl, serr);
       /*  
        * visibility of eclipse phases 
        */
@@ -3497,7 +3497,7 @@ final class Swecl {
      * if mean sidereal time will be used */
     iflag = SweConst.SEFLG_SPEED | SweConst.SEFLG_EQUATORIAL | ifl;
     iflag  = iflag | SweConst.SEFLG_XYZ;
-    deltat = SweDate.getDeltaT(tjd_ut);
+    deltat = sw.swe_deltat_ex(tjd_ut, ifl, serr);
     tjd = tjd_ut + deltat;
     /* moon in cartesian coordinates */
     if (sw.swe_calc(tjd, SweConst.SE_MOON, iflag, rm, serr) == SweConst.ERR) {
@@ -3784,9 +3784,9 @@ final class Swecl {
         find_maximum(dc[0], dc[1], dc[2], dt, dtint, dctr);
         tjd += dtint.val + dt;
       }
-      tjd2 = tjd - SweDate.getDeltaT(tjd);
-      tjd2 = tjd - SweDate.getDeltaT(tjd2);
-      tjd = tjd - SweDate.getDeltaT(tjd2);
+      tjd2 = tjd - sw.swe_deltat_ex(tjd, ifl, serr);
+      tjd2 = tjd - sw.swe_deltat_ex(tjd2, ifl, serr);
+      tjd = tjd - sw.swe_deltat_ex(tjd2, ifl, serr);
       if ((retflag = swe_lun_eclipse_how(tjd, ifl, null, attr, serr)) ==
                                                                  SweConst.ERR) {
         return retflag;
@@ -4304,8 +4304,21 @@ final class Swecl {
   */
   int swe_pheno_ut(double tjd_ut, int ipl, int iflag, double[] attr,
                    StringBuilder serr) {
-    SweDate.swi_set_tid_acc(sw, tjd_ut, iflag, 0);
-    return swe_pheno(tjd_ut + SweDate.getDeltaT(tjd_ut), ipl, iflag, attr, serr);
+    double deltat;
+    int retflag = SweConst.OK;
+    int epheflag = iflag & SweConst.SEFLG_EPHMASK;
+    if (epheflag == 0) {
+      epheflag = SweConst.SEFLG_SWIEPH;
+      iflag |= SweConst.SEFLG_SWIEPH;
+    }
+    deltat = sw.swe_deltat_ex(tjd_ut, iflag, serr);
+    retflag = swe_pheno(tjd_ut + deltat, ipl, iflag, attr, serr);
+    /* if ephe required is not ephe returned, adjust delta t: */
+    if ((retflag & SweConst.SEFLG_EPHMASK) != epheflag) {
+      deltat = sw.swe_deltat_ex(tjd_ut, retflag, serr);
+      retflag = swe_pheno(tjd_ut + deltat, ipl, iflag, attr, serr);
+    }
+    return retflag;
   }
 
   private int find_maximum(double y00, double y11, double y2, double dx,
@@ -4433,7 +4446,7 @@ final class Swecl {
                  StringBuilder serr)
   {
     int i, j, k, ii, calc_culm, nculm = -1;
-    double tjd_et = tjd_ut + SweDate.getDeltaT(tjd_ut);
+    double tjd_et = tjd_ut + sw.swe_deltat_ex(tjd_ut, epheflag, serr);
     double xc[]=new double[6], xh[][]=new double[20][6], ah[]=new double[6],
            aha;
     double tculm[]=new double[4], tcu, tc[]=new double[20], h[]=new double[20],
@@ -4454,7 +4467,7 @@ final class Swecl {
       }
       return SweConst.ERR;
     }
-    SweDate.swi_set_tid_acc(sw, tjd_ut, epheflag, 0);  
+    /*swi_set_tid_acc(tjd_ut, epheflag, 0, serr);*/
     /* function calls for Pluto with asteroid number 134340
      * are treated as calls for Pluto as main body SE_PLUTO */
     if (ipl == SweConst.SE_AST_OFFSET + 134340) {
@@ -4497,7 +4510,7 @@ final class Swecl {
     for (ii = 0, t = tjd_ut - twohrs; ii <= jmax; ii++, t += twohrs) {
       tc[ii] = t;
       if (!do_fixstar) {
-        te = t + SweDate.getDeltaT(t);
+        te = t + sw.swe_deltat_ex(t, epheflag, serr);
         if (sw.swe_calc(te, ipl, iflag, xc, serr) == SweConst.ERR) {
           return SweConst.ERR;
         }
@@ -4567,7 +4580,7 @@ final class Swecl {
         dt /= 3;
         for (; dt > 0.0001; dt /= 3) {
           for (i = 0, tt = tcu - dt; i < 3; tt += dt, i++) {
-            te = tt + SweDate.getDeltaT(tt);
+            te = tt + sw.swe_deltat_ex(tt, epheflag, serr);
             if (!do_fixstar) {
               if (sw.swe_calc(te, ipl, iflag, xc, serr) == SweConst.ERR) {
                 return SweConst.ERR;
@@ -4597,7 +4610,7 @@ final class Swecl {
           }
           tc[j] = tculm[i];
           if (!do_fixstar) {
-            te = tc[j] + SweDate.getDeltaT(tc[j]);
+            te = tc[j] + sw.swe_deltat_ex(tc[j], epheflag, serr);
             if (sw.swe_calc(te, ipl, iflag, xc, serr) == SweConst.ERR) {
               return SweConst.ERR;
             }
@@ -4657,7 +4670,7 @@ final class Swecl {
       for (i = 0; i < 20; i++) {
         t = (t2[0] + t2[1]) / 2;
         if (!do_fixstar) {
-          te = t + SweDate.getDeltaT(t);
+          te = t + sw.swe_deltat_ex(t, epheflag, serr);
           if (sw.swe_calc(te, ipl, iflag, xc, serr) == SweConst.ERR) {
             return SweConst.ERR;
           }
@@ -4716,7 +4729,7 @@ final class Swecl {
                              double[] geopos, StringBuilder starname,
                              DblObj tret, StringBuilder serr) {
     int i;
-    double tjd_et = tjd_ut + SweDate.getDeltaT(tjd_ut);
+    double tjd_et = tjd_ut + sw.swe_deltat_ex(tjd_ut, epheflag, serr);
     double armc, armc0, arxc, x0[]=new double[6], x[]=new double[6], t, te;
     double mdd;
     int iflag = epheflag;
@@ -4771,7 +4784,7 @@ final class Swecl {
         }
         if (!do_fixstar) {
   //        te = t + swe_deltat(t);
-          te = t + SweDate.getDeltaT(t);
+          te = t + sw.swe_deltat_ex(t, epheflag, serr);
           if (sw.swe_calc(te, ipl, iflag, x, serr) == SweConst.ERR) {
             return SweConst.ERR;
           }
@@ -5806,8 +5819,8 @@ final class Swecl {
                      double[] xnasc, double[] xndsc,
                      double[] xperi, double[] xaphe,
                      StringBuilder serr) {
-    SweDate.swi_set_tid_acc(sw, tjd_ut, iflag, 0);
-    return swe_nod_aps(tjd_ut + SweDate.getDeltaT(tjd_ut),
+    /*swi_set_tid_acc(tjd_ut, iflag, 0, serr);*/
+    return swe_nod_aps(tjd_ut + sw.swe_deltat_ex(tjd_ut, iflag, serr),
                         ipl, iflag, method, xnasc, xndsc, xperi, xaphe,
                         serr);
   }
@@ -5862,7 +5875,7 @@ final class Swecl {
      * geometrically from ecl. longitude and latitude 
      */
     if (imeth == 0 || imeth == 1) {
-      t_et = t_ut + SweDate.getDeltaT(t_ut);
+      t_et = t_ut + sw.swe_deltat_ex(t_ut, iflag, serr);
       eps = sl.swi_epsiln(t_et, iflag) * SwissData.RADTODEG;
       sl.swi_nutation(t_et, iflag, nutlo);
       nutlo[0] *= SwissData.RADTODEG;
