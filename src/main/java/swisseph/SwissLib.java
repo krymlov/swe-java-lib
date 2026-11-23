@@ -1865,7 +1865,46 @@ int pn = 0;
     return ans;
   }
 
-  int swi_nutation(double J, int iflag, double nutlo[]) {
+  /**
+   * Nutation. With swe_set_interpolate_nut() it is interpolated between three dates in 1-day
+   * steps; the maximum error is about 3 mas (swi_nutation() in swephlib.c).
+   */
+  int swi_nutation(double tjd, int iflag, double nutlo[]) {
+    if (!swed.do_interpolate_nut)
+      return calc_nutation(tjd, iflag, nutlo);
+    final Interpol ip = swed.interpol;
+    if (tjd < ip.tjd_nut2 && tjd > ip.tjd_nut0) {
+      /* precalculated data points available */
+      final double dx = (tjd - ip.tjd_nut0) - 1.0;
+      nutlo[0] = quadratic_intp(ip.nut_dpsi0, ip.nut_dpsi1, ip.nut_dpsi2, dx);
+      nutlo[1] = quadratic_intp(ip.nut_deps0, ip.nut_deps1, ip.nut_deps2, dx);
+      return SweConst.OK;
+    }
+    final double[] dnut = new double[2];
+    ip.tjd_nut0 = tjd - 1.0; /* one day earlier */
+    ip.tjd_nut2 = tjd + 1.0; /* one day later */
+    int retc = calc_nutation(ip.tjd_nut0, iflag, dnut);
+    if (retc == SweConst.ERR) return SweConst.ERR;
+    ip.nut_dpsi0 = dnut[0];
+    ip.nut_deps0 = dnut[1];
+    retc = calc_nutation(ip.tjd_nut2, iflag, dnut);
+    if (retc == SweConst.ERR) return SweConst.ERR;
+    ip.nut_dpsi2 = dnut[0];
+    ip.nut_deps2 = dnut[1];
+    retc = calc_nutation(tjd, iflag, nutlo);
+    if (retc == SweConst.ERR) return SweConst.ERR;
+    ip.nut_dpsi1 = nutlo[0];
+    ip.nut_deps1 = nutlo[1];
+    return retc;
+  }
+
+  private static double quadratic_intp(double ym, double y0, double yp, double x) {
+    final double b = (yp - ym) / 2.0;
+    final double a = (yp + ym) / 2.0 - y0;
+    return a * x * x + b * x + y0;
+  }
+
+  private int calc_nutation(double J, int iflag, double nutlo[]) {
     int n;
     double dpsi, deps, J2;
     int nut_model = swed.astro_models[SweConst.SE_MODEL_NUT];

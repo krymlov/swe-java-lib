@@ -574,7 +574,7 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
         val = (( val & 0x000000ff ) << 24) +
               (( val & 0x0000ff00 ) <<  8) +
               (( val & 0x00ff0000 ) >>  8) +
-              (( val & 0xff000000 ) >> 24);
+              (( val & 0xff000000 ) >>> 24);
       } else {
         val = (( val & 0x000000ff ) << 24) +
               (( val & 0x0000ff00 ) <<  8) +
@@ -594,17 +594,13 @@ byte[] ba=new byte[2*SwissData.AS_MAXCH];
       fp.seek(fpos);
     }
 
-    long val=Double.doubleToLongBits(fp.readDouble());
+    // the raw bits: a byte-swapped double may look like a NaN. Long.reverseBytes(): the hand-made
+    // swap used a signed ">> 56", which took 256 ulp off every double whose lowest byte is >= 0x80
+    // (tfstart of the EMB: 1.2e-7 day, 0.3 km of the Earth)
+    long val=Double.doubleToRawLongBits(fp.readDouble());
 
     if (freord != 0) {
-      val = (( val & 0x00000000000000ffL ) << 56) +
-            (( val & 0x000000000000ff00L ) << 40) +
-            (( val & 0x0000000000ff0000L ) << 24) +
-            (( val & 0x00000000ff000000L ) <<  8) +
-            (( val & 0x000000ff00000000L ) >>  8) +
-            (( val & 0x0000ff0000000000L ) >> 24) +
-            (( val & 0x00ff000000000000L ) >> 40) +
-            (( val & 0xff00000000000000L ) >> 56);
+      val = Long.reverseBytes(val);
     }
 
     return Double.longBitsToDouble(val);

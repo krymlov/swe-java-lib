@@ -215,12 +215,9 @@ final class SwissData {
   final SavePositions[] savedat = new SavePositions[SweConst.SE_NPLANETS+1];
   int[] astro_models = new int[SwephData.SEI_NMODELS];
 
-  /**
-  * Set by swe_set_interpolate_nut(). Upstream uses it to cache nutation at three dates and
-  * interpolate between them; this port always computes nutation directly, so the flag is
-  * only recorded and reported back.
-  */
+  /** swe_set_interpolate_nut(): nutation from three dates, see SwissLib.swi_nutation() */
   boolean do_interpolate_nut = false;
+  final Interpol interpol = new Interpol();
   final Epsilon oec, oec2000;
   final Nut nut, nut2000, nutv;
   final TopoData topd;
@@ -255,4 +252,17 @@ final class SwissData {
     sidd = new SidData();
   }
 
+}
+
+/** the nutation data points of swe_set_interpolate_nut() (struct interpol in sweph.h) */
+class Interpol {
+  double tjd_nut0, tjd_nut2;
+  double nut_dpsi0, nut_dpsi1, nut_dpsi2;
+  double nut_deps0, nut_deps1, nut_deps2;
+
+  void clear() {
+    tjd_nut0 = tjd_nut2 = 0;
+    nut_dpsi0 = nut_dpsi1 = nut_dpsi2 = 0;
+    nut_deps0 = nut_deps1 = nut_deps2 = 0;
+  }
 }

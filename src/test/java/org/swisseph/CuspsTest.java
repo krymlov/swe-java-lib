@@ -162,7 +162,7 @@ public class CuspsTest extends AbstractTest {
             for (int h = 1; h < CUSPS_COUNT - 1; h++) {
                 // Whole sign is the one system here where a zero speed is correct, not missing:
                 // the cusps sit on sign boundaries, and CalcH of swisseph-2026 sets every one of
-                // them to 0 (see SweHouse.differentiate()'s own javadoc). Until 2026-11-22 cusps
+                // them to 0 (SweHouse is its port). Until 2026-11-22 cusps
                 // 1/4/7/10 carried the ascendant's and MC's speed, as the older swehouse.c did.
                 if (WHOLE_SIGN == hsys) {
                     assertEquals(0., cuspSpeed[h], 0., hsys.name() + " cusp " + h

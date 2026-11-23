@@ -1483,8 +1483,7 @@ public class SweDate implements Serializable {
     /* read additional values from swedelta.txt */
     int tabsiz = init_dt();
     int tabend = TABSTART + tabsiz - 1;
-    /*Y = 2000.0 + (tjd - J2000)/365.25;*/
-    Y = 2000.0 + (tjd - SwephData.J2000)/365.2425;
+    Y = 2000.0 + (tjd - 2451544.5)/365.25;
     if (Y <= tabend) {
       /* Index into the table.
        */
@@ -1665,7 +1664,7 @@ public class SweDate implements Serializable {
     } else {
       t = (Ygreg - 1825) / 100.0;
       dt = -320 + 32.5 * t * t;
-      dt -= 1.517032;      // to make curve continuous at 2016
+      dt += 269.4790417;   // to make curve continous on 1 Jan 2016 (D. Koch)
     }
     // The parameters of the above formulae are for a tidal acceleration of
     // SE_TIDAL_STEPHENSON_2016, and the adjustment is applied for all epochs, not only
@@ -2015,7 +2014,7 @@ public class SweDate implements Serializable {
    */
 
   /* Leap seconds were inserted at the end of the following days:*/
-  private static final int NLEAP_SECONDS = 26;
+  private static final int NLEAP_SECONDS = 27;
   private static final int NLEAP_SECONDS_SPACE = 100;
   private static final int leap_seconds[] = new int[] {
   19720630,
@@ -2044,6 +2043,7 @@ public class SweDate implements Serializable {
   20081231,
   20120630,
   20150630,
+  20161231,
   0,  /* keep this 0 as end mark */
   // JAVA ONLY to have the array extended to NLEAP_SECONDS_SPACE elements:
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

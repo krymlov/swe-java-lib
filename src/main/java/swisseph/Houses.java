@@ -112,4 +112,26 @@ final class Houses {
   */
   double polasc;
 
+
+  // 2026-11-23: the rest of struct houses of swisseph-2026 swehouse.c - the analytic speeds
+  // (degrees per day), the Sunshine declination and the control flags.
+  final double cusp_speed[]=new double[37];
+  double ac_speed;
+  double mc_speed;
+  double armc_speed;
+  double vertex_speed;
+  double equasc_speed;
+  double coasc1_speed;
+  double coasc2_speed;
+  double polasc_speed;
+  /** declination of the Sun, for the Sunshine houses */
+  double sundec;
+  /** speeds of the ascmc points wanted */
+  boolean do_speed;
+  /** cusp speeds wanted */
+  boolean do_hspeed;
+  /** set by CalcH() when the cusp speeds have to be interpolated */
+  boolean do_interpol;
+  /** warning or error message of CalcH(), "" if none */
+  String serr = "";
 }

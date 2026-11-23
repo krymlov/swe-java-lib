@@ -466,6 +466,13 @@ public class SwissEph implements ISwissEph {
     if ((iflag & SweConst.SEFLG_SPEED3)!=0 && (iflag & SweConst.SEFLG_SPEED)!=0) {
       iflag = iflag & ~SweConst.SEFLG_SPEED3;
     }
+    boolean use_speed3 = (iflag & SweConst.SEFLG_SPEED3) != 0;
+    /* topocentric with SEFLG_SPEED is not good if aberration is included.
+     * in such cases we calculate speed from three positions */
+    if ((iflag & SweConst.SEFLG_SPEED) != 0 && (iflag & SweConst.SEFLG_TOPOCTR) != 0 &&
+        (iflag & SweConst.SEFLG_NOABERR) == 0) {
+      use_speed3 = true;
+    }
     /* cartesian flag excludes radians flag */
     if (((iflag & SweConst.SEFLG_XYZ)!=0) &&
          ((iflag & SweConst.SEFLG_RADIANS)!=0)) {
@@ -498,7 +505,7 @@ public class SwissEph implements ISwissEph {
         /*
          * otherwise, new position must be computed
          */
-        if ((iflag & SweConst.SEFLG_SPEED3) == 0) {
+        if (!use_speed3) {
           /*
            * with high precision speed from one call of swecalc()
            * (FAST speed)
@@ -593,7 +600,10 @@ public class SwissEph implements ISwissEph {
     for (i = 0; i <= 5; i++) {
       xx[i] = x[i];
     }
-    iflag = sd.iflgsave;
+    /* iflag from previous call of swe_calc(), without coordinate system flags ... */
+    iflag = sd.iflgsave & ~iflgcoor;
+    /* ... with the correct coordinate system flags of this call */
+    iflag |= (iflgsave & iflgcoor);
     /* if no ephemeris has been specified, do not return chosen ephemeris */
     if ((iflgsave & SweConst.SEFLG_EPHMASK) == 0) {
       iflag = iflag & ~SweConst.SEFLG_DEFAULTEPH;
@@ -6199,6 +6209,7 @@ fname="";
     /*******************************
      * light-time                  *
      *******************************/
+    t = pdp.teval;
     if ((iflag & SweConst.SEFLG_TRUEPOS) == 0) {
       dt = SMath.sqrt(sl.square_sum(xxm)) * SweConst.AUNIT /
                                                    SwephData.CLIGHT / 86400.0;
@@ -8299,7 +8310,7 @@ int refepyOffs;
     }
     /* mean or apparent sidereal time, depending on whether or
      * not SEFLG_NONUT is set */
-    sidt = sl.swe_sidtime0(tjd_ut, eps, nut);
+    sidt = sl.swe_sidtime0(tjd_ut, eps * SwissData.RADTODEG, nut * SwissData.RADTODEG);
     sidt *= 15;   /* in degrees */
     /* length of position and speed vectors;
      * the height above sea level must be taken into account.
@@ -8340,16 +8351,13 @@ int refepyOffs;
     /* subtract nutation, set backward flag */
     if ((iflag & SweConst.SEFLG_NONUT)==0) {
       sl.swi_coortrf2(xobs, xobs, -swed.nut.snut, swed.nut.cnut);
-      if ((iflag & SweConst.SEFLG_SPEED)!=0) {
-        sl.swi_coortrf2(xobs, 3, xobs, 3, -swed.nut.snut, swed.nut.cnut);
-      }
-      swi_nutate(xobs, 0, iflag, true);
+      /* speed of xobs is always required, namely for aberration!!! */
+      sl.swi_coortrf2(xobs, 3, xobs, 3, -swed.nut.snut, swed.nut.cnut);
+      swi_nutate(xobs, 0, iflag | SweConst.SEFLG_SPEED, true);
     }
     /* precess to J2000 */
     sl.swi_precess(xobs, tjd, iflag, SwephData.J_TO_J2000);
-    if ((iflag & SweConst.SEFLG_SPEED)!=0) {
-      swi_precess_speed(xobs, tjd, iflag, SwephData.J_TO_J2000);
-    }
+    swi_precess_speed(xobs, tjd, iflag, SwephData.J_TO_J2000);
     /* neglect frame bias (displacement of 45cm) */
     /* ... */
     /* save */
@@ -9187,43 +9195,27 @@ int refepyOffs;
 
   /**
   * Houses plus the speed in longitude of every cusp and of every ascmc point, in
-  * degrees per day.
+  * degrees per day (radians per day with SEFLG_RADIANS).
   * <p>
-  * The speeds are obtained by central differencing over one second of time, which is what
-  * Swiss Ephemeris itself does for every house system that has no closed-form speed
-  * (see <code>do_interpol</code> in swehouse.c). Differencing the date rather than the ARMC
-  * also picks up the drift of nutation and, in sidereal mode, of the ayanamsa - both far
-  * below the resolution of the difference, but in the right direction.
+  * Since 2026-11-23 this is the port of swe_houses_ex2() of swisseph-2026 (swehouse.c): the
+  * speeds are the analytic derivatives each house system defines, plus the motion of the
+  * sidereal frame in sidereal mode, and fall back to an interpolation over one second of
+  * ARMC only where swehouse.c does. Until then they were a central difference over one second
+  * of time, which differed from the native library by up to 6e-3 degrees per day.
   *
   * @param cusp_speed may be null; cusp_speed[1..12] (or [1..36] for Gauquelin) on return
-  * @param ascmc_speed may be null; ascmc_speed[0..7] on return
+  * @param ascmc_speed may be null; ascmc_speed[0..9] on return
   * @see #swe_houses_armc_ex2(double, double, double, int, double[], double[], double[], double[], StringBuilder)
   */
   @Override
   public int swe_houses_ex2(double tjd_ut, int iflag, double geolat, double geolon, int hsys, double[] cusps,
                              double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
-    final int retc = swe_houses(tjd_ut, iflag, geolat, geolon, hsys, cusps, ascmc);
-    if (retc == SweConst.ERR || (null == cusp_speed && null == ascmc_speed)) {
-      return retc;
-    }
-
-    final double dt = SweHouse.HOUSE_SPEED_DT;
-    final double[] cm = new double[cusps.length], cp = new double[cusps.length];
-    final double[] am = new double[ascmc.length], ap = new double[ascmc.length];
-
-    if (swe_houses(tjd_ut - dt, iflag, geolat, geolon, hsys, cm, am) == SweConst.ERR
-        || swe_houses(tjd_ut + dt, iflag, geolat, geolon, hsys, cp, ap) == SweConst.ERR) {
-      return retc;   // positions are valid, speeds are not available here
-    }
-
-    SweHouse.differentiate(hsys, cusps, ascmc, cm, am, cp, ap, dt, cusp_speed, ascmc_speed);
-    return retc;
+    return getSweHouse().swe_houses_ex2(tjd_ut, iflag, geolat, geolon, hsys, cusps, ascmc, cusp_speed, ascmc_speed, serr);
   }
 
   /**
-  * The ARMC form of {@link #swe_houses_ex2}. Here the speeds are differentiated over the
-  * ARMC, exactly as swehouse.c does: one second of time advances the ARMC by
-  * <code>ARMCS / 86400</code> degrees.
+  * The ARMC form of {@link #swe_houses_ex2}: swe_houses_armc_ex2() of swisseph-2026
+  * (swehouse.c). For the Sunshine houses ('I') ascmc[9] carries the declination of the Sun in.
   *
   * @param cusp_speed may be null
   * @param ascmc_speed may be null
@@ -9231,23 +9223,7 @@ int refepyOffs;
   @Override
   public int swe_houses_armc_ex2(double armc, double geolat, double eps, int hsys, double[] cusps,
                                   double[] ascmc, double[] cusp_speed, double[] ascmc_speed, StringBuilder serr) {
-    final int retc = swe_houses_armc(armc, geolat, eps, hsys, cusps, ascmc);
-    if (retc == SweConst.ERR || (null == cusp_speed && null == ascmc_speed)) {
-      return retc;
-    }
-
-    final double dt = SweHouse.HOUSE_SPEED_DT;
-    final double darmc = dt * SweHouse.ARMCS;
-    final double[] cm = new double[cusps.length], cp = new double[cusps.length];
-    final double[] am = new double[ascmc.length], ap = new double[ascmc.length];
-
-    if (swe_houses_armc(armc - darmc, geolat, eps, hsys, cm, am) == SweConst.ERR
-        || swe_houses_armc(armc + darmc, geolat, eps, hsys, cp, ap) == SweConst.ERR) {
-      return retc;
-    }
-
-    SweHouse.differentiate(hsys, cusps, ascmc, cm, am, cp, ap, dt, cusp_speed, ascmc_speed);
-    return retc;
+    return getSweHouse().swe_houses_armc_ex2(armc, geolat, eps, hsys, cusps, ascmc, cusp_speed, ascmc_speed, serr);
   }
 
   @Override
@@ -9272,10 +9248,10 @@ int refepyOffs;
 
   @Override
   public void swe_set_interpolate_nut(/*AS_BOOL*/int do_interpolate) {
-    // Upstream caches nutation at three dates and interpolates between them, which makes
-    // swe_calc() faster and slightly less exact. The port always computes nutation directly,
-    // so the flag is recorded and the answer is the "do not interpolate" one either way.
+    if (swed.do_interpolate_nut == (do_interpolate != 0))
+      return;
     swed.do_interpolate_nut = (do_interpolate != 0);
+    swed.interpol.clear();
   }
 
   /* coordinate transformation polar -> polar */

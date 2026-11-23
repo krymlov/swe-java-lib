@@ -21,10 +21,10 @@ import static swisseph.SweConst.*;
  * model was off by that correction: Lahiri 3.6e-5 deg, Fagan/Bradley 1.15e-4 deg, for planets
  * and stars alike.
  * <p>
- * The bodies are those whose tropical J2000 position the two engines already agree on to 1e-12
- * (the mean node, the mean apogee, two stars), so what is measured is the sidereal layer alone:
- * measured 1.3e-11 deg. The Moon, the true node and the osculating apogee carry their own
- * tropical Java/native difference (1e-5 .. 1.3e-4 deg) into every zodiac unchanged.
+ * The mean node, the mean apogee and two stars were the only bodies whose tropical J2000 position
+ * the engines agreed on when this was written (measured 1.3e-11 deg); since the tropical fixes of
+ * the same day (see {@link TropicalParityTest}) the Sun, the Moon, the true node and the
+ * osculating apogee are compared as well.
  * <p>
  * {@code @Isolated}: the tidal acceleration is pinned, and it is JVM-global in the Java engine.
  *
@@ -52,7 +52,7 @@ public class RigorousSiderealParityTest extends AbstractTest {
                     jv.swe_set_sid_mode(mode | bit, 0, 0);
                     for (double tjd : DATES) {
                         for (int iflag : new int[]{B, B | SEFLG_EQUATORIAL}) {
-                            for (Object body : new Object[]{SE_MEAN_NODE, SE_MEAN_APOG, "Spica", "Aldebaran"}) {
+                            for (Object body : new Object[]{SE_MEAN_NODE, SE_MEAN_APOG, SE_SUN, SE_MOON, SE_TRUE_NODE, SE_OSCU_APOG, "Spica", "Aldebaran"}) {
                                 String what = "mode " + (mode | bit) + " " + body + " jd " + tjd + " iflag " + iflag;
                                 double[] xc = new double[6], xj = new double[6];
                                 StringBuilder ec = new StringBuilder(), ej = new StringBuilder();

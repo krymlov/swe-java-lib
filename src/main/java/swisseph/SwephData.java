@@ -342,7 +342,7 @@ static final double JPL_DE431_END   =  7930192.5;
   // static final double SUN_EARTH_MRAT = 328900.561400;         Su/(Ea+Mo) AA 2006 K7
   static final double SUN_EARTH_MRAT = 332946.050895;         // Su / (Ea only) AA 2006 K7
   static final double EARTH_MOON_MRAT = (1 / 0.0123000383);   // AA 2006, K7
-  static final double AUNIT = 1.49597870691e+11;              // au in meters, AA 2006 K6
+  static final double AUNIT = SweConst.AUNIT;                 // au in meters, DE431
   static final double CLIGHT = 2.99792458e+8;                 // m/s, AA 1996 K6
   static final double HELGRAVCONST = 1.32712440017987e+20;    // G * M(sun), m^3/sec^2, AA 2006 K6
   static final double GEOGCONST = 3.98600448e+14; // G * M(earth) m^3/sec^2, AA 1996 K6
@@ -355,7 +355,7 @@ static final double JPL_DE431_END   =  7930192.5;
   static final double EARTH_OBLATENESS = (1.0/ 298.25642);    // AA 2006 K6
   static final double EARTH_ROT_SPEED = 7.2921151467e-5 * 86400; // in rad/day, expl. suppl., p 162
 
-  static final double LIGHTTIME_AUNIT = (499.0047838061/3600/24); // 8.3167 minutes (days), AA 2006 K6
+  static final double LIGHTTIME_AUNIT = (499.0047838362/3600.0/24.0); // 8.3167 minutes (days)
 
   /* node of ecliptic measured on ecliptic 2000 */
   static final double SSY_PLANE_NODE_E2000 = 107.582569 * SwissData.DEGTORAD;

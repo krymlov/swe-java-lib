@@ -23,7 +23,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static swisseph.SweConst.*;
 
@@ -191,13 +190,13 @@ public class TransitEngineTest extends AbstractTest {
     }
 
     /**
-     * The two engines are close enough on modern dates that a plain comparison proves little.
-     * A house system the pure Java port gets differently is a sharper probe: whole sign cusps
-     * used to differ by degrees, and the lagna still differs, so a TCPlanetHouse over the
-     * ascendant must land on a measurably different date for each engine.
+     * Both engines must land on the same date. Until 2026-11-23 they were only required to agree
+     * to a minute and NOT to be identical: the Earth, the Moon and delta t of the Java port were
+     * all slightly off (TropicalParityTest). That each calculator really uses the engine it was
+     * given is proved by the delta t test above, which moves one engine only.
      */
     @Test
-    void thePureJavaAndNativeEnginesGiveDifferentButCloseResults() {
+    void thePureJavaAndNativeEnginesGiveTheSameDate() {
         TransitCalculator nat = new TCPlanetHouse(getSwephExp(), SE_MOON, LON, SE_ASC,
                 SweHouseSystem.PLACIDUS.fid(), LON, GEO_LON, GEO_LAT, 0.);
         TransitCalculator jav = new TCPlanetHouse(getSwissEph(), SE_MOON, LON, SE_ASC,
@@ -206,8 +205,7 @@ public class TransitEngineTest extends AbstractTest {
         double n = TransitCalculator.getTransitUT(nat, J2000, false);
         double j = TransitCalculator.getTransitUT(jav, J2000, false);
 
-        assertEquals(n, j, 60. / 86400., "the engines should agree to within a minute");
-        assertFalse(n == j, "but not be bit-identical - they are different ephemerides");
+        assertEquals(n, j, 0.01 / 86400., "the engines must agree to 0.01 second");
     }
 
     /**
