@@ -838,22 +838,173 @@ final class SwissLib {
     35.449, 35.409, 35.497, 35.556, 35.672, 35.760, 35.596, 35.565, 35.510, 35.394,
     35.385, 35.375, 35.415,
   };
+  /** dpsi and deps of IAU 1980 on that day, in arc seconds */
+  private static final double DPSI_IAU1980_TJD0 = (64.284 / 1000.0);
+  private static final double DEPS_IAU1980_TJD0 = (6.151 / 1000.0);
+
+  /* precession according to Owen 1990:
+   * Owen, William M., Jr., (JPL) "A Theory of the Earth's Precession
+   * Relative to the Invariable Plane of the Solar System", Ph.D.
+   * Dissertation, University of Florida, 1990.
+   * Implemented for time range -18000 to 14000.
+   *
+   * p. 177: central time Tc = -160, covering time span -200 <= T <= -120
+   * p. 178: central time Tc = -80, covering time span -120 <= T <= -40
+   * p. 179: central time Tc = 0, covering time span -40 <= T <= +40
+   * p. 180: central time Tc = 80, covering time span 40 <= T <= 120
+   * p. 181: central time Tc = 160, covering time span 120 <= T <= 200
+   * (tables extracted from swephlib.c 2.10.03 by a script)
+   */
+  private static final double owen_eps0_coef[][] = new double[][] {
+    {23.699391439256386, 5.2330816033981775e-1, -5.6259493384864815e-2, -8.2033318431602032e-3, 6.6774163554156385e-4, 2.4931584012812606e-5, -3.1313623302407878e-6, 2.0343814827951515e-7, 2.9182026615852936e-8, -4.1118760893281951e-9,},
+    {24.124759551704588, -1.2094875596566286e-1, -8.3914869653015218e-2, 3.5357075322387405e-3, 6.4557467824807032e-4, -2.5092064378707704e-5, -1.7631607274450848e-6, 1.3363622791424094e-7, 1.5577817511054047e-8, -2.4613907093017122e-9,},
+    {23.439103144206208, -4.9386077073143590e-1, -2.3965445283267805e-4, 8.6637485629656489e-3, -5.2828151901367600e-5, -4.3951004595359217e-5, -1.1058785949914705e-6, 6.2431490022621172e-8, 3.4725376218710764e-8, 1.3658853127005757e-9,},
+    {22.724671295125046, -1.6041813558650337e-1, 7.0646783888132504e-2, 1.4967806745062837e-3, -6.6857270989190734e-4, 5.7578378071604775e-6, 3.3738508454638728e-6, -2.2917813537654764e-7, -2.1019907929218137e-8, 4.3139832091694682e-9,},
+    {22.914636050333696, 3.2123508304962416e-1, 3.6633220173792710e-2, -5.9228324767696043e-3, -1.882379107379328e-4, 3.2274552870236244e-5, 4.9052463646336507e-7, -5.9064298731578425e-8, -2.0485712675098837e-8, -6.2163304813908160e-10,},
+  };
+
+  private static final double owen_psia_coef[][] = new double[][] {
+    {-218.57864954903122, 51.752257487741612, 1.3304715765661958e-1, 9.2048123521890745e-2, -6.0877528127241278e-3, -7.0013893644531700e-5, -4.9217728385458495e-5, -1.8578234189053723e-6, 7.4396426162029877e-7, -5.9157528981843864e-9,},
+    {-111.94350527506128, 55.175558131675861, 4.7366115762797613e-1, -4.7701750975398538e-2, -9.2445765329325809e-3, 7.0962838707454917e-4, 1.5140455277814658e-4, -7.7813159018954928e-7, -2.4729402281953378e-6, -1.0898887008726418e-7,},
+    {-2.041452011529441e-1, 55.969995858494106, -1.9295093699770936e-1, -5.6819574830421158e-3, 1.1073687302518981e-2, -9.0868489896815619e-5, -1.1999773777895820e-4, 9.9748697306154409e-6, 5.7911493603430550e-7, -2.3647526839778175e-7,},
+    {111.61366860604471, 56.404525305162447, 4.4403302410703782e-1, 7.1490030578883907e-2, -4.9184559079790816e-3, -1.3912698949042046e-3, -6.8490613661884005e-5, 1.2394328562905297e-6, 1.7719847841480384e-6, 2.4889095220628068e-7,},
+    {228.40683531269390, 60.056143904919826, 2.9583200718478960e-2, -1.5710838319490748e-1, -7.0017356811600801e-3, 3.3009615142224537e-3, 2.0318123852537664e-4, -6.5840216067828310e-5, -5.9077673352976155e-6, 1.3983942185303064e-6,},
+  };
+
+  private static final double owen_oma_coef[][] = new double[][] {
+    {25.541291140949806, 2.377889511272162e-1, -3.7337334723142133e-1, 2.4579295485161534e-2, 4.3840999514263623e-3, -3.1126873333599556e-4, -9.8443045771748915e-6, -7.9403103080496923e-7, 1.0840116743893556e-9, 9.2865105216887919e-9,},
+    {24.429357654237926, -9.5205745947740161e-1, 8.6738296270534816e-2, 3.0061543426062955e-2, -4.1532480523019988e-3, -3.7920928393860939e-4, 3.5117012399609737e-5, 4.6811877283079217e-6, -8.1836046585546861e-8, -6.1803706664211173e-8,},
+    {23.450465062489337, -9.7259278279739817e-2, 1.1082286925130981e-2, -3.1469883339372219e-2, -1.0041906996819648e-4, 5.6455168475133958e-4, -8.4403910211030209e-6, -3.8269157371098435e-6, 3.1422585261198437e-7, 9.3481729116773404e-9,},
+    {22.581778052947806, -8.7069701538602037e-1, -9.8140710050197307e-2, 2.6025931340678079e-2, 4.8165322168786755e-3, -1.906558772193363e-4, -4.6838759635421777e-5, -1.6608525315998471e-6, -3.2347811293516124e-8, 2.8104728109642000e-9,},
+    {21.518861835737142, 2.0494789509441385e-1, 3.5193604846503161e-1, 1.5305977982348925e-2, -7.5015367726336455e-3, -4.0322553186065610e-4, 1.0655320434844041e-4, 7.1792339586935752e-6, -1.603874697543020e-6, -1.613563462813512e-7,},
+  };
+
+  private static final double owen_chia_coef[][] = new double[][] {
+    {8.2378850337329404e-1, -3.7443109739678667, 4.0143936898854026e-1, 8.1822830214590811e-2, -8.5978790792656293e-3, -2.8350488448426132e-5, -4.2474671728156727e-5, -1.6214840884656678e-6, 7.8560442001953050e-7, -1.032016641696707e-8,},
+    {-2.1726062070318606, 7.8470515033132925e-1, 4.4044931004195718e-1, -8.0671247169971653e-2, -8.9672662444325007e-3, 9.2248978383109719e-4, 1.5143472266372874e-4, -1.6387009056475679e-6, -2.4405558979328144e-6, -1.0148113464009015e-7,},
+    {-4.8518673570735556e-1, 1.0016737299946743e-1, -4.7074888613099918e-1, -5.8604054305076092e-3, 1.4300208240553435e-2, -6.7127991650300028e-5, -1.3703764889645475e-4, 9.0505213684444634e-6, 6.0368690647808607e-7, -2.2135404747652171e-7,},
+    {-2.0950740076326087, -9.4447359463206877e-1, 4.0940512860493755e-1, 1.0261699700263508e-1, -5.3133241571955160e-3, -1.6634631550720911e-3, -5.9477519536647907e-5, 2.9651387319208926e-6, 1.6434499452070584e-6, 2.3720647656961084e-7,},
+    {6.3315163285678715e-1, 3.5241082918420464, 2.1223076605364606e-1, -1.5648122502767368e-1, -9.1964075390801980e-3, 3.3896161239812411e-3, 2.1485178626085787e-4, -6.6261759864793735e-5, -5.9257969712852667e-6, 1.3918759086160525e-6,},
+  };
+
+  private static final double owen_t0s[] = new double[] {
+    -3392455.5, -470455.5, 2451544.5, 5373544.5, 8295544.5, };
+
+  /** get_owen_t0_icof() of swephlib.c: the index of the coefficients; t0 is owen_t0s[icof] */
+  private static int get_owen_icof(double tjd) {
+    int j = 0;
+    for (int i = 1; i < 5; i++) {
+      if (!(tjd < (owen_t0s[i - 1] + owen_t0s[i]) / 2)) {
+        j++;
+      }
+    }
+    return j;
+  }
+
+  /** the Chebyshev polynomials both Owen series are summed over */
+  private static double[] owen_k(double tjd, int icof) {
+    final double k[] = new double[10], tau[] = new double[10];
+    tau[0] = 0;
+    tau[1] = (tjd - owen_t0s[icof]) / 36525.0 / 40.0;
+    for (int i = 2; i <= 9; i++) {
+      tau[i] = tau[1] * tau[i - 1];
+    }
+    k[0] = 1;
+    k[1] = tau[1];
+    k[2] = 2 * tau[2] - 1;
+    k[3] = 4 * tau[3] - 3 * tau[1];
+    k[4] = 8 * tau[4] - 8 * tau[2] + 1;
+    k[5] = 16 * tau[5] - 20 * tau[3] + 5 * tau[1];
+    k[6] = 32 * tau[6] - 48 * tau[4] + 18 * tau[2] - 1;
+    k[7] = 64 * tau[7] - 112 * tau[5] + 56 * tau[3] - 7 * tau[1];
+    k[8] = 128 * tau[8] - 256 * tau[6] + 160 * tau[4] - 32 * tau[2] + 1;
+    k[9] = 256 * tau[9] - 576 * tau[7] + 432 * tau[5] - 120 * tau[3] + 9 * tau[1];
+    return k;
+  }
+
+  /* precession matrix Owen 1990 */
+  private static void owen_pre_matrix(double tjd, double rp[], int iflag) {
+    double eps0, chia = 0, psia = 0, oma = 0;
+    double coseps0, sineps0, coschia, sinchia, cospsia, sinpsia, cosoma, sinoma;
+    final int icof = get_owen_icof(tjd);
+    final double k[] = owen_k(tjd, icof);
+    for (int i = 0; i < 10; i++) {
+      psia += (k[i] * owen_psia_coef[icof][i]);
+      oma  += (k[i] * owen_oma_coef[icof][i]);
+      chia += (k[i] * owen_chia_coef[icof][i]);
+    }
+    if ((iflag & (SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX)) != 0) {
+      /*
+       * In comparison with JPL Horizons we have an almost constant offset
+       * almost constant offset in ecl. longitude of about -0.000019 deg.
+       * We fix this as follows: */
+      psia += -0.000018560;
+    }
+    eps0 = 84381.448 / 3600.0;
+    eps0 *= SwissData.DEGTORAD;
+    psia *= SwissData.DEGTORAD;
+    chia *= SwissData.DEGTORAD;
+    oma *= SwissData.DEGTORAD;
+    coseps0 = SMath.cos(eps0);
+    sineps0 = SMath.sin(eps0);
+    coschia = SMath.cos(chia);
+    sinchia = SMath.sin(chia);
+    cospsia = SMath.cos(psia);
+    sinpsia = SMath.sin(psia);
+    cosoma = SMath.cos(oma);
+    sinoma = SMath.sin(oma);
+    rp[0] = coschia * cospsia + sinchia * cosoma * sinpsia;
+    rp[1] = (-coschia * sinpsia + sinchia * cosoma * cospsia) * coseps0 + sinchia * sinoma * sineps0;
+    rp[2] = (-coschia * sinpsia + sinchia * cosoma * cospsia) * sineps0 - sinchia * sinoma * coseps0;
+    rp[3] = -sinchia * cospsia + coschia * cosoma * sinpsia;
+    rp[4] = (sinchia * sinpsia + coschia * cosoma * cospsia) * coseps0 + coschia * sinoma * sineps0;
+    rp[5] = (sinchia * sinpsia + coschia * cosoma * cospsia) * sineps0 - coschia * sinoma * coseps0;
+    rp[6] = sinoma * sinpsia;
+    rp[7] = sinoma * cospsia * coseps0 - cosoma * sineps0;
+    rp[8] = sinoma * cospsia * sineps0 + cosoma * coseps0;
+  }
+
+  /** the obliquity of Owen 1990 in degrees (named 1986 in swephlib.c) */
+  private static double epsiln_owen_1986(double tjd) {
+    double eps = 0;
+    final int icof = get_owen_icof(tjd);
+    final double k[] = owen_k(tjd, icof);
+    for (int i = 0; i < 10; i++) {
+      eps += (k[i] * owen_eps0_coef[icof][i]);
+    }
+    return eps;
+  }
+
+  /**
+   * JPL Horizons' own method is asked for: always with SEFLG_JPLHOR, with SEFLG_JPLHOR_APPROX
+   * in mode SEMOD_JPLHORA_3 before 20-jan-1962. The same lines open swi_epsiln(),
+   * swi_precess() and calc_nutation() of swephlib.c.
+   */
+  private static boolean is_jplhor(double J, int iflag, int jplhora_model) {
+    return (iflag & SweConst.SEFLG_JPLHOR) != 0
+        || ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0
+            && jplhora_model == SweConst.SEMOD_JPLHORA_3
+            && J <= HORIZONS_TJD0_DPSI_DEPS_IAU1980);
+  }
+
   double swi_epsiln(double J, int iflag) {
     double T, eps;
     double tofs, dofs, t0, t1;
     int prec_model = swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM];
     int prec_model_short = swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM];
-    int jplhor_model = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
     int jplhora_model = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
     if (prec_model == 0) prec_model = SweConst.SEMOD_PREC_DEFAULT;
     if (prec_model_short == 0) prec_model_short = SweConst.SEMOD_PREC_DEFAULT_SHORT;
-    if (jplhor_model == 0) jplhor_model = SweConst.SEMOD_JPLHOR_DEFAULT;
     if (jplhora_model == 0) jplhora_model = SweConst.SEMOD_JPLHORA_DEFAULT;
     T = (J - 2451545.0)/36525.0;
-    if ((iflag & SweConst.SEFLG_JPLHOR) != 0 /*&& INCLUDE_CODE_FOR_DPSI_DEPS_IAU1980*/) {
-      eps = (((1.813e-3*T-5.9e-4)*T-46.8150)*T+84381.448)*SwissData.DEGTORAD/3600;
-    /*} else if ((iflag & SEFLG_JPLHOR_APPROX) && !APPROXIMATE_HORIZONS_ASTRODIENST) {*/
-    } else if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model != SweConst.SEMOD_JPLHORA_1) {
+    if (is_jplhor(J, iflag, jplhora_model)) {
+      if (J > 2378131.5 && J < 2525323.5) { // between 1.1.1799 and 1.1.2202
+        eps = (((1.813e-3*T-5.9e-4)*T-46.8150)*T+84381.448)*SwissData.DEGTORAD/3600;
+      } else {
+        eps = epsiln_owen_1986(J);
+        eps *= SwissData.DEGTORAD;
+      }
+    } else if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model == SweConst.SEMOD_JPLHORA_2) {
       eps = (((1.813e-3*T-5.9e-4)*T-46.8150)*T+84381.448)*SwissData.DEGTORAD/3600;
     } else if (prec_model_short == SweConst.SEMOD_PREC_IAU_1976 && SMath.abs(T) <= PREC_IAU_1976_CTIES ) {
       eps = (((1.813e-3*T-5.9e-4)*T-46.8150)*T+84381.448)*SwissData.DEGTORAD/3600;
@@ -867,25 +1018,30 @@ final class SwissLib {
       eps =  (((((-4.34e-8 * T -5.76e-7) * T +2.0034e-3) * T -1.831e-4) * T -46.836769) * T + 84381.406) * SwissData.DEGTORAD / 3600.0; 
     } else if (prec_model == SweConst.SEMOD_PREC_IAU_2006) {
       eps =  (((((-4.34e-8 * T -5.76e-7) * T +2.0034e-3) * T -1.831e-4) * T -46.836769) * T + 84381.406) * SwissData.DEGTORAD / 3600.0; 
+    } else if (prec_model == SweConst.SEMOD_PREC_NEWCOMB) {
+      double Tn = (J - 2396758.0)/36525.0;
+      eps = (0.0017 * Tn * Tn * Tn - 0.0085 * Tn * Tn - 46.837 * Tn + 84451.68) * SwissData.DEGTORAD / 3600.0;
     } else if (prec_model == SweConst.SEMOD_PREC_BRETAGNON_2003) {
       eps =  ((((((-3e-11 * T - 2.48e-8) * T -5.23e-7) * T +1.99911e-3) * T -1.667e-4) * T -46.836051) * T + 84381.40880) * SwissData.DEGTORAD / 3600.0;/* */
     } else if (prec_model == SweConst.SEMOD_PREC_SIMON_1994) {
       eps =  (((((2.5e-8 * T -5.1e-7) * T +1.9989e-3) * T -1.52e-4) * T -46.80927) * T + 84381.412) * SwissData.DEGTORAD / 3600.0;/* */
     } else if (prec_model == SweConst.SEMOD_PREC_WILLIAMS_1994) {
       eps =  ((((-1.0e-6 * T +2.0e-3) * T -1.74e-4) * T -46.833960) * T + 84381.409) * SwissData.DEGTORAD / 3600.0;/* */
-    } else if (prec_model == SweConst.SEMOD_PREC_LASKAR_1986) {
+    } else if (prec_model == SweConst.SEMOD_PREC_LASKAR_1986 || prec_model == SweConst.SEMOD_PREC_WILL_EPS_LASK) {
       T /= 10.0;
       eps = ((((((((( 2.45e-10*T + 5.79e-9)*T + 2.787e-7)*T
       + 7.12e-7)*T - 3.905e-5)*T - 2.4967e-3)*T
       - 5.138e-3)*T + 1.99925)*T - 0.0155)*T - 468.093)*T
       + 84381.448;
       eps *= SwissData.DEGTORAD/3600.0;
+    } else if (prec_model == SweConst.SEMOD_PREC_OWEN_1990) {
+      eps = epsiln_owen_1986(J);
+      eps *= SwissData.DEGTORAD;
     } else { /* SEMOD_PREC_VONDRAK_2011 */
       double[] ar_eps = new double[1];
       swi_ldp_peps(J, null, ar_eps);
       eps = ar_eps[0];
-      /*if ((iflag & SEFLG_JPLHOR_APPROX) && APPROXIMATE_HORIZONS_ASTRODIENST) {*/
-      if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model == SweConst.SEMOD_JPLHORA_1) {
+      if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model != SweConst.SEMOD_JPLHORA_2) {
         tofs = (J - DCOR_EPS_JPL_TJD0) / 365.25;
         dofs = OFFSET_EPS_JPLHORIZONS;
         if (tofs < 0) {
@@ -1209,20 +1365,15 @@ int pn = 0;
     return(0);
   }
 
-  private int precess_3(double R[], double J, int direction, int prec_meth) {
-    return precess_3(R, 0, J, direction, prec_meth);
-  }
-  private static int precess_3(double R[], int rOffs, double J, int direction, int prec_meth) {
-    double T;
+  private static int precess_3(double R[], int rOffs, double J, int direction, int iflag, int prec_meth) {
     double x[] = new double[3], pmat[] = new double[9];
     int i, j;
     if( J == SwephData.J2000 ) 
       return(0);
-    /* Each precession angle is specified by a polynomial in
-     * T = Julian centuries from J2000.0.  See AA page B18.
-     */
-    T = (J - SwephData.J2000)/36525.0;
-    pre_pmat(J, pmat);
+    if (prec_meth == SweConst.SEMOD_PREC_OWEN_1990)
+      owen_pre_matrix(J, pmat, iflag);
+    else
+      pre_pmat(J, pmat);
     if (direction == -1) {
       for (i = 0, j = 0; i <= 2; i++, j = i * 3) {
         x[i] = R[0+rOffs] *  pmat[j + 0] +
@@ -1260,15 +1411,18 @@ int pn = 0;
     double T = (J - SwephData.J2000)/36525.0;
     int prec_model = swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM];
     int prec_model_short = swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM];
-    int jplhor_model = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
+    int jplhora_model = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
     if (prec_model == 0) prec_model = SweConst.SEMOD_PREC_DEFAULT;
     if (prec_model_short == 0) prec_model_short = SweConst.SEMOD_PREC_DEFAULT_SHORT;
-    if (jplhor_model == 0) jplhor_model = SweConst.SEMOD_JPLHOR_DEFAULT;
+    if (jplhora_model == 0) jplhora_model = SweConst.SEMOD_JPLHORA_DEFAULT;
     /* JPL Horizons uses precession IAU 1976 and nutation IAU 1980 plus
      * some correction to nutation, arriving at extremely high precision */
-    /*if ((iflag & SEFLG_JPLHOR) && (jplhor_model & SEMOD_JPLHOR_DAILY_DATA)) {*/
-    if ((iflag & SweConst.SEFLG_JPLHOR) != 0 /*&& INCLUDE_CODE_FOR_DPSI_DEPS_IAU1980*/) {
-      return precess_1(R, rOffs, J, direction, SweConst.SEMOD_PREC_IAU_1976);
+    if (is_jplhor(J, iflag, jplhora_model)) {
+      if (J > 2378131.5 && J < 2525323.5) { // between 1.1.1799 and 1.1.2202
+        return precess_1(R, rOffs, J, direction, SweConst.SEMOD_PREC_IAU_1976);
+      } else {
+        return precess_3(R, rOffs, J, direction, iflag, SweConst.SEMOD_PREC_OWEN_1990);
+      }
     /* Use IAU 1976 formula for a few centuries.  */
     } else if (prec_model_short == SweConst.SEMOD_PREC_IAU_1976 && SMath.abs(T) <= PREC_IAU_1976_CTIES) {
       return precess_1(R, rOffs, J, direction, SweConst.SEMOD_PREC_IAU_1976);
@@ -1292,8 +1446,12 @@ int pn = 0;
       return precess_2(R, rOffs, J, iflag, direction, SweConst.SEMOD_PREC_LASKAR_1986);
     } else if (prec_model == SweConst.SEMOD_PREC_SIMON_1994) {
       return precess_2(R, rOffs, J, iflag, direction, SweConst.SEMOD_PREC_SIMON_1994);
+    } else if (prec_model == SweConst.SEMOD_PREC_WILLIAMS_1994 || prec_model == SweConst.SEMOD_PREC_WILL_EPS_LASK) {
+      return precess_2(R, rOffs, J, iflag, direction, SweConst.SEMOD_PREC_WILLIAMS_1994);
+    } else if (prec_model == SweConst.SEMOD_PREC_OWEN_1990) {
+      return precess_3(R, rOffs, J, direction, iflag, SweConst.SEMOD_PREC_OWEN_1990);
     } else { /* SEMOD_PREC_VONDRAK_2011 */
-      return precess_3(R, rOffs, J, direction, SweConst.SEMOD_PREC_VONDRAK_2011);
+      return precess_3(R, rOffs, J, direction, iflag, SweConst.SEMOD_PREC_VONDRAK_2011);
     }
   }
 
@@ -1904,38 +2062,94 @@ int pn = 0;
     return a * x * x + b * x + y0;
   }
 
+  /**
+   * calc_nutation_woolard() of swephlib.c: the nutation of Woolard 1953, the one that goes with
+   * the Newcomb precession (SE_SIDBIT_PREC_ORIG). C truncates with (long), 64 bits on LP64; the
+   * Windows DLL's 32-bit long overflows for |t| beyond 162 centuries from 1900, where this and
+   * the DLL part.
+   */
+  private static void calc_nutation_woolard(double J, double nutlo[]) {
+    double ls, ld;       /* sun's mean longitude, moon's mean longitude */
+    double ms, md;       /* sun's mean anomaly, moon's mean anomaly */
+    double nm;           /* longitude of moon's ascending node */
+    double t, t2;        /* number of Julian centuries of 36525 days since Jan 0.5 1900 */
+    double tls, tnm, tld;  /* twice above */
+    double a, b;
+    double dpsi, deps;
+    double mjd = J - SwephData.J1900;
+    t = mjd / 36525.;
+    t2 = t * t;
+    a = 100.0021358 * t;
+    b = 360. * (a - (long) a);
+    ls = 279.697 + .000303 * t2 + b;
+    a = 1336.855231 * t;
+    b = 360. * (a - (long) a);
+    ld = 270.434 - .001133 * t2 + b;
+    a = 99.99736056000026 * t;
+    b = 360. * (a - (long) a);
+    ms = 358.476 - .00015 * t2 + b;
+    a = 13255523.59 * t;
+    b = 360. * (a - (long) a);
+    md = 296.105 + .009192 * t2 + b;
+    a = 5.372616667 * t;
+    b = 360. * (a - (long) a);
+    nm = 259.183 + .002078 * t2 - b;
+    /* convert to radian forms for use with trig functions. */
+    tls = 2 * ls * SwissData.DEGTORAD;
+    nm = nm * SwissData.DEGTORAD;
+    tnm = 2 * nm;
+    ms = ms * SwissData.DEGTORAD;
+    tld = 2 * ld * SwissData.DEGTORAD;
+    md = md * SwissData.DEGTORAD;
+    /* find delta psi and eps, in arcseconds. */
+    dpsi = (-17.2327-.01737*t)*SMath.sin(nm)+(-1.2729-.00013*t)*SMath.sin(tls)
+           +.2088*SMath.sin(tnm)-.2037*SMath.sin(tld)+(.1261-.00031*t)*SMath.sin(ms)
+           +.0675*SMath.sin(md)-(.0497-.00012*t)*SMath.sin(tls+ms)
+           -.0342*SMath.sin(tld-nm)-.0261*SMath.sin(tld+md)+.0214*SMath.sin(tls-ms)
+           -.0149*SMath.sin(tls-tld+md)+.0124*SMath.sin(tls-nm)+.0114*SMath.sin(tld-md);
+    deps = (9.21+.00091*t)*SMath.cos(nm)+(.5522-.00029*t)*SMath.cos(tls)
+           -.0904*SMath.cos(tnm)+.0884*SMath.cos(tld)+.0216*SMath.cos(tls+ms)
+           +.0183*SMath.cos(tld-nm)+.0113*SMath.cos(tld+md)-.0093*SMath.cos(tls-ms)
+           -.0066*SMath.cos(tls-nm);
+    /* convert to radians. */
+    dpsi = dpsi / 3600.0 * SwissData.DEGTORAD;
+    deps = deps / 3600.0 * SwissData.DEGTORAD;
+    nutlo[1] = deps;
+    nutlo[0] = dpsi;
+  }
+
   private int calc_nutation(double J, int iflag, double nutlo[]) {
     int n;
     double dpsi, deps, J2;
     int nut_model = swed.astro_models[SweConst.SE_MODEL_NUT];
-    int jplhor_model = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
     int jplhora_model = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
     if (nut_model == 0) nut_model = SweConst.SEMOD_NUT_DEFAULT;
-    if (jplhor_model == 0) jplhor_model = SweConst.SEMOD_JPLHOR_DEFAULT;
     if (jplhora_model == 0) jplhora_model = SweConst.SEMOD_JPLHORA_DEFAULT;
-    /*if ((iflag & SEFLG_JPLHOR) && (jplhor_model & SEMOD_JPLHOR_DAILY_DATA)) {*/
-    if ((iflag & SweConst.SEFLG_JPLHOR) != 0 /* && INCLUDE_CODE_FOR_DPSI_DEPS_IAU1980*/) {
+    if (is_jplhor(J, iflag, jplhora_model)) {
       swi_nutation_iau1980(J, nutlo);
+      if ((iflag & SweConst.SEFLG_JPLHOR) != 0) {
+        n = (int) (swed.eop_tjd_end - swed.eop_tjd_beg + 0.000001);
+        J2 = J;
+        if (J < swed.eop_tjd_beg_horizons)
+          J2 = swed.eop_tjd_beg_horizons;
+        dpsi = bessel(swed.dpsi, n + 1, J2 - swed.eop_tjd_beg);
+        deps = bessel(swed.deps, n + 1, J2 - swed.eop_tjd_beg);
+        nutlo[0] += dpsi / 3600.0 * SwissData.DEGTORAD;
+        nutlo[1] += deps / 3600.0 * SwissData.DEGTORAD;
+      } else {
+        nutlo[0] += DPSI_IAU1980_TJD0 / 3600.0 * SwissData.DEGTORAD;
+        nutlo[1] += DEPS_IAU1980_TJD0 / 3600.0 * SwissData.DEGTORAD;
+      }
     } else if (nut_model == SweConst.SEMOD_NUT_IAU_1980 || nut_model == SweConst.SEMOD_NUT_IAU_CORR_1987) {
       swi_nutation_iau1980(J, nutlo);
     } else if (nut_model == SweConst.SEMOD_NUT_IAU_2000A || nut_model == SweConst.SEMOD_NUT_IAU_2000B) {
       swi_nutation_iau2000ab(J, nutlo);
-      /*if ((iflag & SEFLG_JPLHOR_APPROX) && FRAME_BIAS_APPROX_HORIZONS) {*/
-      /*if ((iflag & SEFLG_JPLHOR_APPROX) && !APPROXIMATE_HORIZONS_ASTRODIENST) {*/
-      if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model != SweConst.SEMOD_JPLHORA_1) {
+      if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model == SweConst.SEMOD_JPLHORA_2) {
         nutlo[0] += -41.7750 / 3600.0 / 1000.0 * SwissData.DEGTORAD;
         nutlo[1] += -6.8192 / 3600.0 / 1000.0 * SwissData.DEGTORAD;
       }
-    }
-    if ((iflag & SweConst.SEFLG_JPLHOR) != 0 /* && INCLUDE_CODE_FOR_DPSI_DEPS_IAU1980*/) {
-      n = (int) (swed.eop_tjd_end - swed.eop_tjd_beg + 0.000001);
-      J2 = J;
-      if (J < swed.eop_tjd_beg_horizons)
-        J2 = swed.eop_tjd_beg_horizons;
-      dpsi = bessel(swed.dpsi, n + 1, J2 - swed.eop_tjd_beg);
-      deps = bessel(swed.deps, n + 1, J2 - swed.eop_tjd_beg);
-      nutlo[0] += dpsi / 3600.0 * SwissData.DEGTORAD;
-      nutlo[1] += deps / 3600.0 * SwissData.DEGTORAD;
+    } else if (nut_model == SweConst.SEMOD_NUT_WOOLARD) {
+      calc_nutation_woolard(J, nutlo);
     }
     return SweConst.OK;
   }
@@ -1956,13 +2170,11 @@ int pn = 0;
     double t0, t1;
     double t = (tjd - DCOR_RA_JPL_TJD0) / 365.25;
     double dofs = OFFSET_JPLHORIZONS;
-    int jplhor_model = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
     int jplhora_model = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
-    if (jplhor_model == 0) jplhor_model = SweConst.SEMOD_JPLHOR_DEFAULT;
     if (jplhora_model == 0) jplhora_model = SweConst.SEMOD_JPLHORA_DEFAULT;
     if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) == 0)
       return;
-    if (jplhora_model != SweConst.SEMOD_JPLHORA_1)
+    if (jplhora_model == SweConst.SEMOD_JPLHORA_2)
       return;
     if (t < 0) {
       t = 0;
@@ -1990,14 +2202,17 @@ int pn = 0;
     double xx[]=new double[6], rb[][]=new double[3][3];
     int i;
     int bias_model = swed.astro_models[SweConst.SE_MODEL_BIAS];
-    int jplhor_model = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
     int jplhora_model = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
     if (bias_model == 0) bias_model = SweConst.SEMOD_BIAS_DEFAULT;
-    if (jplhor_model == 0) jplhor_model = SweConst.SEMOD_JPLHOR_DEFAULT;
     if (jplhora_model == 0) jplhora_model = SweConst.SEMOD_JPLHORA_DEFAULT;
-    /*if (FRAME_BIAS_APPROX_HORIZONS)*/
-    if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model != SweConst.SEMOD_JPLHORA_1)
+    if (bias_model == SweConst.SEMOD_BIAS_NONE)
       return;
+    if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0) {
+      if (jplhora_model == SweConst.SEMOD_JPLHORA_2)
+        return;
+      if (jplhora_model == SweConst.SEMOD_JPLHORA_3 && tjd < DPSI_DEPS_IAU1980_TJD0_HORIZONS)
+        return;
+    }
 /* #if FRAME_BIAS_IAU2006 * frame bias 2006 */
     if (bias_model == SweConst.SEMOD_BIAS_IAU2006) {
       rb[0][0] = +0.99999999999999412;
@@ -2112,7 +2327,7 @@ int pn = 0;
     // (swephlib.c 2.10.03 uses them as is). The 2.01.00 port converted them with RADTODEG a
     // second time, which scrambled the equation of the equinoxes outside 1850-2050: the
     // pure-Java lagna was 8"-240" off swetest there (fixed 2026-11-22).
-    tjd_et = tjd_ut + SweDate.getDeltaT(tjd_ut);
+    tjd_et = tjd_ut + SweDate.swi_deltat_default(swed, tjd_ut);
     t = (tjd_et - SwephData.J2000) / 365250.0;
     t2 = t * t; t3 = t * t2;
     /* mean longitude of earth J2000 */
@@ -2122,7 +2337,7 @@ int pn = 0;
     xs[0] = dlon * SwissData.DEGTORAD; xs[1] = 0; xs[2] = 1;
     /* to mean equator J2000, cartesian */
     xobl[0] = 23.45; xobl[1] = 23.45;
-    xobl[1] = swi_epsiln(SwephData.J2000 + SweDate.getDeltaT(SwephData.J2000), 0) * SwissData.RADTODEG;
+    xobl[1] = swi_epsiln(SwephData.J2000 + SweDate.swi_deltat_default(swed, SwephData.J2000), 0) * SwissData.RADTODEG;
     swi_polcart(xs, xs);
     swi_coortrf(xs, xs, -xobl[1] * SwissData.DEGTORAD);
     /* precess to mean equinox of date */
@@ -2367,9 +2582,7 @@ int pn = 0;
     double secs;          /* Time of day, UT seconds since UT midnight */
     double eqeq, jd, tu, tt, msday, jdrel;
     double gmst, dadd;
-    int prec_model_short = swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM];
     int sidt_model = swed.astro_models[SweConst.SE_MODEL_SIDT];
-    if (prec_model_short == 0) prec_model_short = SweConst.SEMOD_PREC_DEFAULT_SHORT;
     if (sidt_model == 0) sidt_model = SweConst.SEMOD_SIDT_DEFAULT;
     if (true && sidt_model == SweConst.SEMOD_SIDT_LONGTERM) {
       if (tjd <= SIDT_LTERM_T0 || tjd >= SIDT_LTERM_T1) {
@@ -2403,21 +2616,22 @@ int pn = 0;
       /*  ERA-based expression for for Greenwich Sidereal Time (GST) based
        *  on the IAU 2006 precession */
       jdrel = tjd - SwephData.J2000;
-      tt = (tjd + SweDate.getDeltaT(tjd) - SwephData.J2000) / 36525.0;
+      tt = (tjd + SweDate.swi_deltat_default(swed, tjd) - SwephData.J2000) / 36525.0;
       gmst = swe_degnorm((0.7790572732640 + 1.00273781191135448 * jdrel) * 360);
       gmst += (0.014506 + tt * (4612.156534 +  tt * (1.3915817 + tt * (-0.00000044 + tt * (-0.000029956 + tt * -0.0000000368))))) / 3600.0;
       dadd = sidtime_non_polynomial_part(tt);
       gmst = swe_degnorm(gmst + dadd);
       /*printf("gmst iers=%f \n", gmst);*/
       gmst = gmst / 15.0 * 3600.0;
-    /* sidt_model == SEMOD_SIDT_PREC_MODEL, older standards according to precession model */
-    } else if (prec_model_short >= SweConst.SEMOD_PREC_IAU_2006) {
-      tt = (jd0 + SweDate.getDeltaT(jd0) - SwephData.J2000)/36525.0; /* TT in centuries after J2000 */
+    /* sidt_model == SEMOD_SIDT_IAU_2006, older standards according to precession model */
+    } else if (sidt_model == SweConst.SEMOD_SIDT_IAU_2006) {
+      tt = (jd0 + SweDate.swi_deltat_default(swed, jd0) - SwephData.J2000)/36525.0; /* TT in centuries after J2000 */
       gmst = (((-0.000000002454*tt - 0.00000199708)*tt - 0.0000002926)*tt + 0.092772110)*tt*tt + 307.4771013*(tt-tu) + 8640184.79447825*tu + 24110.5493771;
       /* mean solar days per sidereal day at date tu;
        * for the derivative of gmst, we can assume UT1 =~ TT */
       msday = 1 + ((((-0.000000012270*tt - 0.00000798832)*tt - 0.0000008778)*tt + 0.185544220)*tt + 8640184.79447825)/(86400.*36525.);
       gmst += msday * secs;
+    /* SEMOD_SIDT_IAU_1976 */
     } else {  /* IAU 1976 formula */
         /* Greenwich Mean Sidereal Time at 0h UT of date */
       gmst = (( -6.2e-6*tu + 9.3104e-2)*tu + 8640184.812866)*tu + 24110.54841;
@@ -2449,7 +2663,7 @@ int pn = 0;
   public double swe_sidtime(double tjd_ut) {
     int i;
     double eps, nutlo[]=new double[2], tsid;
-    double tjde = tjd_ut + SweDate.getDeltaT(tjd_ut);
+    double tjde = tjd_ut + SweDate.swi_deltat_default(swed, tjd_ut);
     eps = swi_epsiln(tjde, 0) * SwissData.RADTODEG;
     swi_nutation(tjde, 0, nutlo);
     for (i = 0; i < 2; i++)
@@ -2749,11 +2963,13 @@ SweDate sd = new SweDate(jd);
     return E;
   }
 
-// imodel must be an int[20]
+/**
+ * The models as numbers, indexed by SE_MODEL_*; 0 is the default model of a slot. Java port
+ * only; {@link SwissEph#swe_set_astro_models(StringBuilder, int)} is the API of swephexp.h.
+ * The values are copied (until 2026-11-23 the array itself became the engine's).
+ */
 public void swe_set_astro_models(int[] imodel) {
-  //int *pmodel = &(swed.astro_models[0]);
-  //memcpy(pmodel, imodel, SEI_NMODELS * sizeof(int32));
-  swed.astro_models = imodel;
+  System.arraycopy(imodel, 0, swed.astro_models, 0, Math.min(imodel.length, swed.astro_models.length));
 }
 
 

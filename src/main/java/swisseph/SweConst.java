@@ -1056,35 +1056,42 @@ public interface SweConst {
     double SE_TIDAL_SWIEPH = SE_TIDAL_DEFAULT;
     double SE_TIDAL_JPLEPH = SE_TIDAL_DEFAULT;
 
-    int SE_MODEL_PREC_LONGTERM = 0;
-    int SE_MODEL_PREC_SHORTTERM = 1;
-    int SE_MODEL_NUT = 2;
-    int SE_MODEL_SIDT = 3;
+    /*
+     * Astronomical models for swe_set_astro_models(), numbered as in swephexp.h of Swiss
+     * Ephemeris 2.10.03. Until 2026-11-23 the port had the numbering of an older release (the
+     * slots too: SE_MODEL_PREC_LONGTERM was 0, SE_MODEL_DELTAT 7), so the same list selected
+     * different models in the two engines. SEMOD_SIDT_PREC_MODEL, SEMOD_JPLHOR_EXTENDED_1800
+     * and SEMOD_JPLHOR_NOT_EXTENDED do not exist in 2.10.03 and are gone.
+     */
+    int SE_MODEL_DELTAT = 0;
+    int SE_MODEL_PREC_LONGTERM = 1;
+    int SE_MODEL_PREC_SHORTTERM = 2;
+    int SE_MODEL_NUT = 3;
     int SE_MODEL_BIAS = 4;
     int SE_MODEL_JPLHOR_MODE = 5;
     int SE_MODEL_JPLHORA_MODE = 6;
-    int SE_MODEL_DELTAT = 7;
+    int SE_MODEL_SIDT = 7;
+    int NSE_MODELS = 8;
 
     /* precession models */
+    int SEMOD_NPREC = 11;
     int SEMOD_PREC_IAU_1976 = 1;
-    int SEMOD_PREC_IAU_2000 = 2;
-    int SEMOD_PREC_IAU_2006 = 3;
-    int SEMOD_PREC_BRETAGNON_2003 = 4;
-    int SEMOD_PREC_LASKAR_1986 = 5;
-    int SEMOD_PREC_SIMON_1994 = 6;
-    int SEMOD_PREC_WILLIAMS_1994 = 7;
-    int SEMOD_PREC_VONDRAK_2011 = 8;
-    /** Newcomb (Kinoshita 1975). Same number as in swephexp.h, where the models above are
-     * numbered differently (an older port); used by the ayanamsa precession correction, which
-     * needs the precession model an ayanamsa was defined with (sweph.h, aya_init.prec_offset). */
+    int SEMOD_PREC_LASKAR_1986 = 2;
+    int SEMOD_PREC_WILL_EPS_LASK = 3;
+    int SEMOD_PREC_WILLIAMS_1994 = 4;
+    int SEMOD_PREC_SIMON_1994 = 5;
+    int SEMOD_PREC_IAU_2000 = 6;
+    int SEMOD_PREC_BRETAGNON_2003 = 7;
+    int SEMOD_PREC_IAU_2006 = 8;
+    int SEMOD_PREC_VONDRAK_2011 = 9;
+    int SEMOD_PREC_OWEN_1990 = 10;
+    /** Newcomb (Kinoshita 1975) */
     int SEMOD_PREC_NEWCOMB = 11;
     int SEMOD_PREC_DEFAULT = SEMOD_PREC_VONDRAK_2011;
-    /* former implementations of the used
-     * IAU 1976, 2000 and 2006 for a limited time range
-     * in combination with a different model for
-     * long term precession.
-    #define SEMOD_PREC_DEFAULT_SHORT SEMOD_PREC_IAU_2000
-     */
+    /* SE versions before 1.70 used IAU 1976 for a limited time range of 2 centuries around
+     * J2000 combined with the long-term formula Laskar 1986; versions 1.70 - 1.79 used IAU
+     * 1976, 2000 and 2006 for a limited time range in combination with a different model for
+     * long term precession. */
     int SEMOD_PREC_DEFAULT_SHORT = SEMOD_PREC_VONDRAK_2011;
 
     /* nutation models */
@@ -1099,64 +1106,59 @@ public interface SweConst {
 
     /* methods for sidereal time */
     int SEMOD_NSIDT = 4;
-    int SEMOD_SIDT_LONGTERM = 1;
-    int SEMOD_SIDT_IERS_CONV_2010 = 2;
-    int SEMOD_SIDT_PREC_MODEL = 3;
+    int SEMOD_SIDT_IAU_1976 = 1;
+    int SEMOD_SIDT_IAU_2006 = 2;
+    int SEMOD_SIDT_IERS_CONV_2010 = 3;
+    int SEMOD_SIDT_LONGTERM = 4;
     int SEMOD_SIDT_DEFAULT = SEMOD_SIDT_LONGTERM;
 
     /* frame bias methods */
     int SEMOD_NBIAS = 3;
-    int SEMOD_BIAS_IAU2000 = 1;  /* use frame bias matrix IAU 2000 */
-    int SEMOD_BIAS_IAU2006 = 2;  /* use frame bias matrix IAU 2000 */
+    int SEMOD_BIAS_NONE = 1;     /* ignore frame bias */
+    int SEMOD_BIAS_IAU2000 = 2;  /* use frame bias matrix IAU 2000 */
+    int SEMOD_BIAS_IAU2006 = 3;  /* use frame bias matrix IAU 2006 */
     int SEMOD_BIAS_DEFAULT = SEMOD_BIAS_IAU2006;
 
     /* methods of JPL Horizons (iflag & SEFLG_JPLHOR),
      * using daily dpsi, deps;  see explanations below */
-    int SEMOD_JPLHOR_EXTENDED_1800 = 1;  /* daily dpsi and deps from file are
+    int SEMOD_NJPLHOR = 2;
+    int SEMOD_JPLHOR_LONG_AGREEMENT = 1;  /* daily dpsi and deps from file are
      * limited to 1962 - today. JPL uses the
      * first and last value for all  dates
      * beyond this time range. */
-    int SEMOD_JPLHOR_NOT_EXTENDED = 2;  /* outside the available time range
-     * 1962 - today default to SEFLG_JPLHOR_APROX */
-    int SEMOD_JPLHOR_DEFAULT = SEMOD_JPLHOR_EXTENDED_1800;
-    /* SEMOD_JPLHOR_EXTENDED_1800, if combined with SEFLG_JPLHOR provides good
-     * agreement with JPL Horizons for 1800 - today. However, Horizons uses
-     * correct dpsi and deps only after 20-jan-1962. For all dates before that
-     * it uses dpsi and deps of 20-jan-1962, which provides a continuous
-     * ephemeris, but does not make sense otherwise.
-     * Before 1800, even this option does not provide agreement with Horizons,
-     * because Horizons uses a different precession model (Owen 1986)
-     * before 1800, which is not included in the Swiss Ephemeris.
-     * SEMOD_JPLHOR_NOT_EXTENDED causes the program to default to SEFLG_JPLHOR_APPROX,
-     * if the date is outside the time range 1962 - today, where values
-     * for dpsi and deps are given.
-     * Note that this will result in a non-continuous ephemeris near
-     * 20-jan-1962 and current years.
-     */
+    int SEMOD_JPLHOR_DEFAULT = SEMOD_JPLHOR_LONG_AGREEMENT;
+    /* Currently the only option for SEMOD_JPLHOR. Combined with SEFLG_JPLHOR it agrees with
+     * JPL Horizons from 9998 BC (-9997) until 9999 CE:
+     * - after 20-jan-1962 until today, Horizons uses correct dpsi and deps;
+     * - for dates before that, it uses dpsi and deps of 20-jan-1962, which provides a
+     *   continuous ephemeris, but does not make sense otherwise;
+     * - before 1.1.1799 and after 1.1.2202, the precession model Owen 1990 is used, as in
+     *   Horizons. */
 
     /* methods of approximation of JPL Horizons (iflag & SEFLG_JPLHORA),
      * without dpsi, deps; see explanations below */
+    int SEMOD_NJPLHORA = 3;
     int SEMOD_JPLHORA_1 = 1;
     int SEMOD_JPLHORA_2 = 2;
-    int SEMOD_JPLHORA_DEFAULT = SEMOD_JPLHORA_1;
-
+    int SEMOD_JPLHORA_3 = 3;
+    int SEMOD_JPLHORA_DEFAULT = SEMOD_JPLHORA_3;
     /* With SEMOD_JPLHORA_1, planetary positions are always calculated
      * using a recent precession/nutation model. Frame bias matrix is applied
-     * with some correction to RA and another correction is added to epsilon.
+     * with some correction to RA and another correction added to epsilon.
      * This provides a very good approximation of JPL Horizons positions.
-     * With SEMOD_JPLHORA_2, frame bias as r$ecommended by IERS Conventions 2003
+     *
+     * With SEMOD_JPLHORA_2, frame bias as recommended by IERS Conventions 2003
      * and 2010 is *not* applied. Instead, dpsi_bias and deps_bias are added to
      * nutation. This procedure is found in some older astronomical software.
      * Equatorial apparent positions will be close to JPL Horizons
-     * (within a few mas) beetween 1962 and current years. Ecl. longitude
+     * (within a few mas) between 1962 and current years. Ecl. longitude
      * will be good, latitude bad.
-     */
+     *
+     * With SEMOD_JPLHORA_3 (the default), as SEMOD_JPLHORA_1 after 20-jan-1962; before, the
+     * precession IAU 1976 (Owen 1990 before 1799) and the nutation IAU 1980 with the dpsi and
+     * deps of 20-jan-1962, without frame bias, as Horizons does. */
 
-    /*
-     * Renumbered to match swephexp.h of Swiss Ephemeris 2.10.03. The port used to number
-     * these 1 and 2 while the native library used 4 and 3, so the same value passed to
-     * swe_set_astro_models() selected different models in the two engines.
-     */
+    /* delta t models */
     int SEMOD_NDELTAT = 5;
     int SEMOD_DELTAT_STEPHENSON_MORRISON_1984 = 1;
     int SEMOD_DELTAT_STEPHENSON_1997 = 2;

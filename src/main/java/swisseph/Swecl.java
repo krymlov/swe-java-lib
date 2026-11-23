@@ -3053,7 +3053,7 @@ final class Swecl {
       xra[i] = xin[i];
     xra[2] = 1;
     if (calc_flag == SweConst.SE_ECL2HOR) {
-          tjd_et = tjd_ut + SweDate.getDeltaT(tjd_ut);
+          tjd_et = tjd_ut + sw.swe_deltat_ex(tjd_ut, -1, null);
       sw.swe_calc(tjd_et, SweConst.SE_ECL_NUT, 0, x, null);
       eps_true = x[0];
           sl.swe_cotrans(xra, 0, xra, 0, -eps_true);
@@ -3129,7 +3129,7 @@ final class Swecl {
     xout[1] = xaz[1];
     /* ecliptic positions */
     if (calc_flag == SweConst.SE_HOR2ECL) {
-      tjd_et = tjd_ut + SweDate.getDeltaT(tjd_ut);
+      tjd_et = tjd_ut + sw.swe_deltat_ex(tjd_ut, -1, null);
       sw.swe_calc(tjd_et, SweConst.SE_ECL_NUT, 0, x, null);
       eps_true = x[0];
       sl.swe_cotrans(xaz, 0, x, 0, eps_true);

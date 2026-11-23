@@ -292,28 +292,34 @@ public class ApiCoverageTest extends AbstractTest {
                 "but only by the nutation amplitude");
     }
 
+    /**
+     * swephlib.c's contract: samod is input only, the models show in the report, a model equal
+     * to its slot's default shows as 0 there.
+     */
     @Test
     void astroModelsRoundTrip() {
-        StringBuilder models = new StringBuilder();
-        getSwissEph().swe_get_astro_models(models, new StringBuilder(), 0);
-        String before = models.toString();
-        assertTrue(before.contains(","), "a comma separated list: " + before);
+        try {
+            StringBuilder models = new StringBuilder();
+            StringBuilder detail = new StringBuilder();
+            getSwissEph().swe_get_astro_models(models, detail, 0);
+            assertEquals("", models.toString(), "samod is never written back");
+            assertTrue(detail.toString().contains("-amod0,0,0,0,0,0,0,0,"), detail.toString());
 
-        // ask for the delta t model explicitly and read it back. The slot is
-        // SE_MODEL_DELTAT, so the field list is built by index rather than by counting commas
-        StringBuilder set = new StringBuilder();
-        for (int i = 0; i <= SweConst.SE_MODEL_DELTAT; i++) {
-            if (i > 0) set.append(',');
-            if (i == SweConst.SE_MODEL_DELTAT) set.append(SweConst.SEMOD_DELTAT_STEPHENSON_ETC_2016);
+            // the delta t model of SE 1.00 in slot SE_MODEL_DELTAT, nothing else
+            StringBuilder set = new StringBuilder();
+            for (int i = 0; i < SweConst.NSE_MODELS; i++) {
+                if (i > 0) set.append(',');
+                set.append(i == SweConst.SE_MODEL_DELTAT ? SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_1984 : 0);
+            }
+            getSwissEph().swe_set_astro_models(set, 0);
+            StringBuilder after = new StringBuilder("1");
+            getSwissEph().swe_get_astro_models(after, detail, 0);
+            assertTrue(detail.toString().contains("Delta T (long-term): Stephenson/Morrison 1984 (before 1600)\n"),
+                    detail.toString());
+            assertTrue(detail.toString().contains("-amod1,0,0,0,0,0,0,0,"), detail.toString());
+        } finally {
+            getSwissEph().swe_set_astro_models(new StringBuilder(), 0);
         }
-        getSwissEph().swe_set_astro_models(set, 0);
-
-        StringBuilder after = new StringBuilder();
-        StringBuilder detail = new StringBuilder();
-        getSwissEph().swe_get_astro_models(after, detail, 0);
-        assertEquals(SweConst.SEMOD_DELTAT_STEPHENSON_ETC_2016,
-                Integer.parseInt(after.toString().split(",")[SweConst.SE_MODEL_DELTAT]));
-        assertTrue(detail.toString().contains("delta t"), detail.toString());
     }
 
     @Test

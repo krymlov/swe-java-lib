@@ -1053,7 +1053,7 @@ public class SweDate implements Serializable {
       setGlobalTidalAcc(sw, tjd, epheflag, denum);  /* _set_ saves tid_acc in swed */
       tid_acc = TID_ACC;
     }
-    return calc_deltat(sw, tjd, tid_acc);
+    return calc_deltat(sw.swed, tjd, tid_acc);
   }
 
   /**
@@ -1427,6 +1427,65 @@ public class SweDate implements Serializable {
   /* 1000  1100  1200  1300  1400  1500  1600,                 */
      1570, 1090,  740,  490,  320,  200,  120,
   };
+  /* Table for -500 through 1600, from Stephenson (1997), the delta t model of SE 1.64 - 1.71 */
+  private static final int TAB97_SIZ   = 43;
+  private static final int TAB97_START = -500;
+  private static final int TAB97_END   = 1600;
+  private static final int TAB97_STEP  = 50;
+  private static final short dt97[] = new short[] {
+  /* -500  -450  -400  -350  -300  -250  -200  -150  -100   -50*/
+    16800,16000,15300,14600,14000,13400,12800,12200,11600,11100,
+  /*    0    50   100   150   200   250   300   350   400   450*/
+    10600,10100, 9600, 9100, 8600, 8200, 7700, 7200, 6700, 6200,
+  /*  500   550   600   650   700   750   800   850   900   950*/
+     5700, 5200, 4700, 4300, 3800, 3400, 3000, 2600, 2200, 1900,
+  /* 1000  1050  1100  1150  1200  1250  1300  1350  1400  1450*/
+     1600, 1350, 1100,  900,  750,  600,  470,  380,  300,  230,
+  /* 1500  1550  1600 */
+      180,  140,  110,
+  };
+
+  /** deltat_stephenson_morrison_1997_1600() of swephlib.c 2.10.03 */
+  private static double deltat_stephenson_morrison_1997_1600(double tjd, double tid_acc) {
+    double ans = 0, ans2, ans3;
+    double p, B, Y, dd;
+    int iy;
+    Y = 2000.0 + (tjd - SwephData.J2000)/365.25;
+    /* before -500:
+     * formula by Stephenson (1997; p. 508) but adjusted to fit the starting
+     * point of table dt97 (Stephenson 1997). */
+    if (Y < TAB97_START) {
+      B = (Y - 1735) * 0.01;
+      ans = -20 + 35 * B * B;
+      ans = adjust_for_tidacc(ans, Y, tid_acc);
+      /* transition from formula to table over 100 years */
+      if (Y >= TAB97_START - 100) {
+        /* starting value of table dt97: */
+        ans2 = adjust_for_tidacc(dt97[0], TAB97_START, tid_acc);
+        /* value of formula at epoch TAB97_START */
+        B = (TAB97_START - 1735) * 0.01;
+        ans3 = -20 + 35 * B * B;
+        ans3 = adjust_for_tidacc(ans3, Y, tid_acc);
+        dd = ans3 - ans2;
+        B = (Y - (TAB97_START - 100)) * 0.01;
+        /* fit to starting point of table dt97. */
+        ans = ans - dd * B;
+      }
+    }
+    /* between -500 and 1600:
+     * linear interpolation between values of table dt97 (Stephenson 1997) */
+    if (Y >= TAB97_START && Y < TAB2_END) {
+      p = SMath.floor(Y);
+      iy = (int) ((p - TAB97_START) / 50.0);
+      dd = (Y - (TAB97_START + 50 * iy)) / 50.0;
+      ans = dt97[iy] + (dt97[iy+1] - dt97[iy]) * dd;
+      /* correction for tidal acceleration used by our ephemeris */
+      ans = adjust_for_tidacc(ans, Y, tid_acc);
+    }
+    ans /= 86400.0;
+    return ans;
+  }
+
   /* returns DeltaT (ET - UT) in days
    * double tjd 	= 	julian day in UT
    */
@@ -1435,12 +1494,26 @@ public class SweDate implements Serializable {
     return swe_deltat_ex(getSwissEph(), tjd, -1, null);
   }
 
+  /**
+  * Delta t in days for the engine whose data swed is, with the default tidal acceleration (or
+  * the one set with swe_set_tid_acc()): <code>swe_deltat_ex(tjd, -1, NULL)</code>, as
+  * swephlib.c and swedate.c take it for the sidereal time and the UTC conversions. Unlike
+  * {@link #getDeltaT(double)} it follows that engine's delta t model, not the first SwissEph's.
+  */
+  static double swi_deltat_default(final SwissData swed, double tjd) {
+    final double userDeltaT = USER_DELTA_T.get();
+    if (userDeltaT != SweConst.SE_DELTAT_AUTOMATIC) {
+      return userDeltaT;
+    }
+    return calc_deltat(swed, tjd, swi_get_tid_acc(null, tjd, 0, 9999));
+  }
+
   /** calc_deltat() of swephlib.c 2.10.03, with the tidal acceleration already chosen */
-  private static double calc_deltat(final SwissEph sw, double tjd, double tid_acc) {
+  private static double calc_deltat(final SwissData swed, double tjd, double tid_acc) {
     double ans = 0;
     double B, Y, Ygreg, dd;
     int iy;
-    int deltat_model = sw.swed.astro_models[SweConst.SE_MODEL_DELTAT];
+    int deltat_model = swed.astro_models[SweConst.SE_MODEL_DELTAT];
     if (deltat_model == 0) deltat_model = SweConst.SEMOD_DELTAT_DEFAULT;
     /* read additional values from swedelta.txt */
     /*AS_BOOL use_espenak_meeus = DELTAT_ESPENAK_MEEUS_2006;*/
@@ -1468,39 +1541,75 @@ public class SweDate implements Serializable {
     if (deltat_model == SweConst.SEMOD_DELTAT_ESPENAK_MEEUS_2006 && tjd < 2317746.13090277789) {
       return deltat_espenak_meeus_1620(tjd, tid_acc);
     }
-    /* If the macro DELTAT_ESPENAK_MEEUS_2006 is FALSE:
-     * Before 1620, we follow Stephenson & Morrsion 2004. For the tabulated 
-     * values 1000 BC through 1600 AD, we use linear interpolation.
-     */
-    if (Y < TABSTART) {
+    /* delta t model used in SE 1.72 - 1.76:
+     * Stephenson & Morrison 2004;
+     * before 1620 */
+    if (deltat_model == SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_2004 && Y < TABSTART) {
+      // before 1600:
       if (Y < TAB2_END) {
         return deltat_stephenson_morrison_1600(tjd, tid_acc);
       } else {
         /* between 1600 and 1620:
-         * linear interpolation between 
+         * linear interpolation between
          * end of table dt2 and start of table dt */
-        if (Y >= TAB2_END) { 
-	  B = TABSTART - TAB2_END;
-	  iy = (TAB2_END - TAB2_START) / TAB2_STEP;
-	  dd = (Y - TAB2_END) / B;
-	  /*ans = dt2[iy] + dd * (dt[0] / 100.0 - dt2[iy]);*/
-	  ans = dt2[iy] + dd * (dt[0] - dt2[iy]);
-	  ans = adjust_for_tidacc(ans, Ygreg, tid_acc);
-	  return ans / 86400.0;
+        if (Y >= TAB2_END) {
+          B = TABSTART - TAB2_END;
+          iy = (TAB2_END - TAB2_START) / TAB2_STEP;
+          dd = (Y - TAB2_END) / B;
+          ans = dt2[iy] + dd * (dt[0] - dt2[iy]);
+          ans = adjust_for_tidacc(ans, Ygreg, tid_acc);
+          return ans / 86400.0;
         }
       }
+    }
+    /* delta t model used in SE 1.64 - 1.71:
+     * Stephenson 1997;
+     * before 1620 */
+    if (deltat_model == SweConst.SEMOD_DELTAT_STEPHENSON_1997 && Y < TABSTART) {
+      // before 1600:
+      if (Y < TAB97_END) {
+        return deltat_stephenson_morrison_1997_1600(tjd, tid_acc);
+      } else {
+        /* between 1600 and 1620:
+         * linear interpolation between
+         * end of table dt97 and start of table dt */
+        if (Y >= TAB97_END) {
+          B = TABSTART - TAB97_END;
+          iy = (TAB97_END - TAB97_START) / TAB97_STEP;
+          dd = (Y - TAB97_END) / B;
+          ans = dt97[iy] + dd * (dt[0] - dt97[iy]);
+          ans = adjust_for_tidacc(ans, Ygreg, tid_acc);
+          return ans / 86400.0;
+        }
+      }
+    }
+    /* delta t model used before SE 1.64:
+     * Stephenson/Morrison 1984 with Borkowski 1988;
+     * before 1620 */
+    if (deltat_model == SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_1984 && Y < TABSTART) {
+      if (Y >= 948.0) {
+        /* Stephenson and Morrison, stated domain is 948 to 1600:
+         * 25.5(centuries from 1800)^2 - 1.9159(centuries from 1955)^2 */
+        B = 0.01 * (Y - 2000.0);
+        ans = (23.58 * B + 100.3) * B + 101.6;
+      } else {
+        /* Borkowski, before 948 and between 1600 and 1620 */
+        B = 0.01 * (Y - 2000.0) + 3.75;
+        ans = 35.0 * B * B + 40.;
+      }
+      return ans / 86400.0;
     }
     /* 1620 - today + a few years (tabend):
      * Besselian interpolation from tabulated values in table dt.
      * See AA page K11.
      */
     if (Y >= TABSTART) {
-      return deltat_aa(sw, tjd, tid_acc);
+      return deltat_aa(swed, tjd, tid_acc);
     }
     return ans / 86400.0;
   }
 
-  private static double deltat_aa(final SwissEph sw, double tjd, double tid_acc) {
+  private static double deltat_aa(final SwissData swed, double tjd, double tid_acc) {
     double ans = 0, ans2, ans3;
     double p, B, B2, Y, dd;
     double d[] = new double[6];
@@ -1561,7 +1670,7 @@ public class SweDate implements Serializable {
      * similar to what Meeus 1998 had suggested.
      * Slow transition within 100 years.
      */
-    int deltat_model = sw.swed.astro_models[SweConst.SE_MODEL_DELTAT];
+    int deltat_model = swed.astro_models[SweConst.SE_MODEL_DELTAT];
     if (deltat_model == 0) deltat_model = SweConst.SEMOD_DELTAT_DEFAULT;
     if (deltat_model == SweConst.SEMOD_DELTAT_STEPHENSON_ETC_2016) {
       /* 3rd degree polynomial based on data given by
@@ -2249,7 +2358,7 @@ public class SweDate implements Serializable {
    *   the leap seconds table (or the Swiss Ephemeris version) is not updated
    *   for a long time.
   */
-  public static double[] getJDfromUTC(int iyear,
+  static double[] getJDfromUTC(final SwissData swed, int iyear,
       int imonth,
       int iday,
       int ihour,
@@ -2277,7 +2386,7 @@ public class SweDate implements Serializable {
      */
     if (tjd_ut1 < J1972) {
       dret[1] = swe_julday(iyear, imonth, iday, dhour, gregflag);
-      dret[0] = dret[1] + getDeltaT(dret[1]);
+      dret[0] = dret[1] + swi_deltat_default(swed, dret[1]);
       return dret;
     }
     /*
@@ -2305,10 +2414,10 @@ public class SweDate implements Serializable {
      * input time as UT1, not as UTC. How do we find out?
      * Check, if delta_t - nleap - 32.184 > 0.9
      */
-    d = getDeltaT(tjd_ut1) * 86400.0;
+    d = swi_deltat_default(swed, tjd_ut1) * 86400.0;
     if (d - (double) nleap - 32.184 >= 1.0) {
       dret[1] = tjd_ut1 + dhour / 24.0;
-      dret[0] = dret[1] + getDeltaT(dret[1]);
+      dret[0] = dret[1] + swi_deltat_default(swed, dret[1]);
       return dret;
     }
     /*
@@ -2321,9 +2430,9 @@ public class SweDate implements Serializable {
     /* ET (TT) */
     tjd_et_1972 = J1972 + (32.184 + NLEAP_INIT) / 86400.0;
     tjd_et = tjd_et_1972 + d + ((double) (nleap - NLEAP_INIT)) / 86400.0;
-    d = getDeltaT(tjd_et);
-    tjd_ut1 = tjd_et - getDeltaT(tjd_et - d);
-    tjd_ut1 = tjd_et - getDeltaT(tjd_ut1);
+    d = swi_deltat_default(swed, tjd_et);
+    tjd_ut1 = tjd_et - swi_deltat_default(swed, tjd_et - d);
+    tjd_ut1 = tjd_et - swi_deltat_default(swed, tjd_ut1);
     dret[0] = tjd_et;
     dret[1] = tjd_ut1;
     return dret;
@@ -2363,7 +2472,7 @@ public class SweDate implements Serializable {
    *   the leap seconds table (or the Swiss Ephemeris version) has not been
    *   updated for a long time.
    */
-  public static SDate getUTCfromJDET(double tjd_et, boolean gregflag) {
+  static SDate getUTCfromJDET(final SwissData swed, double tjd_et, boolean gregflag) {
     int i;
     int second_60 = 0;
     int iyear, imonth, iday, ihour, imin, iyear2, imonth2, iday2, nleap, ndat, tabsiz_nleap;
@@ -2372,9 +2481,9 @@ public class SweDate implements Serializable {
      * if tjd_et is before 1 jan 1972 UTC, return UT1
      */
     tjd_et_1972 = J1972 + (32.184 + NLEAP_INIT) / 86400.0;
-    d = getDeltaT(tjd_et);
-    tjd_ut = tjd_et - getDeltaT(tjd_et - d);
-    tjd_ut = tjd_et - getDeltaT(tjd_ut);
+    d = swi_deltat_default(swed, tjd_et);
+    tjd_ut = tjd_et - swi_deltat_default(swed, tjd_et - d);
+    tjd_ut = tjd_et - swi_deltat_default(swed, tjd_ut);
     if (tjd_et < tjd_et_1972) {
 //     swe_revjul(tjd_ut, gregflag, iyear, imonth, iday, &d);
       IDate dt=swe_revjul(tjd_ut, gregflag);
@@ -2411,7 +2520,7 @@ public class SweDate implements Serializable {
       imonth2 = dt.month;
       iday2 = dt.day;
       d = dt.hour;
-      dret = getJDfromUTC(iyear2,imonth2,iday2, 0, 0, 0, SE_GREG_CAL, false);
+      dret = getJDfromUTC(swed, iyear2,imonth2,iday2, 0, 0, 0, SE_GREG_CAL, false);
       d = tjd_et - dret[0];
       if (d >= 0) {
         nleap++;
@@ -2440,8 +2549,8 @@ public class SweDate implements Serializable {
      * input time as UT1, not as UTC. How do we find out?
      * Check, if delta_t - nleap - 32.184 > 0.9
      */
-    d = getDeltaT(tjd_et);
-    d = getDeltaT(tjd_et - d);
+    d = swi_deltat_default(swed, tjd_et);
+    d = swi_deltat_default(swed, tjd_et - d);
     if (d * 86400.0 - (double) (nleap + NLEAP_INIT) - 32.184 >= 1.0) {
 //     swe_revjul(tjd_et - d, SE_GREG_CAL, iyear, imonth, iday, &d);
       dt=swe_revjul(tjd_et - d, SE_GREG_CAL);
@@ -2498,9 +2607,35 @@ public class SweDate implements Serializable {
    *   the leap seconds table (or the Swiss Ephemeris version) has not been
    *   updated for a long time.
    */
+  static SDate getUTCfromJDUT1(final SwissData swed, double tjd_ut, boolean gregflag) {
+    double tjd_et = tjd_ut + swi_deltat_default(swed, tjd_ut);
+    return getUTCfromJDET(swed, tjd_et, gregflag);
+  }
+
+  /**
+  * getJDfromUTC() for the first SwissEph of the JVM: delta t with its delta t model. A
+  * SwissEph converts with its own (swe_utc_to_jd()).
+  */
+  public static double[] getJDfromUTC(int iyear, int imonth, int iday, int ihour, int imin,
+      double dsec, boolean gregflag, boolean checkValidInput) throws SwissephException {
+    return getJDfromUTC(getSwissEph().swed, iyear, imonth, iday, ihour, imin, dsec, gregflag,
+        checkValidInput);
+  }
+
+  /**
+  * getUTCfromJDET() for the first SwissEph of the JVM: delta t with its delta t model. A
+  * SwissEph converts with its own (swe_jdet_to_utc()).
+  */
+  public static SDate getUTCfromJDET(double tjd_et, boolean gregflag) {
+    return getUTCfromJDET(getSwissEph().swed, tjd_et, gregflag);
+  }
+
+  /**
+  * getUTCfromJDUT1() for the first SwissEph of the JVM: delta t with its delta t model. A
+  * SwissEph converts with its own (swe_jdut1_to_utc()).
+  */
   public static SDate getUTCfromJDUT1(double tjd_ut, boolean gregflag) {
-    double tjd_et = tjd_ut + getDeltaT(tjd_ut);
-    return getUTCfromJDET(tjd_et, gregflag);
+    return getUTCfromJDUT1(getSwissEph().swed, tjd_ut, gregflag);
   }
 
   /**

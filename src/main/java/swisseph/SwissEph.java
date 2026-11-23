@@ -1006,8 +1006,7 @@ if(path == null) return;
   public void swe_set_sid_mode(int sid_mode, double t0, double ayan_t0) {
     if (sid_mode < 0)
       sid_mode = 0;
-    // as sweph.c 2.10.03, except the SE_SIDBIT_PREC_ORIG "test feature" (it would also need
-    // the Woolard nutation, which the port does not have)
+    // as sweph.c 2.10.03
     SidData sip = swed.sidd;
     sip.sid_mode = sid_mode;
     if (sid_mode >= SweConst.SE_SIDBITS) {
@@ -1034,6 +1033,18 @@ if(path == null) return;
       sip.t0 = SwephData.ayanamsa[sid_mode].t0;
       sip.ayan_t0 = SwephData.ayanamsa[sid_mode].ayan_t0;
       sip.t0_is_UT = SwephData.ayanamsa[sid_mode].t0_is_UT;
+    }
+    // test feature: ayanamsha using its original precession model
+    if (sid_mode < SweConst.SE_NSIDM_PREDEF && (sip.sid_mode & SweConst.SE_SIDBIT_PREC_ORIG) != 0
+        && SwephData.ayanamsa[sid_mode].prec_offset > 0) {
+      swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM] = SwephData.ayanamsa[sid_mode].prec_offset;
+      swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM] = SwephData.ayanamsa[sid_mode].prec_offset;
+      // add a corresponding nutation model
+      if (SwephData.ayanamsa[sid_mode].prec_offset == SweConst.SEMOD_PREC_NEWCOMB) {
+        swed.astro_models[SweConst.SE_MODEL_NUT] = SweConst.SEMOD_NUT_WOOLARD;
+      } else if (SwephData.ayanamsa[sid_mode].prec_offset == SweConst.SEMOD_PREC_IAU_1976) {
+        swed.astro_models[SweConst.SE_MODEL_NUT] = SweConst.SEMOD_NUT_IAU_1980;
+      }
     }
     swi_force_app_pos_etc();
   }
@@ -5591,9 +5602,9 @@ fname="";
     if (prec_model == SweConst.SEMOD_PREC_VONDRAK_2011) {
       sl.swi_ldp_peps(t, dpre, null);
       sl.swi_ldp_peps(t + 1, dpre2, null);
-      xx[3] += (dpre2[0] - dpre[0]) * fac;
+      xx[3+xOffs] += (dpre2[0] - dpre[0]) * fac;
     } else {
-      xx[3] += (50.290966 + 0.0222226 * tprec) / 3600 / 365.25 * SwissData.DEGTORAD * fac;
+      xx[3+xOffs] += (50.290966 + 0.0222226 * tprec) / 3600 / 365.25 * SwissData.DEGTORAD * fac;
 			  /* formula from Montenbruck, German 1994, p. 18 */
     }
     sl.swi_polcart_sp(xx, xOffs, xx, xOffs);
@@ -7597,29 +7608,24 @@ int refepyOffs;
 
   private int plaus_iflag(int iflag, int ipl, double tjd, StringBuilder serr) {
     int epheflag = 0;
-    int jplhor_model = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
     int jplhora_model = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
-    if (jplhor_model == 0) jplhor_model = SweConst.SEMOD_JPLHOR_DEFAULT;
     if (jplhora_model == 0) jplhora_model = SweConst.SEMOD_JPLHORA_DEFAULT;
     /* either Horizons mode or simplified Horizons mode, not both */
     if ((iflag & SweConst.SEFLG_JPLHOR) != 0)
       iflag &= ~SweConst.SEFLG_JPLHOR_APPROX;
     /* if topocentric bit, turn helio- and barycentric bits off;
-     * also turn JPL Horizons mode off */
+     */
     if ((iflag & SweConst.SEFLG_TOPOCTR)!=0) {
       iflag = iflag & ~(SweConst.SEFLG_HELCTR | SweConst.SEFLG_BARYCTR);
-      iflag = iflag & ~(SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX);
     }
+    /* if barycentric bit, turn heliocentric bit off */
+    if ((iflag & SweConst.SEFLG_BARYCTR)!=0)
+      iflag = iflag & ~(SweConst.SEFLG_HELCTR);
+    if ((iflag & SweConst.SEFLG_HELCTR)!=0)
+      iflag = iflag & ~(SweConst.SEFLG_BARYCTR);
     /* if heliocentric bit, turn aberration and deflection off */
-    if ((iflag & SweConst.SEFLG_HELCTR)!=0) {
-      iflag |= SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL;
-                                              /*iflag |= SEFLG_TRUEPOS;*/
-    }
-    /* same, if barycentric bit */
-    if ((iflag & SweConst.SEFLG_BARYCTR)!=0) {
-      iflag |= SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL;
-                                              /*iflag |= SEFLG_TRUEPOS;*/
-    }
+    if ((iflag & (SweConst.SEFLG_HELCTR|SweConst.SEFLG_BARYCTR))!=0)
+      iflag |= SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL; /*iflag |= SEFLG_TRUEPOS;*/
     /* if no_precession bit is set, set also no_nutation bit */
     if ((iflag & SweConst.SEFLG_J2000)!=0) {
       iflag |= SweConst.SEFLG_NONUT;
@@ -7659,10 +7665,7 @@ int refepyOffs;
       iflag = iflag & ~(SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX);
     /* SEFLG_JPLHOR requires SEFLG_ICRS, if calculated with * precession/nutation IAU 1980 and corrections dpsi, deps */
     if ((iflag & SweConst.SEFLG_JPLHOR) != 0) {
-      if (swed.eop_dpsi_loaded <= 0 
-         || ((tjd < swed.eop_tjd_beg || tjd > swed.eop_tjd_end)
-         && jplhor_model != SweConst.SEMOD_JPLHOR_EXTENDED_1800)) {
-         /*&& !USE_HORIZONS_METHOD_BEFORE_1980)) */
+      if (swed.eop_dpsi_loaded <= 0) {
         if (serr != null) {
 	  switch (swed.eop_dpsi_loaded) {
 	    case 0:
@@ -7689,9 +7692,7 @@ int refepyOffs;
     }
     if ((iflag & SweConst.SEFLG_JPLHOR) != 0)
       iflag |= SweConst.SEFLG_ICRS;
-    /*if ((iflag & SEFLG_JPLHOR_APPROX) && FRAME_BIAS_APPROX_HORIZONS) */
-    /*if ((iflag & SEFLG_JPLHOR_APPROX) && !APPROXIMATE_HORIZONS_ASTRODIENST)*/
-    if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model != SweConst.SEMOD_JPLHORA_1)
+    if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0 && jplhora_model == SweConst.SEMOD_JPLHORA_2)
       iflag |= SweConst.SEFLG_ICRS;
     return iflag;
   }
@@ -8602,7 +8603,7 @@ int refepyOffs;
     public ISweJulianDate swe_utc_to_jd(int year, int month, int day,
                                         int hour, int min, double dsec,
                                         int gregflag, StringBuilder serr) {
-        final double[] dret = SweDate.getJDfromUTC(year, month, 
+        final double[] dret = SweDate.getJDfromUTC(swed, year, month, 
             day, hour, min, dsec, gregflag == SE_GREG_CAL, false);
 
         // dret[0] = Julian day number TT (ET)
@@ -8614,7 +8615,7 @@ int refepyOffs;
 
     @Override
     public ISweJulianDate swe_jdet_to_utc(double tjd_et, int gregflag) {
-        final SDate outsd = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);
+        final SDate outsd = SweDate.getUTCfromJDET(swed, tjd_et, gregflag == SE_GREG_CAL);
         SweJulianDate julianDate = new SweJulianDate(tjd_et, outsd.date(), outsd.hour());
         julianDate.localTime(outsd.hour());
         return julianDate;
@@ -8622,7 +8623,7 @@ int refepyOffs;
     
     @Override
     public ISweJulianDate swe_jdut1_to_utc(double tjd_ut, int gregflag) {
-        final SDate outsd = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);
+        final SDate outsd = SweDate.getUTCfromJDUT1(swed, tjd_ut, gregflag == SE_GREG_CAL);
         SweJulianDate julianDate = new SweJulianDate(tjd_ut, outsd.date(), outsd.hour());
         julianDate.localTime(outsd.hour());
         return julianDate;
@@ -8664,7 +8665,7 @@ int refepyOffs;
   @Override
   public int swe_utc_to_jd(int iyear, int imonth, int iday, int ihour, int imin, double dsec,
                            int gregflag, double[] dret, StringBuilder serr) {
-    final double[] jd = SweDate.getJDfromUTC(iyear, imonth, iday, ihour, imin, dsec,
+    final double[] jd = SweDate.getJDfromUTC(swed, iyear, imonth, iday, ihour, imin, dsec,
         gregflag == SE_GREG_CAL, false);
     if (null != dret) {
       // dret[0] = julian day in TT (ET), dret[1] = julian day in UT1
@@ -8676,13 +8677,13 @@ int refepyOffs;
 
   @Override
   public void swe_jdet_to_utc(double tjd_et, int gregflag, int[] iYearMonthDayHourMin, double[] dsec) {
-    final SDate sd = SweDate.getUTCfromJDET(tjd_et, gregflag == SE_GREG_CAL);
+    final SDate sd = SweDate.getUTCfromJDET(swed, tjd_et, gregflag == SE_GREG_CAL);
     copyUtcOut(sd, iYearMonthDayHourMin, dsec);
   }
 
   @Override
   public void swe_jdut1_to_utc(double tjd_ut, int gregflag, int[] iYearMonthDayHourMin, double[] dsec) {
-    final SDate sd = SweDate.getUTCfromJDUT1(tjd_ut, gregflag == SE_GREG_CAL);
+    final SDate sd = SweDate.getUTCfromJDUT1(swed, tjd_ut, gregflag == SE_GREG_CAL);
     copyUtcOut(sd, iYearMonthDayHourMin, dsec);
   }
 
@@ -8927,45 +8928,349 @@ int refepyOffs;
             azi_moon, alt_moon, dret, serr);
   }
 
+  /** the release whose models are the defaults: atof(SE_VERSION) of swephlib.c */
+  private static final String SE_VERSION_OF_MODELS = "2.10.03";
+
+  /** C atoi(): leading blanks, a sign, the digits, anything after them ignored */
+  private static int c_atoi(String s, int from) {
+    int i = from, n = s.length(), sign = 1, v = 0;
+    while (i < n && Character.isWhitespace(s.charAt(i))) i++;
+    if (i < n && (s.charAt(i) == '-' || s.charAt(i) == '+')) {
+      if (s.charAt(i) == '-') sign = -1;
+      i++;
+    }
+    while (i < n && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+      v = v * 10 + (s.charAt(i) - '0');
+      i++;
+    }
+    return sign * v;
+  }
+
+  /**
+  * C atof() as far as a version number needs it: leading blanks, a sign, the digits with at
+  * most one point, anything after them ignored ("2.10.03" is 2.10). SwissLib.atof() throws on a
+  * second point.
+  */
+  private static double c_atof(String s) {
+    int i = 0, n = s.length();
+    while (i < n && Character.isWhitespace(s.charAt(i))) i++;
+    final int start = i;
+    if (i < n && (s.charAt(i) == '-' || s.charAt(i) == '+')) i++;
+    boolean point = false, digit = false;
+    for (; i < n; i++) {
+      final char c = s.charAt(i);
+      if (c >= '0' && c <= '9') digit = true;
+      else if (c == '.' && !point) point = true;
+      else break;
+    }
+    return digit ? Double.parseDouble(s.substring(start, i)) : 0;
+  }
+
+  /** set_astro_models() of swephlib.c: the numbers of a "D,P,P,N,B,J,J,S" list, in order */
+  private void set_astro_models(String samod) {
+    final int[] pmodel = swed.astro_models;
+    int sp = 0, sp2, i = 0;
+    pmodel[0] = c_atoi(samod, sp);
+    i++;
+    while ((sp2 = samod.indexOf(',', sp)) >= 0 && i < SweConst.NSE_MODELS) {
+      sp = sp2 + 1;
+      pmodel[i] = c_atoi(samod, sp);
+      i++;
+    }
+  }
+
+  /**
+   * swe_set_astro_models() of swephlib.c 2.10.03: samod is either the list of model numbers
+   * swetest takes for -amod, one per SE_MODEL_* slot in the order D,P,P,N,B,J,J,S, or "SE" and
+   * a version ("SE2.05.01"), whose models (and tidal acceleration, before 2.01) are then set;
+   * an empty string stands for this release. Until 2026-11-23 the port parsed the list only,
+   * into slots numbered as in an older release, and skipped empty fields where C writes 0.
+   */
   @Override
   public void swe_set_astro_models(StringBuilder samod, int iflag) {
-    // The argument is the comma separated list of model numbers swetest takes for -amod,
-    // one per SE_MODEL_* slot; an empty field leaves that model alone. Same parsing as
-    // swi_set_astro_models() in swephlib.c.
-    if (null == samod) return;
-    final String[] fields = samod.toString().split(",", -1);
-    for (int i = 0; i < fields.length && i < swed.astro_models.length; i++) {
-      final String f = fields[i].trim();
-      if (f.isEmpty()) continue;
-      try {
-        swed.astro_models[i] = Integer.parseInt(f);
-      } catch (NumberFormatException notANumber) {
-        // swephlib.c ignores unparsable fields too
+    swe_set_astro_models(null == samod ? "" : samod.toString(), iflag);
+  }
+
+  private void swe_set_astro_models(String samod, int iflag) {
+    double dversion;
+    if (!samod.isEmpty() && Character.isDigit(samod.charAt(0))) {
+      set_astro_models(samod);
+    } else if (samod.isEmpty() || samod.startsWith("SE")) {
+      final StringBuilder s = new StringBuilder(samod.length() > 20 ? samod.substring(0, 20) : samod);
+      int sp;
+      if (s.length() > 5 && (sp = s.indexOf(".", 5)) >= 0)  // remove second '.' in "SE2.05.01"
+        s.deleteCharAt(sp);
+      if (s.length() > 5 && (sp = s.indexOf("b", 5)) >= 0)  // remove 'b' in "SE2.05.02b04"
+        s.deleteCharAt(sp);
+      dversion = s.length() > 2 ? c_atof(s.substring(2)) : 0;
+      if (dversion == 0)
+        dversion = c_atof(SE_VERSION_OF_MODELS);
+      if (dversion >= 2.06) {
+        set_astro_models("5,9,9,4,3,0,0,4");
+      } else if (dversion >= 2.01) {
+        set_astro_models("4,9,9,4,3,0,0,4");
+      } else if (dversion >= 2.00) {
+        set_astro_models("4,9,9,4,3,0,0,4");
+        if (swi_get_denum(SwephData.SEI_SUN, iflag) == 431)
+          swe_set_tid_acc(SweConst.SE_TIDAL_DE406);
+      } else if (dversion >= 1.80) {
+        set_astro_models("4,9,9,4,3,0,0,1");  /* note sid. time (S)! */
+        swe_set_tid_acc(SweConst.SE_TIDAL_DE406);
+      } else if (dversion >= 1.78) {
+        set_astro_models("4,9,9,4,2,0,0,2");
+        swe_set_tid_acc(SweConst.SE_TIDAL_DE406);
+      } else if (dversion >= 1.77) {
+        set_astro_models("4,8,8,4,2,0,0,2");
+        swe_set_tid_acc(SweConst.SE_TIDAL_DE406);
+      } else if (dversion >= 1.72) {
+        set_astro_models("3,8,8,4,2,0,0,2");
+        swe_set_tid_acc(-25.7376);
+      } else if (dversion >= 1.70) {
+        set_astro_models("2,8,8,4,2,0,0,2");
+        swe_set_tid_acc(-25.7376);
+      } else if (dversion >= 1.64) {
+        set_astro_models("2,3,1,1,1,0,0,1");
+        swe_set_tid_acc(-25.7376);
+      } else {
+        set_astro_models("1,3,1,1,1,0,0,1");
+        swe_set_tid_acc(-25.7376);
       }
     }
   }
 
-  @Override
-  public void swe_get_astro_models(StringBuilder samod, StringBuilder sdet, int iflag) {
-    // samod gets the model numbers in the same comma separated form swe_set_astro_models()
-    // accepts. sdet is the human readable detail; the native library builds a long report
-    // there, this port only names the models it actually consults.
-    if (null != samod) {
-      samod.setLength(0);
-      for (int i = 0; i < swed.astro_models.length; i++) {
-        if (i > 0) samod.append(',');
-        samod.append(swed.astro_models[i]);
+  /* get_*_model() of swephlib.c: the name of a model into s; a number they do not know leaves
+   * s as it was, which in C is whatever the buffer held */
+  private static void get_precession_model(int precmod, int iflag, StringBuilder s) {
+    if (precmod == 0)
+      precmod = SweConst.SEMOD_PREC_DEFAULT;
+    if ((iflag & SweConst.SEFLG_JPLEPH) != 0) {
+      if ((iflag & SweConst.SEFLG_JPLHOR) != 0) {
+        set(s, "IAU 1976 (Lieske) / Owen 1990 before 1799");
+        return;
+      }
+      if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0) {
+        set(s, "Vondrak 2011 / IAU 1976 (Lieske) before 1962 / Owen 1990 before 1799");
+        return;
       }
     }
-    if (null != sdet) {
-      sdet.setLength(0);
-      sdet.append("precession long term: ").append(swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM])
-          .append("\nprecession short term: ").append(swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM])
-          .append("\nnutation: ").append(swed.astro_models[SweConst.SE_MODEL_NUT])
-          .append("\nsidereal time: ").append(swed.astro_models[SweConst.SE_MODEL_SIDT])
-          .append("\ndelta t: ").append(swed.astro_models[SweConst.SE_MODEL_DELTAT])
-          .append("\njpl horizons mode: ").append(swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE])
-          .append("\njpl horizons approx mode: ").append(swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE]);
+    switch (precmod) {
+      case SweConst.SEMOD_PREC_IAU_1976: set(s, "IAU 1976 (Lieske)"); break;
+      case SweConst.SEMOD_PREC_IAU_2000: set(s, "IAU 2000 (Lieske 1976, Mathews 2002)"); break;
+      case SweConst.SEMOD_PREC_IAU_2006: set(s, "IAU 2006 (Capitaine & alii)"); break;
+      case SweConst.SEMOD_PREC_BRETAGNON_2003: set(s, "Bretagnon 2003"); break;
+      case SweConst.SEMOD_PREC_LASKAR_1986: set(s, "Laskar 1986"); break;
+      case SweConst.SEMOD_PREC_SIMON_1994: set(s, "Simon 1994"); break;
+      case SweConst.SEMOD_PREC_WILLIAMS_1994: set(s, "Williams 1994"); break;
+      case SweConst.SEMOD_PREC_WILL_EPS_LASK: set(s, "Williams 1994 / Epsilon Laskar 1986"); break;
+      case SweConst.SEMOD_PREC_OWEN_1990: set(s, "Owen 1990"); break;
+      case SweConst.SEMOD_PREC_NEWCOMB: set(s, "Newcomb 1895"); break;
+      case SweConst.SEMOD_PREC_VONDRAK_2011: set(s, "Vondrák 2011"); break;
+      default: break;
+    }
+  }
+
+  private static void get_deltat_model(int dtmod, StringBuilder s) {
+    if (dtmod == 0)
+      dtmod = SweConst.SEMOD_DELTAT_DEFAULT;
+    switch (dtmod) {
+      case SweConst.SEMOD_DELTAT_ESPENAK_MEEUS_2006: set(s, "Espenak/Meeus 2006 (before 1633)"); break;
+      case SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_2004: set(s, "Stephenson/Morrison 2004 (before 1600)"); break;
+      case SweConst.SEMOD_DELTAT_STEPHENSON_1997: set(s, "Stephenson 1997 (before 1600)"); break;
+      case SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_1984: set(s, "Stephenson/Morrison 1984 (before 1600)"); break;
+      case SweConst.SEMOD_DELTAT_STEPHENSON_ETC_2016: set(s, "Stephenson/Morrison/Hohenkerk 2016 (before 1955)"); break;
+      default: break;
+    }
+  }
+
+  private void get_nutation_model(int nutmod, int iflag, StringBuilder s) {
+    int jplhormod = swed.astro_models[SweConst.SE_MODEL_JPLHOR_MODE];
+    int jplhoramod = swed.astro_models[SweConst.SE_MODEL_JPLHORA_MODE];
+    if (jplhormod == 0)
+      jplhormod = SweConst.SEMOD_JPLHOR_DEFAULT;
+    if (jplhoramod == 0)
+      jplhoramod = SweConst.SEMOD_JPLHORA_DEFAULT;
+    if (nutmod == 0)
+      nutmod = SweConst.SEMOD_NUT_DEFAULT;
+    switch (nutmod) {
+      case SweConst.SEMOD_NUT_WOOLARD: set(s, "Woolard 1953"); break;
+      case SweConst.SEMOD_NUT_IAU_1980: set(s, "IAU 1980 (Wahr)"); break;
+      case SweConst.SEMOD_NUT_IAU_CORR_1987: set(s, "Herring 1986"); break;
+      case SweConst.SEMOD_NUT_IAU_2000A: set(s, "IAU 2000A (Mathews)"); break;
+      case SweConst.SEMOD_NUT_IAU_2000B: set(s, "IAU 2000B (Mathews)"); break;
+      default: break;
+    }
+    if ((iflag & SweConst.SEFLG_JPLEPH) != 0) {
+      if ((iflag & SweConst.SEFLG_JPLHOR) != 0)
+        set(s, "IAU 1980 (Wahr)");
+      if ((iflag & SweConst.SEFLG_JPLHOR) != 0) {
+        s.append("\n+ daily corrections to dpsi/deps 1962-today");
+        if (jplhormod == SweConst.SEMOD_JPLHOR_LONG_AGREEMENT)
+          s.append("\n  good agreement with JPL Horizons between 1800 and today");
+        else
+          s.append("\n  defaults to SEFLG_JPLEPH_APPROX before 1962");
+      } else if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0) {
+        s.append("\n+ some corrections, approximating JPL Horizons");
+        if (jplhoramod == SweConst.SEMOD_JPLHORA_1)
+          s.append(" (SEMOD_JPLHORA_1)");
+        else if (jplhoramod == SweConst.SEMOD_JPLHORA_2)
+          s.append(" (SEMOD_JPLHORA_2)");
+        else
+          s.append(" (SEMOD_JPLHORA_3)");
+      }
+    }
+  }
+
+  private static void get_frame_bias_model(int biasmod, StringBuilder s) {
+    if (biasmod == 0)
+      biasmod = SweConst.SEMOD_BIAS_DEFAULT;
+    switch (biasmod) {
+      case SweConst.SEMOD_BIAS_IAU2000: set(s, "IAU 2000"); break;
+      case SweConst.SEMOD_BIAS_IAU2006: set(s, "IAU 2006"); break;
+      case SweConst.SEMOD_BIAS_NONE: set(s, "none"); break;
+      default: break;
+    }
+  }
+
+  private static void get_sidt_model(int sidtmod, StringBuilder s) {
+    if (sidtmod == 0)
+      sidtmod = SweConst.SEMOD_SIDT_DEFAULT;
+    switch (sidtmod) {
+      case SweConst.SEMOD_SIDT_IAU_1976: set(s, "IAU 1976"); break;
+      case SweConst.SEMOD_SIDT_IAU_2006: set(s, "IAU 2006 (Capitaine 2003)"); break;
+      case SweConst.SEMOD_SIDT_IERS_CONV_2010: set(s, "IERS Convention 2010"); break;
+      case SweConst.SEMOD_SIDT_LONGTERM: set(s, "IERS Convention 2010 + long-term extension by Astrodienst"); break;
+      default: break;
+    }
+  }
+
+  private static void set(StringBuilder s, String text) {
+    s.setLength(0);
+    s.append(text);
+  }
+
+  /**
+   * swe_get_astro_models() of swephlib.c 2.10.03. samod is first passed to
+   * swe_set_astro_models() (a '+' in it also lists every model there is) and is never written
+   * back; sdet gets the report swetest prints for -amod. As through the JNI bridge, a null
+   * samod counts as "", so asking resets the models to those of this release. Until 2026-11-23
+   * the port wrote the raw model numbers into samod and a report of its own into sdet.
+   */
+  @Override
+  public void swe_get_astro_models(StringBuilder samod, StringBuilder sdet, int iflag) {
+    final String samodIn = null == samod ? "" : samod.toString();
+    final int[] pmodel = swed.astro_models;
+    final StringBuilder s = new StringBuilder();
+    final StringBuilder samod0 = new StringBuilder();
+    final boolean list_all_models = samodIn.indexOf('+') >= 0;
+    swe_set_astro_models(samodIn, iflag);
+    for (int i = 0; i < SweConst.NSE_MODELS; i++) {
+      int imod = pmodel[i];
+      switch (i) {
+        case SweConst.SE_MODEL_PREC_LONGTERM: if (imod == SweConst.SEMOD_PREC_DEFAULT) imod = 0; break;
+        case SweConst.SE_MODEL_PREC_SHORTTERM: if (imod == SweConst.SEMOD_PREC_DEFAULT_SHORT) imod = 0; break;
+        case SweConst.SE_MODEL_NUT: if (imod == SweConst.SEMOD_NUT_DEFAULT) imod = 0; break;
+        case SweConst.SE_MODEL_SIDT: if (imod == SweConst.SEMOD_SIDT_DEFAULT) imod = 0; break;
+        case SweConst.SE_MODEL_BIAS: if (imod == SweConst.SEMOD_BIAS_DEFAULT) imod = 0; break;
+        case SweConst.SE_MODEL_JPLHOR_MODE: if (imod == SweConst.SEMOD_JPLHOR_DEFAULT) imod = 0; break;
+        case SweConst.SE_MODEL_JPLHORA_MODE: if (imod == SweConst.SEMOD_JPLHORA_DEFAULT) imod = 0; break;
+        case SweConst.SE_MODEL_DELTAT: if (imod == SweConst.SEMOD_DELTAT_DEFAULT) imod = 0; break;
+        default: break;
+      }
+      samod0.append(imod).append(',');
+    }
+    if (null == sdet) return;
+    sdet.setLength(0);
+    /* JPL ephemeris number and tidal acceleration used with it */
+    sdet.append(String.format(java.util.Locale.ROOT, "JPL eph. %d; tidal acc. Moon used by SE: %.4f\n",
+        swi_get_denum(SwephData.SEI_SUN, iflag), swe_get_tid_acc()));
+    if ((iflag & SweConst.SEFLG_JPLEPH) != 0) {
+      if ((iflag & SweConst.SEFLG_JPLHOR) != 0)
+        sdet.append("JPL Horizons method:\n");
+      if ((iflag & SweConst.SEFLG_JPLHOR_APPROX) != 0)
+        sdet.append("JPL Horizons method (approximation):\n");
+    } else if ((iflag & SweConst.SEFLG_SWIEPH) != 0) {
+      sdet.append("Swiss Ephemeris compressed files sepl*/semo*\n");
+    } else {
+      sdet.append("Moshier semi-analytical approximation\n");
+    }
+    /* long-term Delta T calculation */
+    get_deltat_model(pmodel[SweConst.SE_MODEL_DELTAT], s);
+    sdet.append("Delta T (long-term): ").append(s).append('\n');
+    /* precession model */
+    get_precession_model(pmodel[SweConst.SE_MODEL_PREC_LONGTERM], iflag, s);
+    sdet.append("Precession: ").append(s).append('\n');
+    if (pmodel[SweConst.SE_MODEL_PREC_LONGTERM] != pmodel[SweConst.SE_MODEL_PREC_SHORTTERM]
+        && (iflag & (SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX)) == 0) {
+      get_precession_model(pmodel[SweConst.SE_MODEL_PREC_SHORTTERM], iflag, s);
+      sdet.append("+ short-term model: ").append(s).append('\n');
+    }
+    /* nutation */
+    get_nutation_model(pmodel[SweConst.SE_MODEL_NUT], iflag, s);
+    sdet.append("Nutation: ").append(s).append('\n');
+    /* frame bias */
+    get_frame_bias_model(pmodel[SweConst.SE_MODEL_BIAS], s);
+    sdet.append("Frame bias: ").append(s).append('\n');
+    /* sidereal time */
+    get_sidt_model(pmodel[SweConst.SE_MODEL_SIDT], s);
+    sdet.append("Sid. time: ").append(s).append('\n');
+    /* swetest parameters */
+    sdet.append("swetest parameters:      D P P N B J J S\n");
+    sdet.append("                    -amod").append(samod0);
+    sdet.append(String.format(java.util.Locale.ROOT, " -tidacc%f", swe_get_tid_acc()));
+    sdet.append('\n');
+    /* list all available astronomical models */
+    if (!list_all_models) {
+      sdet.append("For list of all available astronomical models, add a '+' to the version string\n(swetest parameter -amod")
+          .append(samodIn).append("+ or -amod").append(samod0).append("+)\n");
+    } else {
+      sdet.append("DELTA T MODELS (D)\n");
+      for (int i = 0; i <= SweConst.SEMOD_NDELTAT; i++) {
+        if (i == SweConst.SEMOD_DELTAT_DEFAULT) continue;
+        sdet.append("  (").append(i).append(')');
+        if (i == 0) sdet.append(" (=").append(SweConst.SEMOD_DELTAT_DEFAULT).append(')');
+        get_deltat_model(i, s);
+        sdet.append(": ").append(s).append('\n');
+      }
+      sdet.append("PRECESSION MODELS (P P) (long-term/short-term)\n");
+      for (int i = 0; i <= SweConst.SEMOD_NPREC; i++) {
+        if (i == SweConst.SEMOD_PREC_DEFAULT) continue;
+        sdet.append("  (").append(i).append(')');
+        if (i == 0) sdet.append(" (=").append(SweConst.SEMOD_PREC_DEFAULT).append(')');
+        get_precession_model(i, iflag, s);
+        sdet.append(": ").append(s).append('\n');
+      }
+      sdet.append("NUTATION MODELS (N)\n");
+      for (int i = 0; i <= SweConst.SEMOD_NNUT; i++) {
+        if (i == SweConst.SEMOD_NUT_DEFAULT) continue;
+        sdet.append("  (").append(i).append(')');
+        if (i == 0) sdet.append(" (=").append(SweConst.SEMOD_NUT_DEFAULT).append(')');
+        get_nutation_model(i, iflag, s);
+        sdet.append(": ").append(s).append('\n');
+      }
+      sdet.append("FRAME BIAS MODELS (B)\n");
+      for (int i = 0; i <= SweConst.SEMOD_NBIAS; i++) {
+        if (i == SweConst.SEMOD_BIAS_DEFAULT) continue;
+        sdet.append("  (").append(i).append(')');
+        if (i == 0) sdet.append(" (=").append(SweConst.SEMOD_BIAS_DEFAULT).append(')');
+        get_frame_bias_model(i, s);
+        sdet.append(": ").append(s).append('\n');
+      }
+      sdet.append("JPL HORIZONS MODELS (J) (with SEFLG_JPLEPH|SEFLG_JPLHOR).\n");
+      sdet.append("  IAU 1980 (Wahr) + daily corrections to dpsi/deps 1962-today.\n");
+      sdet.append("  (0 (=1): between 1799 and 1962, dpsi/deps of 20-jan-1962 are used.\n");
+      sdet.append("           For times beyond the dpsi/deps table, the last tabulated values are used.\n");
+      sdet.append("           Beyond 1799 and 2201, precession Owen 1990 is used..\n");
+      sdet.append("  Documentation in swephexp.h under 'methods of JPL Horizons'\n");
+      sdet.append("JPL HORIZONS APPROXIMATION (J) (with SEFLG_JPLEPH|SEFLG_JPLHORA)\n");
+      sdet.append("  Documentation in swephexp.h under 'methods of JPL Horizons'\n");
+      sdet.append("SIDEREAL TIME MODELS (S)\n");
+      for (int i = 0; i <= SweConst.SEMOD_NSIDT; i++) {
+        if (i == SweConst.SEMOD_SIDT_DEFAULT) continue;
+        sdet.append("  (").append(i).append(')');
+        if (i == 0) sdet.append(" (=").append(SweConst.SEMOD_SIDT_DEFAULT).append(')');
+        get_sidt_model(i, s);
+        sdet.append(": ").append(s).append('\n');
+      }
     }
   }
 
@@ -9183,8 +9488,15 @@ int refepyOffs;
     }
     double ay = swi_get_ayanamsa_nonut(tjd_et, iflag, serr);
     if ((iflag & SweConst.SEFLG_NONUT) == 0) {
-      final double[] nutlo = new double[2];
-      sl.swi_nutation(tjd_et, iflag, nutlo);
+      // as sweph.c: the nutation swe_calc() cached for this date, with that call's flags (a
+      // JPLHOR call leaves the Horizons dpsi in it), else a fresh one with iflag
+      final double[] nutlo;
+      if (tjd_et == swed.nut.tnut) {
+        nutlo = swed.nut.nutlo;
+      } else {
+        nutlo = new double[2];
+        sl.swi_nutation(tjd_et, iflag, nutlo);
+      }
       ay += nutlo[0] * SwissData.RADTODEG;
     }
     daya[0] = SwissLib.swe_degnorm(ay);

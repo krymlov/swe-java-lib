@@ -18,24 +18,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * bare Swiss Ephemeris version string ("SE2.06") that expands to the model set that version
  * used.
  * <p>
- * <b>{@link swisseph.SweConst}'s {@code SE_MODEL_*} constants do not match this ordering</b> -
- * they index the pure Java port's own, differently-ordered internal list ({@code DELTAT} is
- * slot 7 there, {@code SIDT} is slot 3), not swephexp.h's ({@code DELTAT} is slot 0,
- * {@code SIDT} is slot 7). That reordering is fine for {@code swisseph.SwissEph}, which reads
- * and writes its own array with its own constants consistently. It is wrong for this raw
- * delegating call, which reaches {@link swisseph.SwephExp#swe_set_astro_models} directly and
- * must use swephexp.h's slot numbers - so this file spells the index out (0) rather than
- * naming it, to avoid the trap of reaching for {@code SweConst.SE_MODEL_DELTAT} here and
- * silently setting the sidereal-time model instead.
+ * Until 2026-11-23 {@link swisseph.SweConst}'s {@code SE_MODEL_*} and {@code SEMOD_*} constants
+ * had the numbering of an older release ({@code SE_MODEL_DELTAT} was slot 7, not 0), so this
+ * file spelled the index out. They are swephexp.h's now, pinned by
+ * {@link #sweConstsModelIndicesMatchSwephexpH()}; {@code AstroModelsParityTest} compares the
+ * pure Java engine with these native calls model by model.
  *
  * @author Yura Krymlov
  * @version 1.0, 2026-08
  */
 class SwephAstroModelsTest extends AIswTest {
 
-    /** index 0 of the model list, per swephexp.h's {@code SE_MODEL_DELTAT} - NOT
-     * {@link swisseph.SweConst#SE_MODEL_DELTAT}, see the class javadoc */
-    static final String SEMOD_DELTAT_STEPHENSON_MORRISON_1984 = "1";
+    /** slot 0 of the model list ({@code SE_MODEL_DELTAT}): the delta t model of SE 1.00 */
+    static final String SEMOD_DELTAT_STEPHENSON_MORRISON_1984 =
+            String.valueOf(swisseph.SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_1984);
 
     @AfterEach
     void resetToDefaultModels() {
@@ -100,17 +96,26 @@ class SwephAstroModelsTest extends AIswTest {
         assertTrue(sdet.length() > 0, "the call should not throw and should leave usable state");
     }
 
-    /**
-     * Pins the discrepancy the class javadoc warns about. If {@code swisseph.SweConst} is
-     * ever realigned with swephexp.h, this starts failing - which is the point: it means
-     * {@code SEMOD_DELTAT_STEPHENSON_MORRISON_1984}'s hardcoded "index 0" above needs
-     * revisiting too.
-     */
+    /** swephexp.h 2.10.03: the slots and the model numbers */
     @Test
-    void sweConstsModelIndicesDoNotMatchSwephexpHForThisRawCall() {
-        assertEquals(0, swisseph.SweConst.SE_MODEL_PREC_LONGTERM,
-                "swephexp.h's SE_MODEL_DELTAT is slot 0, not SweConst's SE_MODEL_PREC_LONGTERM");
-        assertEquals(7, swisseph.SweConst.SE_MODEL_DELTAT,
-                "SweConst's own (differently-ordered) SE_MODEL_DELTAT is slot 7, not slot 0");
+    void sweConstsModelIndicesMatchSwephexpH() {
+        assertEquals(0, swisseph.SweConst.SE_MODEL_DELTAT);
+        assertEquals(1, swisseph.SweConst.SE_MODEL_PREC_LONGTERM);
+        assertEquals(2, swisseph.SweConst.SE_MODEL_PREC_SHORTTERM);
+        assertEquals(3, swisseph.SweConst.SE_MODEL_NUT);
+        assertEquals(4, swisseph.SweConst.SE_MODEL_BIAS);
+        assertEquals(5, swisseph.SweConst.SE_MODEL_JPLHOR_MODE);
+        assertEquals(6, swisseph.SweConst.SE_MODEL_JPLHORA_MODE);
+        assertEquals(7, swisseph.SweConst.SE_MODEL_SIDT);
+        assertEquals(8, swisseph.SweConst.NSE_MODELS);
+        assertEquals(1, swisseph.SweConst.SEMOD_DELTAT_STEPHENSON_MORRISON_1984);
+        assertEquals(5, swisseph.SweConst.SEMOD_DELTAT_STEPHENSON_ETC_2016);
+        assertEquals(9, swisseph.SweConst.SEMOD_PREC_VONDRAK_2011);
+        assertEquals(11, swisseph.SweConst.SEMOD_PREC_NEWCOMB);
+        assertEquals(4, swisseph.SweConst.SEMOD_NUT_IAU_2000B);
+        assertEquals(5, swisseph.SweConst.SEMOD_NUT_WOOLARD);
+        assertEquals(3, swisseph.SweConst.SEMOD_BIAS_IAU2006);
+        assertEquals(4, swisseph.SweConst.SEMOD_SIDT_LONGTERM);
+        assertEquals(3, swisseph.SweConst.SEMOD_JPLHORA_3);
     }
 }

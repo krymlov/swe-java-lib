@@ -17,8 +17,7 @@ import swisseph.SweConst;
  * than trusting it compiles.
  * <p>
  * {@code getSwephExp()}'s constants ({@link SweConst}) are used throughout instead of
- * hand-typed numbers, per this workspace's convention - with one documented exception, see
- * {@code SwephAstroModelsTest}'s {@code SE_MODEL_*} note.
+ * hand-typed numbers, per this workspace's convention.
  *
  * @author Yura Krymlov
  * @version 1.0, 2026-08

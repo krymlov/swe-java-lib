@@ -649,7 +649,7 @@ private double sunRA_ralast;
       OffSetYear = (SweDate.getJulDay(StartYear, 1, 1, 0, gregflag) - JDNDays) / 365.25;
       return (OffSetYear * OffSetYear / 100.0 / 2.0 * COD * Y2D) / 1000.0;
     }
-    return SweDate.getDeltaT(JDNDays) * D2S;
+    return sw.swe_deltat_ex(JDNDays, -1, null) * D2S;
   }
 
   /*###################################################################
