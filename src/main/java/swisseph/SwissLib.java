@@ -2718,26 +2718,39 @@ public void swe_set_astro_models(int[] imodel) {
 }
 
 
+  /**
+   * swephlib.c 2.10.03: the position and the speed are converted (swi_cartpol_sp); a star given
+   * with zero speed keeps zero speed. Until 2026-11-23 only the position was converted, and
+   * xp[3] got the polar correction added to the Cartesian speed - harmless while the old fixstar
+   * zeroed the speed, 1e-2 deg at 0 CE for a 1950 star with a radial velocity (Apex) since.
+   */
   public static void swi_FK4_FK5(double xp[], double tjd) {
+    boolean correct_speed = true;
     if (xp[0] == 0 && xp[1] == 0 && xp[2] == 0) {
       return;
     }
-    swi_cartpol(xp, xp);
+    /* with zero speed, we assume that it should be really zero */
+    if (xp[3] == 0) {
+      correct_speed = false;
+    }
+    swi_cartpol_sp(xp, xp);
     /* according to Expl.Suppl., p. 167f. */
     xp[0] += (0.035 + 0.085 * (tjd - SwephData.B1950) / 36524.2198782) / 3600 * 15 * SwissData.DEGTORAD;
-    xp[3] += (0.085 / 36524.2198782) / 3600 * 15 * SwissData.DEGTORAD;
-    swi_polcart(xp, xp);
+    if (correct_speed) {
+      xp[3] += (0.085 / 36524.2198782) / 3600 * 15 * SwissData.DEGTORAD;
+    }
+    swi_polcart_sp(xp, xp);
   }
 
   public static void swi_FK5_FK4(double[] xp, double tjd) {
     if (xp[0] == 0 && xp[1] == 0 && xp[2] == 0) {
       return;
     }
-    swi_cartpol(xp, xp);
+    swi_cartpol_sp(xp, xp);
     /* according to Expl.Suppl., p. 167f. */
     xp[0] -= (0.035 + 0.085 * (tjd - SwephData.B1950) / 36524.2198782) / 3600 * 15 * SwissData.DEGTORAD;
     xp[3] -= (0.085 / 36524.2198782) / 3600 * 15 * SwissData.DEGTORAD;
-    swi_polcart(xp, xp);
+    swi_polcart_sp(xp, xp);
   }
 
   static String swi_strcpy(String to, String from) {

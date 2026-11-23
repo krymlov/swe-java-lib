@@ -1199,12 +1199,19 @@ if(path == null) return;
   @Override
   public int swe_fixstar(StringBuilder star, double tjd, int iflag, double xx[],
                          StringBuilder serr) {
-    int i;
-//    int cmplen;
+    return fixstar(star, tjd, iflag, xx, serr, false);
+  }
+
+  /**
+   * swe_fixstar() and swe_fixstar2(): {@code ayaSpeed} is the one difference in the numbers - see
+   * {@link #swe_fixstar_found}.
+   */
+  private int fixstar(StringBuilder star, double tjd, int iflag, double xx[],
+                      StringBuilder serr, boolean ayaSpeed) {
 // Missing parameters are in "boolean readFixstarParameters(...)" and "int swe_fixstar_found(...)"!
     int epheflag, iflgsave;
-    iflag |= SweConst.SEFLG_SPEED; /* we need this in order to work correctly */
     iflgsave = iflag;
+    iflag |= SweConst.SEFLG_SPEED; /* we need this in order to work correctly */
 
     if (serr != null) {
       serr.setLength(0);
@@ -1225,7 +1232,7 @@ if(path == null) return;
     swi_check_nutation(tjd, iflag);
     String[] par = readFixstarParameters(star, serr);
     if (par != null) {
-      return swe_fixstar_found(serr,par[1],star,Integer.parseInt(par[0]),tjd,iflag,iflgsave,epheflag,xx);
+      return swe_fixstar_found(serr,par[1],star,Integer.parseInt(par[0]),tjd,iflag,iflgsave,epheflag,xx,ayaSpeed);
     }
     return swe_fixstar_error(xx,SweConst.ERR);
   }
@@ -1460,9 +1467,19 @@ String slast_starname;
   @Override
   public int swe_fixstar_ut(StringBuilder star, double tjd_ut, int iflag,
                             double[] xx, StringBuilder serr) {
-    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);  
+    iflag = fixstarUtFlags(iflag, tjd_ut, serr);
+    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);
     return swe_fixstar(star, tjd_ut + SweDate.getDeltaT(tjd_ut),
                        iflag, xx, serr);
+  }
+
+  /** sweph.c swe_fixstar_ut() / swe_fixstar2_ut(): plaus_iflag(), then Swiss Eph by default */
+  private int fixstarUtFlags(int iflag, double tjd_ut, StringBuilder serr) {
+    iflag = plaus_iflag(iflag, -1, tjd_ut, serr);
+    if ((iflag & SweConst.SEFLG_EPHMASK) == 0) {
+      iflag |= SweConst.SEFLG_SWIEPH;
+    }
+    return iflag;
   }
 
 
@@ -5212,8 +5229,10 @@ fname="";
     }
     /* to polar coordinates */
     sl.swi_cartpol_sp(x, x);
-    /* subtract ayan_t0 */
+    /* subtract ayan_t0; C 2.10.03 adds get_aya_correction() (Lahiri: IAU 1976 precession) */
+    double corr = get_aya_correction(iflag, serr);
     x[0] -= sip.ayan_t0 * SwissData.DEGTORAD;
+    x[0] = SwissLib.swe_radnorm(x[0] + corr * SwissData.DEGTORAD);
     /* back to cartesian */
     sl.swi_polcart_sp(x, 0, xout, xoOffs);
     return SweConst.OK;
@@ -5272,9 +5291,10 @@ fname="";
     /* measure planet from zero point */
     x[0] -= x0[0];
     x[0] *= SwissData.RADTODEG;
-    /* subtract ayan_t0 */
+    /* subtract ayan_t0; C 2.10.03 adds get_aya_correction() */
+    double corr = get_aya_correction(iflag, serr);
     x[0] -= sip.ayan_t0;
-    x[0] = sl.swe_degnorm(x[0]) * SwissData.DEGTORAD;
+    x[0] = SwissLib.swe_degnorm(x[0] + corr) * SwissData.DEGTORAD;
     /* back to cartesian */
     sl.swi_polcart_sp(x, 0, xout, xoOffs);
     return SweConst.OK;
@@ -5608,6 +5628,53 @@ fname="";
    *              and gravitational light deflection
    * xe           earth's position and speed
    */
+  /* sweph.c 2.10.03 aberr_light(): position only */
+  private void aberr_light(double xx[], double xe[]) {
+    int i;
+    double v[] = new double[6], u[] = new double[6], ru;
+    double b_1, f1, f2, v2;
+    for (i = 0; i <= 5; i++) {
+      u[i] = xx[i];
+    }
+    ru = SMath.sqrt(sl.square_sum(u));
+    for (i = 0; i <= 2; i++) {
+      v[i] = xe[i+3] / 24.0 / 3600.0 / SwephData.CLIGHT * SweConst.AUNIT;
+    }
+    v2 = sl.square_sum(v);
+    b_1 = SMath.sqrt(1 - v2);
+    f1 = dot_prod(u, v) / ru;
+    f2 = 1.0 + f1 / (1.0 + b_1);
+    for (i = 0; i <= 2; i++) {
+      xx[i] = (b_1*xx[i] + f2*ru*v[i]) / (1.0 + f1);
+    }
+  }
+
+  /**
+   * sweph.c 2.10.03 swi_aberr_light_ex(): 'annual' aberration, the speed from a second position
+   * at t - dt aberrated with the Earth (or observer) at t - dt ({@code xe_dt}).
+   */
+  void swi_aberr_light_ex(double xx[], double xe[], double xe_dt[], double dt, int iflag) {
+    int i;
+    double xxs[] = new double[6], xx2[] = new double[6];
+    for (i = 0; i <= 5; i++) {
+      xxs[i] = xx[i];
+    }
+    aberr_light(xx, xe);
+    /* correction of speed
+     * the influence of aberration on apparent velocity can
+     * reach 0.4"/day
+     */
+    if ((iflag & SweConst.SEFLG_SPEED) != 0) {
+      for (i = 0; i <= 2; i++) {
+        xx2[i] = xxs[i] - dt * xxs[i+3];
+      }
+      aberr_light(xx2, xe_dt);
+      for (i = 0; i <= 2; i++) {
+        xx[i+3] = (xx[i] - xx2[i]) / dt;
+      }
+    }
+  }
+
   void swi_aberr_light(double xx[], double xe[], int iflag) {
     swi_aberr_light(xx, 0, xe, iflag);
   }
@@ -7594,84 +7661,85 @@ int refepyOffs;
     return iflag;
   }
 
+  /**
+   * sweph.c 2.10.03 swi_fixstar_calc_from_record() (swe_fixstar) and fixstar_calc_from_struct()
+   * (swe_fixstar2), ported 2026-11-23. The two differ only in the traditional sidereal branch:
+   * the old API subtracts the ayanamsa from the position alone, swe_fixstar2 from the speed too
+   * ({@code ayaSpeed}). Until then this was the SE 2.07 algorithm: a unit vector plus a separate
+   * space-motion vector scaled by the parallax, x10000 for the light deflection, normalized to
+   * distance 1 and with the speed set to 0. Now the star carries its real distance (rdist, from
+   * the parallax; 1e9 AU without one), the speed is computed, and the aberration of the speed
+   * comes from the Earth at tjd - dt, as in C.
+   *
+   * @return the caller's iflag on success, as C returns it - not the flags actually used
+   */
   int swe_fixstar_found(StringBuilder serr, String s, StringBuilder star,
                         int fline, double tjd, int iflag, int iflgsave,
-                        int epheflag, double[] xx) {
-    double xpo[] = null;
-    double ra_s, ra_pm, de_pm, ra, de, t, cosra, cosde, sinra, sinde;
+                        int epheflag, double[] xx, boolean ayaSpeed) {
+    double ra_s, ra_pm, de_pm, ra, de, t;
     double ra_h, ra_m, de_d, de_m, de_s;
     String sde_d;
-    double epoch, radv, parall, u;
-    double x[]=new double[6];
-    double xxsv[]=new double[6];
-    double xobs[]=new double[6];
-    int retc;
-    PlanData pedp = swed.pldat[SwephData.SEI_EARTH];
-    PlanData psdp = swed.pldat[SwephData.SEI_SUNBARY];
+    double epoch, radv, parall, rdist;
+    double x[] = new double[6], xxsv[] = new double[6];
+    double xobs[] = new double[6], xobs_dt[] = new double[6];
+    double xearth[] = new double[6], xearth_dt[] = new double[6];
+    double xsun[] = new double[6], xsun_dt[] = new double[6];
+    double xpo[] = null, xpo_dt[] = null;
+    final double dt = SwephData.PLAN_SPEED_INTV * 0.1;
+    int i;
     Epsilon oe = swed.oec2000;
 
-    String[] cpos=new String[20];
-    StringTokenizer tk=new StringTokenizer(s,",");
-    int i=tk.countTokens();
-    if(i<2) {
+    /* fixstar_cut_string() */
+    String[] cpos = new String[20];
+    i = cutstr(s, ',', cpos, 20);
+    if (i < 14) {
       if (serr != null) {
         serr.setLength(0);
-        serr.append("star file "+SweConst.SE_STARFILE+" damaged at line "+
-                                                                   fline);
+        if (i >= 2) {
+          serr.append("data of star '" + cpos[0].trim() + "," + cpos[1].trim() + "' incomplete");
+        } else {
+          serr.append("invalid line in fixed stars file: '"
+              + (s.length() > 200 ? s.substring(0, 200) : s) + "'");
+        }
       }
-      return swe_fixstar_error(xx,SweConst.ERR);
+      return swe_fixstar_error(xx, SweConst.ERR);
     }
-    int n=0;
-    while(tk.hasMoreTokens() && n<20) {
-      cpos[n++]=tk.nextToken();
-    }
-    cpos[0]=cpos[0].trim();
-    cpos[1]=cpos[1].trim();
-    if (i < 13) {
-      if (serr!=null) {
-        serr.setLength(0);
-        serr.append("data of star '"+cpos[0]+","+cpos[1]+"' incomplete");
-      }
-      return swe_fixstar_error(xx,SweConst.ERR);
-    }
-    // JAVA: Grrr: zumindest cpos[2] muss keine Zahl sein, aber es FAENGT
-    // moeglicherweise mit einer Zahl AN!!!
-    int idx=cpos[2].length();
-    while(true) {
+    cpos[0] = rightTrim(cpos[0]);
+    cpos[1] = rightTrim(cpos[1]);
+    // JAVA: cpos[2] need not be a number but may START with one - C atof() semantics
+    int idx = cpos[2].length();
+    while (true) {
       try {
-        epoch = Double.valueOf(cpos[2].substring(0,idx)).doubleValue();
+        epoch = Double.valueOf(cpos[2].substring(0, idx)).doubleValue();
         break;
       } catch (NumberFormatException nf) {
         idx--;
-        if (idx==0) { epoch=0.; break; }
+        if (idx == 0) { epoch = 0.; break; }
       }
     }
-    ra_h = new Double(cpos[3]).doubleValue();
-    ra_m = new Double(cpos[4]).doubleValue();
-    ra_s = new Double(cpos[5]).doubleValue();
-    de_d = new Double(cpos[6]).doubleValue();
+    ra_h = Double.parseDouble(cpos[3].trim());
+    ra_m = Double.parseDouble(cpos[4].trim());
+    ra_s = Double.parseDouble(cpos[5].trim());
+    de_d = Double.parseDouble(cpos[6].trim());
     sde_d = cpos[6];
-    de_m = new Double(cpos[7]).doubleValue();
-    de_s = new Double(cpos[8]).doubleValue();
-    ra_pm = new Double(cpos[9]).doubleValue();
-    de_pm = new Double(cpos[10]).doubleValue();
-    radv = new Double(cpos[11]).doubleValue();
-    parall = new Double(cpos[12]).doubleValue();
+    de_m = Double.parseDouble(cpos[7].trim());
+    de_s = Double.parseDouble(cpos[8].trim());
+    ra_pm = Double.parseDouble(cpos[9].trim());
+    de_pm = Double.parseDouble(cpos[10].trim());
+    radv = Double.parseDouble(cpos[11].trim());
+    parall = Double.parseDouble(cpos[12].trim());
+    if (parall < 0) parall = -parall; /* to fix bug like old Rasalgheti */
     /* return trad. name, nomeclature name */
     if (cpos[0].length() > SweConst.SE_MAX_STNAME) {
-      cpos[0]=cpos[0].substring(0,SweConst.SE_MAX_STNAME);
+      cpos[0] = cpos[0].substring(0, SweConst.SE_MAX_STNAME);
     }
-    if (cpos[1].length() > SweConst.SE_MAX_STNAME-1) {
-      cpos[1]=cpos[1].substring(0,SweConst.SE_MAX_STNAME-1);
+    if (cpos[1].length() > SweConst.SE_MAX_STNAME - 1) {
+      cpos[1] = cpos[1].substring(0, SweConst.SE_MAX_STNAME - 1);
     }
-    // name of star:
     star.setLength(0);
     star.append(cpos[0]);
     if (cpos[0].length() + cpos[1].length() + 1 < SweConst.SE_MAX_STNAME - 1)
-      star.append(","+cpos[1]);
-    /****************************************
-     * position and speed (equinox)
-     ****************************************/
+      star.append("," + cpos[1]);
     /* ra and de in degrees */
     ra = (ra_s / 3600.0 + ra_m / 60.0 + ra_h) * 15.0;
     if (sde_d.indexOf('-') < 0) {
@@ -7696,7 +7764,6 @@ int refepyOffs;
     }
     /* radial velocity in AU per century */
     radv *= SwephData.KM_S_TO_AU_CTY;
-    /*printf("ra=%.17f,de=%.17f,ma=%.17f,md=%.17f,pa=%.17f,rv=%.17f\n",ra,de,ra_pm,de_pm,parall,radv);*/
     /* radians */
     ra *= SwissData.DEGTORAD;
     de *= SwissData.DEGTORAD;
@@ -7704,24 +7771,26 @@ int refepyOffs;
     de_pm *= SwissData.DEGTORAD;
     ra_pm /= SMath.cos(de); /* catalogues give proper motion in RA as great circle */
     parall *= SwissData.DEGTORAD;
+
+    /* swi_fixstar_calc_from_record() */
+    if (epoch == 1950) {
+      t = (tjd - SwephData.B1950);   /* days since 1950.0 */
+    } else { /* epoch == 2000 */
+      t = (tjd - SwephData.J2000);   /* days since 2000.0 */
+    }
     x[0] = ra;
     x[1] = de;
-    x[2] = 1;     /* -> unit vector */
-    /* cartesian */
-    sl.swi_polcart(x, x);
-    /*space motion vector */
-    cosra = SMath.cos(ra);
-    cosde = SMath.cos(de);
-    sinra = SMath.sin(ra);
-    sinde = SMath.sin(de);
-    x[3] = -ra_pm * cosde * sinra - de_pm * sinde * cosra
-                          + radv * parall * cosde * cosra;
-    x[4] = ra_pm * cosde * cosra - de_pm * sinde * sinra
-                          + radv * parall * cosde * sinra;
-    x[5] = de_pm * cosde + radv * parall * sinde;
-    x[3] /= 36525;
-    x[4] /= 36525;
-    x[5] /= 36525;
+    if (parall == 0) {
+      rdist = 1000000000;
+    } else {
+      rdist = 1.0 / (parall * SwissData.RADTODEG * 3600) * SwephData.PARSEC_TO_AUNIT;
+    }
+    x[2] = rdist;
+    x[3] = ra_pm / 36525.0;
+    x[4] = de_pm / 36525.0;
+    x[5] = radv / 36525.0;
+    /* Cartesian space motion vector */
+    sl.swi_polcart_sp(x, x);
     /******************************************
      * FK5
      ******************************************/
@@ -7742,65 +7811,49 @@ int refepyOffs;
      * earth/sun
      * for parallax, light deflection, and aberration,
      ****************************************************/
-    if ((iflag & SweConst.SEFLG_BARYCTR)==0 &&
-        ((iflag & SweConst.SEFLG_HELCTR)==0 || (iflag & SweConst.SEFLG_MOSEPH)==0)) {
-      if ((retc = main_planet(tjd, SwephData.SEI_EARTH, epheflag, iflag, serr)) != SweConst.OK) {
-        /*retc = ERR;
-        goto return_err;*/
-        iflag &= ~(SweConst.SEFLG_TOPOCTR|SweConst.SEFLG_HELCTR);
-        /* on error, we provide barycentric position: */
-        iflag |= SweConst.SEFLG_BARYCTR | SweConst.SEFLG_TRUEPOS | SweConst.SEFLG_NOGDEFL;
-        retc = iflag;
-      } else {
-        /* iflag (ephemeris bit) may have changed in main_planet() */
-        iflag = swed.pldat[SwephData.SEI_EARTH].xflgs;
-      }
+    final boolean needEarth = (iflag & SweConst.SEFLG_BARYCTR) == 0 &&
+        ((iflag & SweConst.SEFLG_HELCTR) == 0 || (iflag & SweConst.SEFLG_MOSEPH) == 0);
+    if (needEarth) {
+      if (main_planet_bary(tjd - dt, SwephData.SEI_EARTH, epheflag, iflag, SwephData.NO_SAVE,
+                           xearth_dt, xearth_dt, xsun_dt, null, serr) != SweConst.OK)
+        return swe_fixstar_error(xx, SweConst.ERR);
+      if (main_planet_bary(tjd, SwephData.SEI_EARTH, epheflag, iflag, SwephData.DO_SAVE,
+                           xearth, xearth, xsun, null, serr) != SweConst.OK)
+        return swe_fixstar_error(xx, SweConst.ERR);
     }
     /************************************
      * observer: geocenter or topocenter
      ************************************/
-    /* if topocentric position is wanted  */
-    if ((iflag & SweConst.SEFLG_TOPOCTR)!=0) {
-      if (swed.topd.teval != pedp.teval
-        || swed.topd.teval == 0) {
-        if (swi_get_observer(pedp.teval, iflag | SweConst.SEFLG_NONUT, SwephData.DO_SAVE, xobs, serr)!=
-                                                                  SweConst.OK) {
-          return SweConst.ERR;
-        }
-      } else {
-        for (i = 0; i <= 5; i++) {
-          xobs[i] = swed.topd.xobs[i];
-        }
-      }
+    if ((iflag & SweConst.SEFLG_TOPOCTR) != 0) {
+      if (swi_get_observer(tjd - dt, iflag | SweConst.SEFLG_NONUT, SwephData.NO_SAVE, xobs_dt, serr) != SweConst.OK)
+        return swe_fixstar_error(xx, SweConst.ERR);
+      if (swi_get_observer(tjd, iflag | SweConst.SEFLG_NONUT, SwephData.NO_SAVE, xobs, serr) != SweConst.OK)
+        return swe_fixstar_error(xx, SweConst.ERR);
       /* barycentric position of observer */
       for (i = 0; i <= 5; i++) {
-        xobs[i] = xobs[i] + pedp.x[i];
+        xobs[i] = xobs[i] + xearth[i];
+        xobs_dt[i] = xobs_dt[i] + xearth_dt[i];
       }
-    } else if ((iflag & SweConst.SEFLG_BARYCTR)==0 &&
-        ((iflag & SweConst.SEFLG_HELCTR)==0 || (iflag & SweConst.SEFLG_MOSEPH)==0)) {
+    } else if (needEarth) {
       /* barycentric position of geocenter */
       for (i = 0; i <= 5; i++) {
-        xobs[i] = pedp.x[i];
+        xobs[i] = xearth[i];
+        xobs_dt[i] = xearth_dt[i];
       }
     }
     /************************************
      * position and speed at tjd        *
      ************************************/
-    if (epoch == 1950) {
-      t= (tjd - SwephData.B1950);   /* days since 1950.0 */
-    } else { /* epoch == 2000 */
-      t= (tjd - SwephData.J2000);   /* days since 2000.0 */
-    }
-    /* for parallax */
-    if ((iflag & SweConst.SEFLG_HELCTR)!=0 &&
-        (iflag & SweConst.SEFLG_MOSEPH)!=0) {
+    if ((iflag & SweConst.SEFLG_HELCTR) != 0 && (iflag & SweConst.SEFLG_MOSEPH) != 0) {
       xpo = null;         /* no parallax, if moshier and heliocentric */
-    } else if ((iflag & SweConst.SEFLG_HELCTR)!=0) {
-      xpo = psdp.x;
-    } else if ((iflag & SweConst.SEFLG_BARYCTR)!=0) {
+    } else if ((iflag & SweConst.SEFLG_HELCTR) != 0) {
+      xpo = xsun;
+      xpo_dt = xsun_dt;
+    } else if ((iflag & SweConst.SEFLG_BARYCTR) != 0) {
       xpo = null;         /* no parallax, if barycentric */
     } else {
       xpo = xobs;
+      xpo_dt = xobs_dt;
     }
     if (xpo == null) {
       for (i = 0; i <= 2; i++) {
@@ -7808,34 +7861,30 @@ int refepyOffs;
       }
     } else {
       for (i = 0; i <= 2; i++) {
-        x[i] += t * x[i+3] - parall * xpo[i];
-        x[i+3] -= parall * xpo[i+3];
+        x[i] += t * x[i+3];
+        x[i] -= xpo[i];
+        x[i+3] -= xpo[i+3];
       }
     }
     /************************************
      * relativistic deflection of light *
      ************************************/
-    for (i = 0; i <= 5; i++) {
-      x[i] *= 10000;      /* great distance, to allow
-                           * algorithm used with planets */
-    }
     if ((iflag & SweConst.SEFLG_TRUEPOS) == 0 &&
         (iflag & SweConst.SEFLG_NOGDEFL) == 0) {
       swi_deflect_light(x, 0, 0, iflag & SweConst.SEFLG_SPEED);
     }
     /**********************************
      * 'annual' aberration of light   *
-     * speed is incorrect !!!         *
      **********************************/
     if ((iflag & SweConst.SEFLG_TRUEPOS) == 0 &&
         (iflag & SweConst.SEFLG_NOABERR) == 0) {
-      swi_aberr_light(x, xpo, iflag & SweConst.SEFLG_SPEED);
+      swi_aberr_light_ex(x, xpo, xpo_dt, dt, iflag & SweConst.SEFLG_SPEED);
     }
     /* ICRS to J2000 */
     if ((iflag & SweConst.SEFLG_ICRS) == 0 &&
         (swi_get_denum(SwephData.SEI_SUN, iflag) >= 403 || (iflag & SweConst.SEFLG_BARYCTR) != 0)) {
       sl.swi_bias(x, tjd, iflag, false);
-    }/**/
+    }
     /* save J2000 coordinates; required for sidereal positions */
     for (i = 0; i <= 5; i++) {
       xxsv[i] = x[i];
@@ -7843,10 +7892,9 @@ int refepyOffs;
     /************************************************
      * precession, equator 2000 -> equator of date *
      ************************************************/
-    /*x[0] = -0.374018403; x[1] = -0.312548592; x[2] = -0.873168719;*/
     if ((iflag & SweConst.SEFLG_J2000) == 0) {
       sl.swi_precess(x, tjd, iflag, SwephData.J2000_TO_J);
-      if ((iflag & SweConst.SEFLG_SPEED)!=0) {
+      if ((iflag & SweConst.SEFLG_SPEED) != 0) {
         swi_precess_speed(x, tjd, iflag, SwephData.J2000_TO_J);
       }
       oe = swed.oec;
@@ -7854,31 +7902,10 @@ int refepyOffs;
       oe = swed.oec2000;
     }
     /************************************************
-     * nutation                                     *
+     * nutation (C passes iflag: the speed too)     *
      ************************************************/
     if ((iflag & SweConst.SEFLG_NONUT) == 0) {
-      swi_nutate(x, 0, 0, false);
-    }
-if (false) {
-  double r = SMath.sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
-  //System.out.println((x[0]/r) + " " + (x[1]/r) + " " + (x[2]/r) + "\n");
-}
-    /************************************************
-     * unit vector (distance = 1)                   *
-     ************************************************/
-    u = SMath.sqrt(sl.square_sum(x));
-    for (i = 0; i <= 5; i++) {
-      x[i] /= u;
-    }
-    u = SMath.sqrt(sl.square_sum(xxsv));
-    for (i = 0; i <= 5; i++) {
-      xxsv[i] /= u;
-    }
-    /************************************************
-     * set speed = 0, because not correct (aberration)
-     ************************************************/
-    for (i = 3; i <= 5; i++) {
-      x[i] = xxsv[i] = 0;
+      swi_nutate(x, 0, iflag, false);
     }
     /************************************************
      * transformation to ecliptic.                  *
@@ -7887,12 +7914,12 @@ if (false) {
      ************************************************/
     if ((iflag & SweConst.SEFLG_EQUATORIAL) == 0) {
       sl.swi_coortrf2(x, x, oe.seps, oe.ceps);
-      if ((iflag & SweConst.SEFLG_SPEED)!=0) {
+      if ((iflag & SweConst.SEFLG_SPEED) != 0) {
         sl.swi_coortrf2(x, 3, x, 3, oe.seps, oe.ceps);
       }
       if ((iflag & SweConst.SEFLG_NONUT) == 0) {
         sl.swi_coortrf2(x, x, swed.nut.snut, swed.nut.cnut);
-        if ((iflag & SweConst.SEFLG_SPEED)!=0) {
+        if ((iflag & SweConst.SEFLG_SPEED) != 0) {
           sl.swi_coortrf2(x, 3, x, 3, swed.nut.snut, swed.nut.cnut);
         }
       }
@@ -7900,24 +7927,23 @@ if (false) {
     /************************************
      * sidereal positions               *
      ************************************/
-    if ((iflag & SweConst.SEFLG_SIDEREAL)!=0) {
+    if ((iflag & SweConst.SEFLG_SIDEREAL) != 0) {
       /* rigorous algorithm */
-      if ((swed.sidd.sid_mode & SweConst.SE_SIDBIT_ECL_T0)!=0) {
+      if ((swed.sidd.sid_mode & SweConst.SE_SIDBIT_ECL_T0) != 0) {
         if (swi_trop_ra2sid_lon(xxsv, x, xxsv, iflag, serr) != SweConst.OK) {
-          return SweConst.ERR;
+          return swe_fixstar_error(xx, SweConst.ERR);
         }
-        if ((iflag & SweConst.SEFLG_EQUATORIAL)!=0) {
+        if ((iflag & SweConst.SEFLG_EQUATORIAL) != 0) {
           for (i = 0; i <= 5; i++) {
             x[i] = xxsv[i];
           }
         }
       /* project onto solar system equator */
-      } else if ((swed.sidd.sid_mode & SweConst.SE_SIDBIT_SSY_PLANE)!=0) {
-        if (swi_trop_ra2sid_lon_sosy(xxsv, x, xxsv, iflag, serr) !=
-                                                                SweConst.OK) {
-          return SweConst.ERR;
+      } else if ((swed.sidd.sid_mode & SweConst.SE_SIDBIT_SSY_PLANE) != 0) {
+        if (swi_trop_ra2sid_lon_sosy(xxsv, x, xxsv, iflag, serr) != SweConst.OK) {
+          return swe_fixstar_error(xx, SweConst.ERR);
         }
-        if ((iflag & SweConst.SEFLG_EQUATORIAL)!=0) {
+        if ((iflag & SweConst.SEFLG_EQUATORIAL) != 0) {
           for (i = 0; i <= 5; i++) {
             x[i] = xxsv[i];
           }
@@ -7925,9 +7951,15 @@ if (false) {
       /* traditional algorithm */
       } else {
         sl.swi_cartpol_sp(x, x);
-        final double[] daya = swi_get_ayanamsa_with_speed(tjd, iflag, null);
-        x[0] -= daya[0] * SwissData.DEGTORAD;
-        x[3] -= daya[1] * SwissData.DEGTORAD;
+        if (ayaSpeed) {
+          /* fixstar_calc_from_struct(): position and speed */
+          final double[] daya = swi_get_ayanamsa_with_speed(tjd, iflag, serr);
+          x[0] -= daya[0] * SwissData.DEGTORAD;
+          x[3] -= daya[1] * SwissData.DEGTORAD;
+        } else {
+          /* swi_fixstar_calc_from_record(): the position only */
+          x[0] -= swi_get_ayanamsa_nonut(tjd, iflag, serr) * SwissData.DEGTORAD;
+        }
         sl.swi_polcart_sp(x, x);
       }
     }
@@ -7950,12 +7982,42 @@ if (false) {
     for (i = 0; i <= 5; i++) {
       xx[i] = x[i];
     }
-    /* if no ephemeris has been specified, do not return chosen ephemeris */
-    if ((iflgsave & SweConst.SEFLG_EPHMASK) == 0) {
-      iflag = iflag & ~SweConst.SEFLG_DEFAULTEPH;
+    if ((iflgsave & SweConst.SEFLG_SPEED) == 0) {
+      for (i = 3; i <= 5; i++) {
+        xx[i] = 0;
+      }
     }
-    iflag = iflag & ~SweConst.SEFLG_SPEED;
-    return iflag;
+    /* C swe_fixstar() / swe_fixstar2() return the caller's iflag */
+    return iflgsave;
+  }
+
+  /**
+   * swephlib.c swi_cutstr(): an empty first field is kept (",omeDra,ICRS,..." - a star without
+   * a traditional name), a run of separators counts as one, the last of {@code nmax} fields
+   * takes the rest, and CR/LF ends the string. StringTokenizer, used here before, dropped the
+   * empty first field and shifted every value of such a record by one.
+   */
+  static int cutstr(String s, char sep, String[] cpos, int nmax) {
+    int n = 1, start = 0, len = s.length(), i = 0;
+    for (; i < len; i++) {
+      char c = s.charAt(i);
+      if (c == sep && n < nmax) {
+        cpos[n - 1] = s.substring(start, i);
+        while (i + 1 < len && s.charAt(i + 1) == sep) i++;
+        start = i + 1;
+        n++;
+        continue;
+      }
+      if (c == '\n' || c == '\r') break;
+    }
+    cpos[n - 1] = s.substring(start, Math.max(start, i));
+    return n;
+  }
+
+  private static String rightTrim(String s) {
+    int e = s.length();
+    while (e > 0 && Character.isWhitespace(s.charAt(e - 1))) e--;
+    return s.substring(0, e);
   }
 
   int swe_fixstar_error(double[] xx, int retc) {
@@ -8151,10 +8213,10 @@ if (false) {
           retc,
           errmsg);
     }
-    i = sl.swi_cutstr(s, ",", cpos, 20);
-    cpos[0] = cpos[0].trim();
-    cpos[1] = cpos[1].trim();
-    if (i < 13) {
+    i = cutstr(s, ',', cpos, 20); // C swi_cutstr(): keeps an empty first field (",omeDra")
+    cpos[0] = rightTrim(cpos[0]);
+    cpos[1] = rightTrim(cpos[1]);
+    if (i < 14) {
       String errmsg = "data of star '" + cpos[0] + "," + cpos[1] + "' incomplete";
       throw new SwissephException(0./0.,
           SwissephException.DAMAGED_FILE_ERROR,
@@ -8873,18 +8935,21 @@ if (false) {
   }
 
   @Override
-  // swe_fixstar2*() reads the same sefstars.txt as swe_fixstar*(); the "2" forms exist only
-  // because upstream builds a sorted index over the file first, which makes repeated lookups
-  // much faster. The positions are identical, so here they delegate - a caller gets the right
-  // numbers, just without the speedup.
+  // swe_fixstar2*() reads the same sefstars.txt as swe_fixstar*(); upstream builds a sorted
+  // index over the file first, which makes repeated lookups much faster - not done here. The
+  // numbers differ in one place only, as in C 2.10.03: in the traditional sidereal modes
+  // swe_fixstar2 subtracts the ayanamsa from the speed as well (fixstar_calc_from_struct),
+  // swe_fixstar from the position only (swi_fixstar_calc_from_record).
 
   public int swe_fixstar2(StringBuilder star, double tjd, int iflag, double[] xx, StringBuilder serr) {
-    return swe_fixstar(star, tjd, iflag, xx, serr);
+    return fixstar(star, tjd, iflag, xx, serr, true);
   }
 
   @Override
   public int swe_fixstar2_ut(StringBuilder star, double tjd_ut, int iflag, double[] xx, StringBuilder serr) {
-    return swe_fixstar_ut(star, tjd_ut, iflag, xx, serr);
+    iflag = fixstarUtFlags(iflag, tjd_ut, serr);
+    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);
+    return swe_fixstar2(star, tjd_ut + SweDate.getDeltaT(tjd_ut), iflag, xx, serr);
   }
 
   @Override

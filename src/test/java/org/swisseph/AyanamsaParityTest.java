@@ -37,20 +37,17 @@ public class AyanamsaParityTest extends AbstractTest {
     static final double[] DATES = {2086307.5, 2415020.5, 2451545.0, 2461041.5, 2561117.5};
 
     /**
-     * precession modes agree to ~3e-13 deg; the star modes (Spica, SgrA*, ...) to ~2e-9, which
-     * is the old Java fixstar again, much smaller for these J2000/ICRS stars
+     * all 47 modes agree to ~1.3e-11 deg since the fixstar port (precession modes ~3e-13; the
+     * star modes had been ~2e-9 with the old Java fixstar)
      */
-    static final double AYA_TOL = 5e-9;
+    static final double AYA_TOL = 1e-10;
 
     /**
-     * The galactic-equator modes read GP1958 / GPol through swe_fixstar, and the Java fixstar
-     * is still the old algorithm (unit vector + separate space motion, no rdist). GP1958 is
-     * given in B1950 coordinates, so precession and the FK4 correction act and the difference
-     * grows away from 1950: 1.8e-5 deg in 2026, 5.1e-5 in 1000 CE. GPol (ICRS): 6.4e-8.
+     * The galactic-equator modes read GP1958 / GPol through swe_fixstar. Until the fixstar port
+     * of 2026-11-23 (2.07 algorithm: unit vector, separate space motion, no rdist) they were
+     * 1.8e-5..5.1e-5 deg (GP1958, B1950) and 6.4e-8 (GPol) off; now within AYA_TOL like the rest.
      */
     static double ayaTol(int mode) {
-        if (mode == SE_SIDM_GALEQU_IAU1958) return 1e-4;
-        if (mode == SE_SIDM_GALEQU_TRUE || mode == SE_SIDM_GALEQU_MULA) return 1e-7;
         return AYA_TOL;
     }
 

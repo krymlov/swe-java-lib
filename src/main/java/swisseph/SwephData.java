@@ -365,6 +365,7 @@ static final double JPL_DE431_END   =  7930192.5;
   static final double SSY_PLANE_INCL = 1.578701 * SwissData.DEGTORAD;
 
   static final double KM_S_TO_AU_CTY = 21.095;           // km/s to AU/century
+  static final double PARSEC_TO_AUNIT = 206264.8062471;  // sweph.h: AU per parsec
   static final double MOON_SPEED_INTV = 0.00005;         // 4.32 seconds (in days)
   static final double PLAN_SPEED_INTV = 0.0001;          // 8.64 seconds (in days)
   static final double MEAN_NODE_SPEED_INTV = 0.001;
