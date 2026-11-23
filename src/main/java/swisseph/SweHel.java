@@ -1416,7 +1416,7 @@ private int Magnitude(double JDNDaysUT, double[] dgeo, StringBuilder ObjectName,
     int scotopic_flag[] = new int[]{0};
     double AltO[] = new double[1], AziO[] = new double[1], AltM[] = new double[1], AziM[] = new double[1], AltS[] = new double[1], AziS[] = new double[1];
     double sunra;
-    SweDate.swi_set_tid_acc(tjdut, helflag, 0);
+    SweDate.swi_set_tid_acc(sw, tjdut, helflag, 0);
     sunra = SunRA(tjdut, helflag, serr);
     default_heliacal_parameters(datm, dgeo, dobs, helflag);
     sw.swe_set_topo(dgeo[0], dgeo[1], dgeo[2]);
@@ -1532,7 +1532,7 @@ private int Magnitude(double JDNDaysUT, double[] dgeo, StringBuilder ObjectName,
   */
   public int swe_topo_arcus_visionis(double tjdut, double[] dgeo, double[] datm, double[] dobs, int helflag, double mag, double azi_obj, double alt_obj, double azi_sun, double azi_moon, double alt_moon, double[] dret, StringBuilder serr) {
     double sunra;
-    SweDate.swi_set_tid_acc(tjdut, helflag, 0);
+    SweDate.swi_set_tid_acc(sw, tjdut, helflag, 0);
     sunra = SunRA(tjdut, helflag, serr);
     if (serr != null && serr.length() > 0)
       return SweConst.ERR;
@@ -1634,7 +1634,7 @@ private int Magnitude(double JDNDaysUT, double[] dgeo, StringBuilder ObjectName,
       }
       return SweConst.ERR;
     }
-    SweDate.swi_set_tid_acc(tjdut, helflag, 0);
+    SweDate.swi_set_tid_acc(sw, tjdut, helflag, 0);
     return HeliacalAngle(mag, dobs, azi_obj, alt_moon, azi_moon, tjdut, azi_sun, dgeo, datm, helflag, dret, serr);
   }
 
@@ -1909,7 +1909,7 @@ private int Magnitude(double JDNDaysUT, double[] dgeo, StringBuilder ObjectName,
       }
       return SweConst.ERR;
     }
-    SweDate.swi_set_tid_acc(JDNDaysUT, helflag, 0);
+    SweDate.swi_set_tid_acc(sw, JDNDaysUT, helflag, 0);
     sunra = SunRA(JDNDaysUT, helflag, serr);
     /* note, the fixed stars functions rewrite the star name. The input string 
        may be too short, so we have to make sure we have enough space */
@@ -3321,7 +3321,7 @@ darr[30] = darr[26] + darr[27] + darr[28] + darr[29];
       }
       return SweConst.ERR;
     }
-    SweDate.swi_set_tid_acc(JDNDaysUTStart, helflag, 0);
+    SweDate.swi_set_tid_acc(sw, JDNDaysUTStart, helflag, 0);
     if ((helflag & SweConst.SE_HELFLAG_LONG_SEARCH) != 0)
       MaxCountSynodicPeriod = MAX_COUNT_SYNPER_MAX;
   /*  if (helflag & SE_HELFLAG_SEARCH_1_PERIOD)

@@ -117,16 +117,11 @@ final class SweHouse {
   * halved, so the derivative becomes one-sided over the half that is still continuous. That
   * is what swehouse.c does with its <code>hp1 = h</code> / <code>hm1 = h</code>.
   * <p>
-  * <b>Whole sign.</b> Upstream's {@code CalcH} (swehouse.c) never differentiates whole sign's
-  * cusps at all - its {@code case 'W'} sets no {@code cusp_speed} of its own, so eight of the
-  * twelve keep the array's initial zero (cusps 2, 3, 5, 6, 8, 9, 11, 12), and only cusp 1 and
-  * cusp 10 keep the ordinary pre-switch default ({@code cusp_speed[1] = ac_speed},
-  * {@code cusp_speed[10] = mc_speed}) that every house system starts from; cusps 4 and 7 then
-  * pick those same two values up via the generic opposite-cusp mirroring every non-Gauquelin,
-  * non-Sunshine, non-APC system gets afterward ({@code cusp_speed[hsy != 'G' ...]} block). This
-  * reproduces exactly that - not a central-difference approximation of it - so the pure-Java
-  * port matches the native library's reported whole sign speeds bit for bit rather than only
-  * being self-consistent with its own (differenced) positions.
+  * <b>Whole sign and 1 = 0 Aries.</b> In {@code CalcH} of swisseph-2026 ({@code swehouse.c})
+  * {@code case 'W'} and {@code case 'N'} set every {@code cusp_speed} to 0: the cusps sit on sign
+  * boundaries and do not move between ingresses. This reproduces that bit for bit. (Until
+  * 2026-11-22 it reproduced the older swehouse.c, where cusps 1/7 carried the ascendant's speed
+  * and 4/10 the MC's for 'W', and every cusp the ascendant's for 'N'.)
   *
   * @param hsys the house system, needed to recognise the snapped ones
   * @param c0 cusps at the requested moment, a0 the matching ascmc
@@ -155,23 +150,11 @@ final class SweHouse {
     final int ito = cuspsCount(hsys);
     final char ihs = Character.toUpperCase((char) hsys);
 
-    if (ihs == 'W') {
-      // Matches CalcH exactly: cusps 2/3/5/6/8/9/11/12 are never assigned a speed of their
-      // own for 'W' and stay at the array's initial zero; 1 and 10 keep the pre-switch
-      // default (ac_speed/mc_speed), and 4/7 inherit it through the opposite-cusp mirror.
-      final double mcSpeed = SwissLib.swe_difdeg2n(ap[1], am[1]) / (2. * dt);
+    if (ihs == 'W' || ihs == 'N') {
+      // As CalcH of swisseph-2026 (swehouse.c): the cusps sit on sign boundaries and stand
+      // still between ingresses, so every speed is 0 - for 'W' and for 'N' (1 = 0 Aries).
       for (int i = 1; i <= ito && i < cusp_speed.length; i++) {
         cusp_speed[i] = 0.;
-      }
-      if (1 < cusp_speed.length) cusp_speed[1] = ascSpeed;
-      if (7 < cusp_speed.length) cusp_speed[7] = ascSpeed;
-      if (4 < cusp_speed.length) cusp_speed[4] = mcSpeed;
-      if (10 < cusp_speed.length) cusp_speed[10] = mcSpeed;
-      return;
-    }
-    if (ihs == 'N') {   // equal with house 1 = 0 Aries: CalcH's own branch isn't ported, kept as-is
-      for (int i = 1; i <= ito && i < cusp_speed.length; i++) {
-        cusp_speed[i] = ascSpeed;
       }
       return;
     }

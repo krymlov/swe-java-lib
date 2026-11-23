@@ -232,6 +232,14 @@ public interface ISwissEph extends Closeable {
         return SwephExp.swe_version();
     }
 
+    /**
+     * @return the DE number of the planetary ephemeris file in use, or {@code SE_DE_NUMBER}
+     * when none has been opened yet
+     */
+    default int swe_get_denum() {
+        return SwephExp.swe_get_denum();
+    }
+
     default String swe_get_library_path() {
         return SwephExp.swe_get_library_path();
     }

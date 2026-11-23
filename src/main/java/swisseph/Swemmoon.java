@@ -676,21 +676,24 @@ final class Swemmoon {
   double T;
   double T2;
 
-  static double T3;
-  static double T4;
-  static double f;
-  static double g;
-  static double Ve;
-  static double Ea;
-  static double Ma;
-  static double Ju;
-  static double Sa;
-  static double cg;
-  static double sg;
-  static double l1;
-  static double l2;
-  static double l3;
-  static double l4;
+  /* Working variables of one evaluation. They were static, so two SwissEph instances computing
+   * the Moshier moon on two threads overwrote each other's terms (a NaN true node was seen,
+   * 2026-11-23); instance fields like the rest of this class now. */
+  double T3;
+  double T4;
+  double f;
+  double g;
+  double Ve;
+  double Ea;
+  double Ma;
+  double Ju;
+  double Sa;
+  double cg;
+  double sg;
+  double l1;
+  double l2;
+  double l3;
+  double l4;
 
   /* Calculate geometric coordinates of Moon
    * without light time or nutation correction.

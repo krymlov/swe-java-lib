@@ -989,6 +989,21 @@ final class SwissLib {
       Z =  ((((((-0.00000000013*T - 0.0000003040)*T - 0.000005708)*T + 0.01801752)*T + 0.3023262)*T + 2306.080472)*T + 2.72767)*SwissData.DEGTORAD/3600;
       z =  ((((((-0.00000000005*T - 0.0000002486)*T - 0.000028276)*T + 0.01826676)*T + 1.0956768)*T + 2306.076070)*T - 2.72767)*SwissData.DEGTORAD/3600;
       TH = ((((((0.000000000009*T + 0.00000000036)*T -0.0000001127)*T - 0.000007291)*T - 0.04182364)*T - 0.4266980)*T + 2004.190936)*T*SwissData.DEGTORAD/3600;
+    } else if (prec_method == SweConst.SEMOD_PREC_NEWCOMB) {
+      // Newcomb according to Kinoshita 1975, as swephlib.c 2.10.03 (its "#if 1" variant);
+      // needed by the ayanamsa precession correction of Fagan, Raman, Krishnamurti, ...
+      final double mills = 365242.198782; // trop. millennia
+      final double t1 = (SwephData.J2000 - SwephData.B1850) / mills;
+      final double t2 = (J - SwephData.B1850) / mills;
+      final double Tn = t2 - t1;
+      final double T2 = Tn * Tn, T3 = T2 * Tn;
+      final double Z1 = 23035.5548 + 139.720 * t1 + 0.069 * t1 * t1;
+      Z = Z1 * Tn + (30.242 - 0.269 * t1) * T2 + 17.996 * T3;
+      z = Z1 * Tn + (109.478 - 0.387 * t1) * T2 + 18.324 * T3;
+      TH = (20051.125 - 85.294 * t1 - 0.365 * t1 * t1) * Tn + (-42.647 - 0.365 * t1) * T2 - 41.802 * T3;
+      Z *= (SwissData.DEGTORAD/3600.0);
+      z *= (SwissData.DEGTORAD/3600.0);
+      TH *= (SwissData.DEGTORAD/3600.0);
     } else {
       return 0;
     }
@@ -1271,6 +1286,8 @@ int pn = 0;
       return precess_1(R, rOffs, J, direction, SweConst.SEMOD_PREC_IAU_2006);
     } else if (prec_model == SweConst.SEMOD_PREC_BRETAGNON_2003) {
       return precess_1(R, rOffs, J, direction, SweConst.SEMOD_PREC_BRETAGNON_2003);
+    } else if (prec_model == SweConst.SEMOD_PREC_NEWCOMB) {
+      return precess_1(R, rOffs, J, direction, SweConst.SEMOD_PREC_NEWCOMB);
     } else if (prec_model == SweConst.SEMOD_PREC_LASKAR_1986) {
       return precess_2(R, rOffs, J, iflag, direction, SweConst.SEMOD_PREC_LASKAR_1986);
     } else if (prec_model == SweConst.SEMOD_PREC_SIMON_1994) {

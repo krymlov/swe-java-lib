@@ -29,7 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public final class Swetest {
 
     public static final String EXE = System.getProperty("swetest.exe",
-            "E:/Github/swisseph/windows/programs/swetest64.exe");
+            System.getenv().getOrDefault("SWISSEPH_HOME", "<SWISSEPH_HOME unset>")
+                    + "/bin/swetest64.exe"); // $SWISSEPH_HOME = swisseph-2026, the reference
 
     public static final File EPHE = new File("ephe").getAbsoluteFile();
 

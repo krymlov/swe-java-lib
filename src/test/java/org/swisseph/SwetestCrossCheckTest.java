@@ -46,7 +46,8 @@ import static org.swisseph.app.SweHouseSystem.PLACIDUS;
 public class SwetestCrossCheckTest extends AbstractTest {
 
     static final String SWETEST = System.getProperty("swetest.exe",
-            "E:/Github/swisseph/windows/programs/swetest64.exe");
+            System.getenv().getOrDefault("SWISSEPH_HOME", "<SWISSEPH_HOME unset>")
+                    + "/bin/swetest64.exe"); // $SWISSEPH_HOME = swisseph-2026, the reference
 
     static final JhdChart JHD = JhdChart.read("IuriiK.jhd");
     static final double DELTA = 1e-7;

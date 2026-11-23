@@ -616,7 +616,7 @@ final class Swecl {
     int retflag, retflag2;
     double dcore[]=new double[10];
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_ut, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_ut, ifl, 0);
     if ((retflag = eclipse_where(tjd_ut, SweConst.SE_SUN, null, ifl, geopos, dcore, serr)) < 0) {
       return retflag;
     }
@@ -638,7 +638,7 @@ final class Swecl {
     double dcore[]=new double[10];
     if (ipl < 0) ipl = 0;
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_ut, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_ut, ifl, 0);
     /* function calls for Pluto with asteroid number 134340
      * are treated as calls for Pluto as main body SE_PLUTO */
     if (ipl == SweConst.SE_AST_OFFSET + 134340) {
@@ -976,7 +976,7 @@ final class Swecl {
       return SweConst.ERR;
     }
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_ut, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_ut, ifl, 0);
     if ((retflag = eclipse_how(tjd_ut, SweConst.SE_SUN, null, ifl, geopos[0],
                                geopos[1], geopos[2], attr, serr)) == SweConst.ERR) {
       return retflag;
@@ -1262,7 +1262,7 @@ final class Swecl {
     boolean dont_times = false;
     int iflag, iflagcart;
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_start, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_start, ifl, 0);
     iflag = SweConst.SEFLG_EQUATORIAL | ifl;
     iflagcart = iflag | SweConst.SEFLG_XYZ;
     if (ifltype == (SweConst.SE_ECL_PARTIAL | SweConst.SE_ECL_CENTRAL)) {
@@ -1704,7 +1704,7 @@ final class Swecl {
       ipl = SweConst.SE_PLUTO;
     }
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_start, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_start, ifl, 0);
     iflag = SweConst.SEFLG_EQUATORIAL | ifl;
     iflagcart = iflag | SweConst.SEFLG_XYZ;
     backward &= 1L;
@@ -2196,7 +2196,7 @@ final class Swecl {
       return SweConst.ERR;
     }
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_start, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_start, ifl, 0);
     if ((retflag = eclipse_when_loc(tjd_start, ifl, geopos, tret, attr,
                                                         backward, serr)) <= 0) {
       return retflag;
@@ -2259,7 +2259,7 @@ final class Swecl {
       ipl = SweConst.SE_PLUTO;
     }
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_start, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_start, ifl, 0);
     if ((retflag = occult_when_loc(tjd_start, ipl, starname, ifl, geopos, tret, attr, backward, serr)) <= 0)
       return retflag;
     /*
@@ -3446,7 +3446,7 @@ final class Swecl {
     }
     ifl = ifl & ~SweConst.SEFLG_TOPOCTR;
     ifl &= ~(SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX);
-    SweDate.swi_set_tid_acc(tjd_ut, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_ut, ifl, 0);
     retc = lun_eclipse_how(tjd_ut, ifl, attr, dcore, serr);
     if (geopos == null) {
       return retc;
@@ -3670,7 +3670,7 @@ final class Swecl {
     int iflag;
     int iflagcart;
     ifl &= SweConst.SEFLG_EPHMASK;
-    SweDate.swi_set_tid_acc(tjd_start, ifl, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_start, ifl, 0);
     iflag = SweConst.SEFLG_EQUATORIAL | ifl;
     iflagcart = iflag | SweConst.SEFLG_XYZ;
     if (ifltype == 0) {
@@ -4304,7 +4304,7 @@ final class Swecl {
   */
   int swe_pheno_ut(double tjd_ut, int ipl, int iflag, double[] attr,
                    StringBuilder serr) {
-    SweDate.swi_set_tid_acc(tjd_ut, iflag, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_ut, iflag, 0);
     return swe_pheno(tjd_ut + SweDate.getDeltaT(tjd_ut), ipl, iflag, attr, serr);
   }
 
@@ -4454,7 +4454,7 @@ final class Swecl {
       }
       return SweConst.ERR;
     }
-    SweDate.swi_set_tid_acc(tjd_ut, epheflag, 0);  
+    SweDate.swi_set_tid_acc(sw, tjd_ut, epheflag, 0);  
     /* function calls for Pluto with asteroid number 134340
      * are treated as calls for Pluto as main body SE_PLUTO */
     if (ipl == SweConst.SE_AST_OFFSET + 134340) {
@@ -5806,7 +5806,7 @@ final class Swecl {
                      double[] xnasc, double[] xndsc,
                      double[] xperi, double[] xaphe,
                      StringBuilder serr) {
-    SweDate.swi_set_tid_acc(tjd_ut, iflag, 0);
+    SweDate.swi_set_tid_acc(sw, tjd_ut, iflag, 0);
     return swe_nod_aps(tjd_ut + SweDate.getDeltaT(tjd_ut),
                         ipl, iflag, method, xnasc, xndsc, xperi, xaphe,
                         serr);

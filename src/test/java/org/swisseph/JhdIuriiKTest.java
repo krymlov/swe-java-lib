@@ -26,7 +26,7 @@ import static swisseph.SweConst.*;
  * 18 April 1976, 23:21 local, UTC+3, Starokostyantyniv 27&deg;13'E 49&deg;45'N.
  * <p>
  * Every expected value below was produced by the Swiss Ephemeris reference program
- * <code>e:\Github\swisseph\windows\programs\swetest64.exe</code> against the same
+ * <code>$SWISSEPH_HOME/bin/swetest64.exe</code> (swisseph-2026) against the same
  * ephemeris files this project ships in <code>ephe/</code>, e.g.
  * <pre>
  * swetest64.exe -b18.4.1976 -ut20:21:00 -p0123456789m -eswe -sid1 -true \

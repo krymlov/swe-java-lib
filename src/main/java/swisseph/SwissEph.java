@@ -255,6 +255,45 @@ public class SwissEph implements ISwissEph {
     return SwephData.SE_JAVA_VERSION;
   }
 
+  /**
+  * swe_get_denum() of sweph.c: swi_get_denum(SEI_SUN, 0) - the DE number read from the
+  * planetary file's header, or SE_DE_NUMBER while no planetary file has been opened.
+  */
+  @Override
+  public int swe_get_denum() {
+    return swi_get_denum(SwephData.SEI_SUN, 0);
+  }
+
+  /**
+  * swi_get_denum() of sweph.c: the DE number the given body is computed from, which decides
+  * whether the ICRS frame bias applies. The Moshier ephemeris counts as DE403, as in C - not
+  * whatever file happened to be opened last.
+  */
+  int swi_get_denum(int ipli, int iflag) {
+    FileData fdp;
+    if ((iflag & SweConst.SEFLG_MOSEPH) != 0) {
+      return 403;
+    }
+    if ((iflag & SweConst.SEFLG_JPLEPH) != 0) {
+      return swed.jpldenum > 0 ? swed.jpldenum : SweConst.SE_DE_NUMBER;
+    }
+    if (ipli > SweConst.SE_AST_OFFSET || ipli > SweConst.SE_PLMOON_OFFSET) {
+      fdp = swed.fidat[SwephData.SEI_FILE_ANY_AST];
+    } else if (ipli == SwephData.SEI_CHIRON || ipli == SwephData.SEI_PHOLUS
+        || ipli == SwephData.SEI_CERES || ipli == SwephData.SEI_PALLAS
+        || ipli == SwephData.SEI_JUNO || ipli == SwephData.SEI_VESTA) {
+      fdp = swed.fidat[SwephData.SEI_FILE_MAIN_AST];
+    } else if (ipli == SwephData.SEI_MOON) {
+      fdp = swed.fidat[SwephData.SEI_FILE_MOON];
+    } else {
+      fdp = swed.fidat[SwephData.SEI_FILE_PLANET];
+    }
+    if (fdp != null && fdp.sweph_denum != 0) {
+      return fdp.sweph_denum;
+    }
+    return SweConst.SE_DE_NUMBER;
+  }
+
   @Override
   public String swe_get_library_path() {
       return new File(getClass().getProtectionDomain().getCodeSource()
@@ -302,7 +341,7 @@ public class SwissEph implements ISwissEph {
                          StringBuilder serr) {
     double deltat;
     int retval = SweConst.OK;
-    SweDate.swi_set_tid_acc(tjd_ut, iflag, 0);  
+    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);  
     deltat = SweDate.getDeltaT(tjd_ut);
     retval = swe_calc(tjd_ut + deltat, ipl, iflag, xx, serr);
     return retval;
@@ -705,7 +744,7 @@ if(path == null) return;
     iflag = SweConst.SEFLG_SWIEPH|SweConst.SEFLG_J2000|SweConst.SEFLG_TRUEPOS|SweConst.SEFLG_ICRS;
     swe_calc(SwephData.J2000, SweConst.SE_MOON, iflag, xx, null);
     if (swed.fidat[SwephData.SEI_FILE_MOON].fptr != null) {
-      SweDate.swi_set_tid_acc(0, 0, swed.fidat[SwephData.SEI_FILE_MOON].sweph_denum);
+      SweDate.swi_set_tid_acc(this, 0, 0, swed.fidat[SwephData.SEI_FILE_MOON].sweph_denum);
     }
   }
 
@@ -828,6 +867,8 @@ if(path == null) return;
   public void swe_set_jpl_file(String fname) {
     int retc;
     double ss[] = new double[3];
+    /* null fails before anything is closed, exactly as the native bridge does */
+    java.util.Objects.requireNonNull(fname, "swe_set_jpl_file: fname is null");
     /* close all open files and delete all planetary data */
     swe_close();
     /* if path is contained in fnam, it is filled into the path variable */
@@ -946,6 +987,8 @@ if(path == null) return;
   public void swe_set_sid_mode(int sid_mode, double t0, double ayan_t0) {
     if (sid_mode < 0)
       sid_mode = 0;
+    // as sweph.c 2.10.03, except the SE_SIDBIT_PREC_ORIG "test feature" (it would also need
+    // the Woolard nutation, which the port does not have)
     SidData sip = swed.sidd;
     sip.sid_mode = sid_mode;
     if (sid_mode >= SweConst.SE_SIDBITS) {
@@ -954,23 +997,47 @@ if(path == null) return;
     /* standard equinoxes: positions always referred to ecliptic of t0 */
     if (sid_mode == SweConst.SE_SIDM_J2000
             || sid_mode == SweConst.SE_SIDM_J1900
-            || sid_mode == SweConst.SE_SIDM_B1950) {
-      sip.sid_mode &= ~SweConst.SE_SIDBIT_SSY_PLANE;
-      sip.sid_mode |= SweConst.SE_SIDBIT_ECL_T0;
+            || sid_mode == SweConst.SE_SIDM_B1950
+            || sid_mode == SweConst.SE_SIDM_GALALIGN_MARDYKS) {
+      sip.sid_mode = sid_mode | SweConst.SE_SIDBIT_ECL_T0;
     }
-    if (sid_mode == SweConst.SE_SIDM_TRUE_CITRA || sid_mode == SweConst.SE_SIDM_TRUE_REVATI) 
-      sip.sid_mode &= ~(SweConst.SE_SIDBIT_ECL_T0 | SweConst.SE_SIDBIT_SSY_PLANE);
+    if (isStarAyanamsa(sid_mode)) {
+      sip.sid_mode = sid_mode;
+    }
     if (sid_mode >= SweConst.SE_NSIDM_PREDEF && sid_mode != SweConst.SE_SIDM_USER)
       sip.sid_mode = sid_mode = SweConst.SE_SIDM_FAGAN_BRADLEY;
     swed.ayana_is_set = true;
     if (sid_mode == SweConst.SE_SIDM_USER) {
       sip.t0 = t0;
       sip.ayan_t0 = ayan_t0;
+      sip.t0_is_UT = (sip.sid_mode & SweConst.SE_SIDBIT_USER_UT) != 0;
     } else {
       sip.t0 = SwephData.ayanamsa[sid_mode].t0;
       sip.ayan_t0 = SwephData.ayanamsa[sid_mode].ayan_t0;
+      sip.t0_is_UT = SwephData.ayanamsa[sid_mode].t0_is_UT;
     }
     swi_force_app_pos_etc();
+  }
+
+  /** the ayanamsas that are a star's (or a galactic point's) computed position */
+  private static boolean isStarAyanamsa(int sid_mode) {
+    switch (sid_mode) {
+      case SweConst.SE_SIDM_TRUE_CITRA:
+      case SweConst.SE_SIDM_TRUE_REVATI:
+      case SweConst.SE_SIDM_TRUE_PUSHYA:
+      case SweConst.SE_SIDM_TRUE_SHEORAN:
+      case SweConst.SE_SIDM_TRUE_MULA:
+      case SweConst.SE_SIDM_GALCENT_0SAG:
+      case SweConst.SE_SIDM_GALCENT_COCHRANE:
+      case SweConst.SE_SIDM_GALCENT_RGILBRAND:
+      case SweConst.SE_SIDM_GALCENT_MULA_WILHELM:
+      case SweConst.SE_SIDM_GALEQU_IAU1958:
+      case SweConst.SE_SIDM_GALEQU_TRUE:
+      case SweConst.SE_SIDM_GALEQU_MULA:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /* the ayanamsa (precession in longitude)
@@ -989,47 +1056,8 @@ if(path == null) return;
   */
   @Override
   public double swe_get_ayanamsa(double tjd_et) {
-    double x[]=new double[6], eps;
-    SidData sip = swed.sidd;
-    StringBuilder star = new StringBuilder(SwissData.AS_MAXCH);
-    if (!swed.ayana_is_set) {
-      swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
-    }
-    if (sip.sid_mode == SweConst.SE_SIDM_TRUE_CITRA) {
-      star.append("Spica"); /* Citra */
-      swe_fixstar(star, tjd_et, SweConst.SEFLG_NONUT, x, null);
-      return sl.swe_degnorm(x[0] - 180);
-    }
-    if (sip.sid_mode == SweConst.SE_SIDM_TRUE_REVATI) {
-      star.append(",zePsc"); /* Revati */
-      swe_fixstar(star, tjd_et, SweConst.SEFLG_NONUT, x, null);
-      /* as sweph.c 2.10.03: zeta Psc at 359 deg 50'. This port had x[0] (0 deg), a constant
-       * 10' off the native engine in every True Revati position (found 2026-11-22) */
-      return sl.swe_degnorm(x[0] - 359.8333333333);
-    }
-    if (sip.sid_mode == SweConst.SE_SIDM_TRUE_PUSHYA) {
-      star.append(",deCnc"); /* Pushya = Asellus Australis */
-      swe_fixstar(star, tjd_et, SweConst.SEFLG_NONUT, x, null);
-      return sl.swe_degnorm(x[0] - 106);
-    }
-    /* vernal point (tjd), cartesian */
-    x[0] = 1;
-    x[1] = x[2] = 0;
-    /* to J2000 */
-    if (tjd_et != SwephData.J2000) {
-      sl.swi_precess(x, tjd_et, 0, SwephData.J_TO_J2000);
-    }
-    /* to t0 */
-    sl.swi_precess(x, sip.t0, 0, SwephData.J2000_TO_J);
-    /* to ecliptic */
-    eps = sl.swi_epsiln(sip.t0, 0);
-    sl.swi_coortrf(x, x, eps);
-    /* to polar */
-    sl.swi_cartpol(x, x);
-    /* subtract initial value of ayanamsa */
-    x[0] = x[0] * SwissData.RADTODEG - sip.ayan_t0;
-    /* get ayanamsa */
-    return sl.swe_degnorm(-x[0]);
+    // the ayanamsa without nutation, as sweph.c's swe_get_ayanamsa()
+    return swi_get_ayanamsa_nonut(tjd_et, 0, null);
   }
 
   /**
@@ -1202,6 +1230,30 @@ if(path == null) return;
     return swe_fixstar_error(xx,SweConst.ERR);
   }
 
+  /**
+   * sweph.c 2.10.03 get_builtin_star(): the stars the ayanamsas are defined by are built in and
+   * take precedence over sefstars.txt (whose Galactic Center is ICRS, the built-in one J2000 -
+   * 5.5e-6 deg apart; the galactic poles are not in the file at all). The C strncmp() calls
+   * are kept literally: "mula" with length 6 matches the exact name only.
+   */
+  static String builtinStar(String star) {
+    if (star.startsWith("spica") || star.startsWith("Spica"))
+      return "Spica,alVir,ICRS,13,25,11.57937,-11,09,40.7501,-42.35,-30.67,1,13.06,0.97,-10,3672";
+    if (star.contains(",zePsc") || star.startsWith("revati") || star.startsWith("Revati"))
+      return "Revati,zePsc,ICRS,01,13,43.88735,+07,34,31.2745,145,-55.69,15,18.76,5.187,06,174";
+    if (star.contains(",deCnc") || star.startsWith("pushya") || star.startsWith("Pushya"))
+      return "Pushya,deCnc,ICRS,08,44,41.09921,+18,09,15.5034,-17.67,-229.26,17.14,24.98,3.94,18,2027";
+    if (star.contains(",laSco") || star.equals("mula") || star.equals("Mula"))
+      return "Mula,laSco,ICRS,17,33,36.52012,-37,06,13.7648,-8.53,-30.8,-3,5.71,1.62,-37,11673";
+    if (star.contains(",SgrA*"))
+      return "Gal. Center,SgrA*,2000,17,45,40.03599,-29,00,28.1699,-2.755718425,-5.547,0.0,0.125,999.99,0,0";
+    if (star.contains(",GP1958"))
+      return "Gal. Pole IAU1958,GP1958,1950,12,49,0.0,27,24,0.0,0.0,0.0,0.0,0.0,0.0,0,0";
+    if (star.contains(",GPol"))
+      return "Gal. Pole,GPol,ICRS,12,51,36.7151981,27,06,11.193172,0.0,0.0,0.0,0.0,0.0,0,0";
+    return null;
+  }
+
 String slast_stardata;
 String slast_starname;
   // Reads the line with the fixstar parameters and returns the
@@ -1214,6 +1266,11 @@ String slast_starname;
     int fline = 0;
     int line = 0;
     boolean isnomclat = false;
+
+    final String builtin = builtinStar(star.toString());
+    if (builtin != null) {
+      return new String[] { "-1", builtin };
+    }
 
     if (swed.fixstarsHash != null) {
       sstar = star.toString();
@@ -1403,7 +1460,7 @@ String slast_starname;
   @Override
   public int swe_fixstar_ut(StringBuilder star, double tjd_ut, int iflag,
                             double[] xx, StringBuilder serr) {
-    SweDate.swi_set_tid_acc(tjd_ut, iflag, 0);  
+    SweDate.swi_set_tid_acc(this, tjd_ut, iflag, 0);  
     return swe_fixstar(star, tjd_ut + SweDate.getDeltaT(tjd_ut),
                        iflag, xx, serr);
   }
@@ -3088,22 +3145,52 @@ String slast_starname;
             if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
               serr.append(" \ntrying Swiss Eph; ");
             }
-            retc =  sweph_moon(tjd, ipli, iflag, serr);
-            if (retc == SweConst.ERR) {
+            epheflag = SweConst.SEFLG_SWIEPH;    // sweph_moon:
+          } else if (retc == SwephData.BEYOND_EPH_LIMITS) {
+            if (tjd > SwephData.MOSHLUEPH_START && tjd < SwephData.MOSHLUEPH_END) {
+              iflag = (iflag & ~SweConst.SEFLG_JPLEPH) | SweConst.SEFLG_MOSEPH;
+              if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+                serr.append(" \nusing Moshier Eph; ");
+              }
+              epheflag = SweConst.SEFLG_MOSEPH;  // moshier_moon:
+            } else {
               return swecalc_error(x);
             }
-          } else if (retc == SwephData.BEYOND_EPH_LIMITS) {
-              return swecalc_error(x);
-          }
-          break;
-        case SweConst.SEFLG_SWIEPH:
-          retc =  sweph_moon(tjd, ipli,iflag, serr);
-          if (retc == SweConst.ERR) {
-            return swecalc_error(x);
           }
           break;
         default:
           break;
+      }
+      if (epheflag == SweConst.SEFLG_SWIEPH) {
+        // sweph_moon:
+        retc = sweph_moon(tjd, ipli, iflag, serr);
+        if (retc == SweConst.ERR) {
+          return swecalc_error(x);
+        }
+        /* if sweph file not found, switch to moshier */
+        if (retc == SwephData.NOT_AVAILABLE) {
+          if (tjd > SwephData.MOSHLUEPH_START && tjd < SwephData.MOSHLUEPH_END) {
+            iflag = (iflag & ~SweConst.SEFLG_SWIEPH) | SweConst.SEFLG_MOSEPH;
+            if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+              serr.append(" \nusing Moshier eph.; ");
+            }
+            epheflag = SweConst.SEFLG_MOSEPH;    // goto moshier_moon;
+          } else {
+            return swecalc_error(x);
+          }
+        }
+      }
+      if (epheflag == SweConst.SEFLG_MOSEPH) {
+        // moshier_moon:
+        retc = sm.swi_moshmoon(tjd, SwephData.DO_SAVE, null, serr);
+        if (retc == SweConst.ERR) {
+          return swecalc_error(x);
+        }
+        /* for hel. position, we need earth as well */
+        retc = smosh.swi_moshplan(tjd, SwephData.SEI_EARTH, SwephData.DO_SAVE, null, null, serr);
+        if (retc == SweConst.ERR) {
+          return swecalc_error(x);
+        }
       }
       /* heliocentric, lighttime etc. */
       if ((retc = app_pos_etc_moon(iflag, serr))!=SweConst.OK) {
@@ -3499,7 +3586,15 @@ String slast_starname;
          */
         if (retc == SwephData.NOT_AVAILABLE ||
             retc == SwephData.BEYOND_EPH_LIMITS) {
-            return swecalc_error(x);
+          if (epheflag != SweConst.SEFLG_MOSEPH) {
+            iflag = (iflag & ~SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_MOSEPH;
+            epheflag = SweConst.SEFLG_MOSEPH;
+            if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+              serr.append("\nusing Moshier eph.; ");
+            }
+            continue;
+          }
+          return swecalc_error(x);
         }
         break;
       }
@@ -3542,7 +3637,15 @@ String slast_starname;
          */
         if (retc == SwephData.NOT_AVAILABLE ||
             retc == SwephData.BEYOND_EPH_LIMITS) {
-            return swecalc_error(x);
+          if (epheflag != SweConst.SEFLG_MOSEPH) {
+            iflag = (iflag & ~SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_MOSEPH;
+            epheflag = SweConst.SEFLG_MOSEPH;
+            if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+              serr.append("\nusing Moshier eph.; ");
+            }
+            continue;
+          }
+          return swecalc_error(x);
         }
         break;
       }
@@ -3596,9 +3699,9 @@ String slast_starname;
     if (retc == SweConst.ERR) {
       return SweConst.ERR;
     }
-    /* if sweph file not found, switch to moshier */
+    /* if sweph file not found, the caller switches to moshier */
     if (retc == SwephData.NOT_AVAILABLE) {
-      return SweConst.ERR;
+      return SwephData.NOT_AVAILABLE;
     }
     return SweConst.OK;
   }
@@ -3636,8 +3739,8 @@ String slast_starname;
   private int main_planet(double tjd, int ipli, int epheflag, int iflag,
                          StringBuilder serr) throws SwissephException {
     int retc;
-    boolean calc_swieph=false;
-    boolean calc_moshier=false;
+    /* the C version is one switch with `goto sweph_planet` / `goto moshier_planet`;
+     * here epheflag is re-assigned and the next block picks it up. */
     if (epheflag == SweConst.SEFLG_JPLEPH) {
       try {
         retc = jplplan(tjd, ipli, iflag, SwephData.DO_SAVE,
@@ -3655,21 +3758,18 @@ String slast_starname;
         if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
           serr.append(" \ntrying Swiss Eph; ");
         }
-        calc_swieph=true;
-//        goto sweph_planet;
+        epheflag = SweConst.SEFLG_SWIEPH;            // goto sweph_planet;
       } else if (retc == SwephData.BEYOND_EPH_LIMITS) {
         if (tjd > SwephData.MOSHPLEPH_START && tjd < SwephData.MOSHPLEPH_END) {
           iflag = (iflag & ~SweConst.SEFLG_JPLEPH) | SweConst.SEFLG_MOSEPH;
           if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
             serr.append(" \nusing Moshier Eph; ");
           }
-          calc_moshier=true;
-//          goto moshier_planet;
+          epheflag = SweConst.SEFLG_MOSEPH;          // goto moshier_planet;
         } else {
           return SweConst.ERR;
         }
-      }
-      if (!calc_swieph && !calc_moshier) {
+      } else {
         /* geocentric, lighttime etc. */
         if (ipli == SwephData.SEI_SUN) {
           retc = app_pos_etc_sun(iflag, serr)/**/;
@@ -3685,25 +3785,42 @@ String slast_starname;
           if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
             serr.append(" \ntrying Swiss Eph; ");
           }
-          calc_swieph=true;
-//          goto sweph_planet;
+          epheflag = SweConst.SEFLG_SWIEPH;          // goto sweph_planet;
         } else if (retc == SwephData.BEYOND_EPH_LIMITS) {
-          return SweConst.ERR;
+          if (tjd > SwephData.MOSHPLEPH_START && tjd < SwephData.MOSHPLEPH_END) {
+            iflag = (iflag & ~SweConst.SEFLG_JPLEPH) | SweConst.SEFLG_MOSEPH;
+            if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+              serr.append(" \nusing Moshier Eph; ");
+            }
+            epheflag = SweConst.SEFLG_MOSEPH;        // goto moshier_planet;
+          } else {
+            return SweConst.ERR;
+          }
+        } else {
+          return SweConst.OK;
         }
       }
-    } // SweConst.SEFLG_JPLEPH
-    if (epheflag == SweConst.SEFLG_SWIEPH || calc_swieph) {
-//      sweph_planet:
+    }
+    if (epheflag == SweConst.SEFLG_SWIEPH) {
+      // sweph_planet:
       /* compute barycentric planet (+ earth, sun, moon) */
       retc = sweplan(tjd, ipli, SwephData.SEI_FILE_PLANET, iflag, SwephData.DO_SAVE,
                      null, null, null, null, serr);
       if (retc == SweConst.ERR) {
         return SweConst.ERR;
       }
+      /* if sweph file not found, switch to moshier */
       if (retc == SwephData.NOT_AVAILABLE) {
-        return SweConst.ERR;
-      }
-      if (!calc_moshier) {
+        if (tjd > SwephData.MOSHPLEPH_START && tjd < SwephData.MOSHPLEPH_END) {
+          iflag = (iflag & ~SweConst.SEFLG_SWIEPH) | SweConst.SEFLG_MOSEPH;
+          if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+            serr.append(" \nusing Moshier eph.; ");
+          }
+          epheflag = SweConst.SEFLG_MOSEPH;          // goto moshier_planet;
+        } else {
+          return SweConst.ERR;
+        }
+      } else {
         /* geocentric, lighttime etc. */
         if (ipli == SwephData.SEI_SUN) {
           retc = app_pos_etc_sun(iflag, serr)/**/;
@@ -3715,10 +3832,36 @@ String slast_starname;
         }
         /* if sweph file for t(lighttime) not found, switch to moshier */
         if (retc == SwephData.NOT_AVAILABLE) {
-          return SweConst.ERR;
+          if (tjd > SwephData.MOSHPLEPH_START && tjd < SwephData.MOSHPLEPH_END) {
+            iflag = (iflag & ~SweConst.SEFLG_SWIEPH) | SweConst.SEFLG_MOSEPH;
+            if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+              serr.append(" \nusing Moshier eph.; ");
+            }
+            epheflag = SweConst.SEFLG_MOSEPH;        // goto moshier_planet;
+          } else {
+            return SweConst.ERR;
+          }
+        } else {
+          return SweConst.OK;
         }
-      } // SweConst.SEFLG_SWIEPH
-    } // !calc_moshier
+      }
+    }
+    if (epheflag == SweConst.SEFLG_MOSEPH) {
+      // moshier_planet:
+      retc = smosh.swi_moshplan(tjd, ipli, SwephData.DO_SAVE, null, null, serr);/**/
+      if (retc == SweConst.ERR) {
+        return SweConst.ERR;
+      }
+      /* geocentric, lighttime etc. */
+      if (ipli == SwephData.SEI_SUN) {
+        retc = app_pos_etc_sun(iflag, serr)/**/;
+      } else {
+        retc = app_pos_etc_plan(ipli, iflag, serr);
+      }
+      if (retc == SweConst.ERR) {
+        return SweConst.ERR;
+      }
+    }
     return SweConst.OK;
   }
 
@@ -3748,8 +3891,7 @@ String slast_starname;
                        boolean do_save,
                        double xp[], double xe[], double xs[], double xm[],
                        StringBuilder serr) {
-    int retc;
-    boolean calc_swieph=false;
+    int i, retc;
     if (epheflag == SweConst.SEFLG_JPLEPH) {
       try {
         retc = jplplan(tjd, ipli, iflag, do_save, xp, xe, xs, serr);
@@ -3760,23 +3902,47 @@ String slast_starname;
           return retc;
         }
       }
+      if (retc == SweConst.ERR || retc == SwephData.BEYOND_EPH_LIMITS) {
+        return retc;
+      }
       /* jpl ephemeris not on disk or date beyond ephemeris range */
       if (retc == SwephData.NOT_AVAILABLE) {
         iflag = (iflag & ~SweConst.SEFLG_JPLEPH) | SweConst.SEFLG_SWIEPH;
         if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
           serr.append(" \ntrying Swiss Eph; ");
         }
-        calc_swieph=true;
-//        goto sweph_planet;
+        epheflag = SweConst.SEFLG_SWIEPH;            // goto sweph_planet;
       }
     }
-    if (epheflag == SweConst.SEFLG_SWIEPH || calc_swieph) {
-//      sweph_planet:
+    if (epheflag == SweConst.SEFLG_SWIEPH) {
+      // sweph_planet:
       /* compute barycentric planet (+ earth, sun, moon) */
       retc = sweplan(tjd, ipli, SwephData.SEI_FILE_PLANET, iflag, do_save,
                      xp, xe, xs, xm, serr);
-      if (retc == SweConst.ERR || retc == SwephData.NOT_AVAILABLE) {
-        return retc;
+      if (retc == SweConst.ERR) {
+        return SweConst.ERR;
+      }
+      /* if sweph file not found, switch to moshier */
+      if (retc == SwephData.NOT_AVAILABLE) {
+        if (tjd > SwephData.MOSHPLEPH_START && tjd < SwephData.MOSHPLEPH_END) {
+          iflag = (iflag & ~SweConst.SEFLG_SWIEPH) | SweConst.SEFLG_MOSEPH;
+          if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+            serr.append(" \nusing Moshier eph.; ");
+          }
+          epheflag = SweConst.SEFLG_MOSEPH;          // goto moshier_planet;
+        } else {
+          return SweConst.ERR;
+        }
+      }
+    }
+    if (epheflag == SweConst.SEFLG_MOSEPH) {
+      // moshier_planet:
+      retc = smosh.swi_moshplan(tjd, ipli, do_save, xp, xe, serr);/**/
+      if (retc == SweConst.ERR) {
+        return SweConst.ERR;
+      }
+      for (i = 0; i <= 5; i++) {
+        xs[i] = 0;
       }
     }
     return SweConst.OK;
@@ -3943,7 +4109,13 @@ String slast_starname;
         }
         /* if moon file doesn't exist, take moshier moon */
         if (swed.fidat[SwephData.SEI_FILE_MOON].fptr == null) {
-          return SweConst.ERR;
+          if (serr != null && serr.length() + 35 < SwissData.AS_MAXCH) {
+            serr.append(" \nusing Moshier eph. for moon; ");
+          }
+          retc = sm.swi_moshmoon(tjd, do_save, xpm, serr);
+          if (retc != SweConst.OK) {
+            return(retc);
+          }
         }
       }
       if (xpmret != null) {
@@ -4779,6 +4951,40 @@ fname="";
             return(retc);
           }
           break;
+        case SweConst.SEFLG_MOSEPH:
+        default:
+          /*
+           * with moshier or other ephemerides, subtraction of dt * speed
+           * is sufficient (has been done in light-time iteration above)
+           */
+          /* if speed flag is true, we call swi_moshplan() for new t.
+           * this does not increase position precision,
+           * but speed precision, which becomes better than 0.01"/day.
+           * for precise speed, we need earth as well.
+           */
+          if ((iflag & SweConst.SEFLG_SPEED)!=0
+            && (iflag & (SweConst.SEFLG_HELCTR | SweConst.SEFLG_BARYCTR))==0) {
+            if (ibody == SwephData.IS_PLANET) {
+              retc = smosh.swi_moshplan(t, ipli, SwephData.NO_SAVE, xxsv, xearth, serr);
+            } else {      /* if asteroid */
+              retc = sweph(t, ipli, ifno, iflag, null, SwephData.NO_SAVE, xxsv, serr);
+              if (retc == SweConst.OK) {
+                retc = smosh.swi_moshplan(t, SwephData.SEI_EARTH, SwephData.NO_SAVE, xearth, xearth, serr);
+              }
+            }
+            if (retc != SweConst.OK) {
+              return(retc);
+            }
+            /* only speed is taken from this computation, otherwise position
+             * calculations with and without speed would not agree. The difference
+             * would be about 0.01", which is far below the intrinsic error of the
+             * moshier ephemeris.
+             */
+            for (i = 3; i <= 5; i++) {
+              xx[i] = xxsv[i];
+            }
+          }
+          break;
       }
       if ((iflag & SweConst.SEFLG_HELCTR)!=0) {
         if (pdp.iephe == SweConst.SEFLG_JPLEPH ||
@@ -4864,7 +5070,7 @@ fname="";
       }
     }
     /* ICRS to J2000 */
-    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swed.jpldenum >= 403) {
+    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swi_get_denum(ipli, epheflag) >= 403) {
       sl.swi_bias(xx, t, iflag, false);
     }/**/
     /* save J2000 coordinates; required for sidereal positions */
@@ -4942,9 +5148,10 @@ fname="";
          * may be this very pdp, so the current values are saved and restored */
         final double[] xxsv = new double[24];
         System.arraycopy(pdp.xreturn, 0, xxsv, 0, 24);
-        final double aya = swi_get_ayanamsa_nonut(pdp.teval, iflag, serr);
+        final double[] daya = swi_get_ayanamsa_with_speed(pdp.teval, iflag, serr);
         System.arraycopy(xxsv, 0, pdp.xreturn, 0, 24);
-        pdp.xreturn[0] -= aya * SwissData.DEGTORAD;
+        pdp.xreturn[0] -= daya[0] * SwissData.DEGTORAD;
+        pdp.xreturn[3] -= daya[1] * SwissData.DEGTORAD;
         sl.swi_polcart_sp(pdp.xreturn, 0, pdp.xreturn, 6);
       }
     }
@@ -5762,6 +5969,14 @@ fname="";
                              SwephData.NO_SAVE, xsun, serr);
               }
               break;
+            case SweConst.SEFLG_MOSEPH:
+              if ((iflag & SweConst.SEFLG_HELCTR)!=0 ||
+                  (iflag & SweConst.SEFLG_BARYCTR)!=0) {
+                retc = smosh.swi_moshplan(t, SwephData.SEI_EARTH, SwephData.NO_SAVE,
+                                          xearth, xearth, serr);
+              }
+              /* with moshier there is no barycentric sun */
+              break;
             default:
               retc = SweConst.ERR;
               break;
@@ -5807,7 +6022,7 @@ fname="";
       }
     }
     /* ICRS to J2000 */
-    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swed.jpldenum >= 403) {
+    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swi_get_denum(SwephData.SEI_SUN, iflag) >= 403) {
       sl.swi_bias(xx, t, iflag, false);
     }/**/
     /* save J2000 coordinates; required for sidereal positions */
@@ -6023,7 +6238,7 @@ fname="";
       }
     }
     /* ICRS to J2000 */
-    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swed.jpldenum >= 403) {
+    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swi_get_denum(SwephData.SEI_MOON, iflag) >= 403) {
       sl.swi_bias(xx, t, iflag, false);
     }/**/
     /* save J2000 coordinates; required for sidereal positions */
@@ -6076,7 +6291,7 @@ fname="";
       }
     }
     /* ICRS to J2000 */
-    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swed.jpldenum >= 403) {
+    if ((iflag & SweConst.SEFLG_ICRS) == 0 && swi_get_denum(SwephData.SEI_SUN, iflag) >= 403) {
       sl.swi_bias(xx, psdp.teval, iflag, false);
     }/**/
     /* save J2000 coordinates; required for sidereal positions */
@@ -6549,7 +6764,36 @@ int refepyOffs;
             }
           }
           if (retc == SwephData.NOT_AVAILABLE) {
-            return SweConst.ERR;
+            if (tjd > SwephData.MOSHPLEPH_START && tjd < SwephData.MOSHPLEPH_END) {
+              iflag = (iflag & ~SweConst.SEFLG_SWIEPH) | SweConst.SEFLG_MOSEPH;
+              epheflag = SweConst.SEFLG_MOSEPH;
+              if (serr != null && serr.length() + 30 < SwissData.AS_MAXCH) {
+                serr.append(" \nusing Moshier eph.; ");
+              }
+              break;
+            } else {
+              return SweConst.ERR;
+            }
+          }
+          /* precession and nutation etc. */
+          retc = swi_plan_for_osc_elem(iflag|SweConst.SEFLG_SPEED, t, xpos[i]); /* retc is always ok */
+        }
+        break;
+      case SweConst.SEFLG_MOSEPH:
+        /* with moshier moon, we need a greater speed_intv, because here the
+         * node and apogee oscillate wildly within small intervals */
+        speed_intv = SwephData.NODE_CALC_INTV_MOSH;
+        for (i = istart; i <= 2; i++) {
+          if (i == 0) {
+            t = tjd - speed_intv;
+          } else if (i == 1) {
+            t = tjd + speed_intv;
+          } else {
+            t = tjd;
+          }
+          retc = sm.swi_moshmoon(t, SwephData.NO_SAVE, xpos[i], serr);/**/
+          if (retc == SweConst.ERR) {
+            return(retc);
           }
           /* precession and nutation etc. */
           retc = swi_plan_for_osc_elem(iflag|SweConst.SEFLG_SPEED, t, xpos[i]); /* retc is always ok */
@@ -6750,7 +6994,9 @@ int refepyOffs;
          * sidereal code together */
         } else {
           sl.swi_cartpol_sp(ndp.xreturn, 6, ndp.xreturn, 0);
-          ndp.xreturn[0] -= swi_get_ayanamsa_nonut(ndp.teval, iflag, null) * SwissData.DEGTORAD;
+          final double[] daya = swi_get_ayanamsa_with_speed(ndp.teval, iflag, null);
+          ndp.xreturn[0] -= daya[0] * SwissData.DEGTORAD;
+          ndp.xreturn[3] -= daya[1] * SwissData.DEGTORAD;
           sl.swi_polcart_sp(ndp.xreturn, 0, ndp.xreturn, 6);
         }
       } else if ((iflag & SweConst.SEFLG_J2000)!=0) {
@@ -6899,7 +7145,9 @@ int refepyOffs;
       } else {
       /* traditional algorithm */
         sl.swi_cartpol_sp(ndp.xreturn, 6, ndp.xreturn, 0);
-        ndp.xreturn[0] -= swi_get_ayanamsa_nonut(ndp.teval, iflag, null) * SwissData.DEGTORAD;
+        final double[] daya = swi_get_ayanamsa_with_speed(ndp.teval, iflag, null);
+        ndp.xreturn[0] -= daya[0] * SwissData.DEGTORAD;
+        ndp.xreturn[3] -= daya[1] * SwissData.DEGTORAD;
         sl.swi_polcart_sp(ndp.xreturn, 0, ndp.xreturn, 6); 
         sl.swi_cartpol_sp(ndp.xreturn, 18, ndp.xreturn, 12);
       }
@@ -6973,7 +7221,7 @@ int refepyOffs;
     Epsilon oe = swed.oec;
     Epsilon oectmp=new Epsilon();
     /* ICRS to J2000 */
-    if ((iflag & SweConst.SEFLG_ICRS)==0 && swed.jpldenum >= 403) {
+    if ((iflag & SweConst.SEFLG_ICRS)==0 && swi_get_denum(SwephData.SEI_SUN, iflag) >= 403) {
       sl.swi_bias(xx, tjd, iflag, false);
     }/**/
     /************************************************
@@ -7284,6 +7532,9 @@ int refepyOffs;
       iflag |= SweConst.SEFLG_NONUT;
       iflag = iflag & ~(SweConst.SEFLG_JPLHOR | SweConst.SEFLG_JPLHOR_APPROX);
     }
+    if ((iflag & SweConst.SEFLG_MOSEPH)!=0) {
+      epheflag = SweConst.SEFLG_MOSEPH;
+    }
     if ((iflag & SweConst.SEFLG_SWIEPH)!=0) {
       epheflag = SweConst.SEFLG_SWIEPH;
     }
@@ -7484,7 +7735,7 @@ int refepyOffs;
     if (epoch != 0) {
       sl.swi_icrs2fk5(x, iflag, true); /* backward, i. e. to icrf */
       /* with ephemerides < DE403, we now convert to J2000 */
-      if (swed.jpldenum < 403)
+      if (swi_get_denum(SwephData.SEI_SUN, iflag) >= 403)
         sl.swi_bias(x, SwephData.J2000, SweConst.SEFLG_SPEED, false);
     }
     /****************************************************
@@ -7582,7 +7833,7 @@ int refepyOffs;
     }
     /* ICRS to J2000 */
     if ((iflag & SweConst.SEFLG_ICRS) == 0 &&
-        (swed.jpldenum >= 403 || (iflag & SweConst.SEFLG_BARYCTR) != 0)) {
+        (swi_get_denum(SwephData.SEI_SUN, iflag) >= 403 || (iflag & SweConst.SEFLG_BARYCTR) != 0)) {
       sl.swi_bias(x, tjd, iflag, false);
     }/**/
     /* save J2000 coordinates; required for sidereal positions */
@@ -7674,7 +7925,9 @@ if (false) {
       /* traditional algorithm */
       } else {
         sl.swi_cartpol_sp(x, x);
-        x[0] -= swi_get_ayanamsa_nonut(tjd, iflag, null) * SwissData.DEGTORAD;
+        final double[] daya = swi_get_ayanamsa_with_speed(tjd, iflag, null);
+        x[0] -= daya[0] * SwissData.DEGTORAD;
+        x[3] -= daya[1] * SwissData.DEGTORAD;
         sl.swi_polcart_sp(x, x);
       }
     }
@@ -8143,7 +8396,7 @@ if (false) {
     if (retc == SweConst.OK) {
       swed.jpldenum = sj.swi_get_jpl_denum();
       swed.jpl_file_is_open = true;
-      SweDate.swi_set_tid_acc(0, 0, swed.jpldenum);
+      SweDate.swi_set_tid_acc(this, 0, 0, swed.jpldenum);
     }
     return retc;
   }
@@ -8639,7 +8892,20 @@ if (false) {
     return swe_fixstar_mag(star, mag, serr);
   }
 
-  /**
+    /**
+   * sweph.c swi_get_ayanamsa_with_speed(): {ayanamsa, its speed in deg/day} without nutation,
+   * the speed as a backward difference over 0.001 day. Every "traditional" sidereal branch
+   * subtracts both; until 2026-11-23 the Java engine subtracted only the position, so every
+   * sidereal speed was one ayanamsa rate (~3.8e-5 deg/day) off native.
+   */
+  double[] swi_get_ayanamsa_with_speed(double tjd_et, int iflag, StringBuilder serr) {
+    final double tintv = 0.001;
+    final double daya_t2 = swi_get_ayanamsa_nonut(tjd_et - tintv, iflag, serr);
+    final double daya = swi_get_ayanamsa_nonut(tjd_et, iflag, serr);
+    return new double[] {daya, (daya - daya_t2) / tintv};
+  }
+
+/**
    * The ayanamsa without nutation, as upstream's swi_get_ayanamsa_ex(tjd_et, iflag) returns it
    * (sweph.c): the value swe_get_ayanamsa_ex() adds nutation to, and the value swe_calc()
    * subtracts in the traditional sidereal algorithm.
@@ -8658,22 +8924,137 @@ if (false) {
    * agrees with the native library to 2e-10 arcsec either way.
    */
   double swi_get_ayanamsa_nonut(double tjd_et, int iflag, StringBuilder serr) {
+    // A port of sweph.c 2.10.03 swi_get_ayanamsa_ex(). Until 2026-11-23 the precession-based
+    // modes here had neither the precession-model correction (get_aya_correction) nor
+    // t0_is_UT nor SE_SIDBIT_ECL_DATE, and the ayanamsa table was an old one: Lahiri sat
+    // 3.6e-5 deg (0.13") off the native engine, Fagan 1.15e-4, Raman 2.3e-4, DeLuce 22".
     if (!swed.ayana_is_set) {
       swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
     }
-    final String star;
-    final double offset;
-    switch (swed.sidd.sid_mode) {
-      case SweConst.SE_SIDM_TRUE_CITRA:  star = "Spica";  offset = 180; break;
-      case SweConst.SE_SIDM_TRUE_REVATI: star = ",zePsc"; offset = 359.8333333333; break;
-      case SweConst.SE_SIDM_TRUE_PUSHYA: star = ",deCnc"; offset = 106; break;
-      default: return swe_get_ayanamsa(tjd_et);
-    }
+    final SidData sip = swed.sidd;
+    final int sid_mode = sip.sid_mode % SweConst.SE_SIDBITS;
+    final int ephe = (iflag & SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_NONUT;
     final double[] x = new double[6];
-    final int starFlags = (iflag & SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_NONUT
-            | (iflag & (SweConst.SEFLG_TRUEPOS | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL));
-    swe_fixstar(new StringBuilder(star), tjd_et, starFlags, x, serr);
-    return sl.swe_degnorm(x[0] - offset);
+    if (isStarAyanamsa(sid_mode)) {
+      /* _TRUE_ ayanamshas take SEFLG_TRUEPOS/NOABERR/NOGDEFL from the caller ("iflag_true");
+       * the galactic-equator ones always need SEFLG_TRUEPOS ("iflag_galequ") */
+      final int iflag_true = ephe
+          | (iflag & (SweConst.SEFLG_TRUEPOS | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL));
+      final int iflag_galequ = ephe | SweConst.SEFLG_TRUEPOS;
+      final String star;
+      final double offset;
+      int flags = iflag_true;
+      switch (sid_mode) {
+        case SweConst.SE_SIDM_TRUE_CITRA:          star = "Spica";   offset = 180; break;
+        case SweConst.SE_SIDM_TRUE_REVATI:         star = ",zePsc";  offset = 359.8333333333; break;
+        case SweConst.SE_SIDM_TRUE_PUSHYA:         star = ",deCnc";  offset = 106; break;
+        case SweConst.SE_SIDM_TRUE_SHEORAN:        star = ",deCnc";  offset = 103.49264221625; break;
+        case SweConst.SE_SIDM_TRUE_MULA:           star = ",laSco";  offset = 240; break;
+        case SweConst.SE_SIDM_GALCENT_0SAG:        star = ",SgrA*";  offset = 240.0; break;
+        case SweConst.SE_SIDM_GALCENT_COCHRANE:    star = ",SgrA*";  offset = 270.0; break;
+        case SweConst.SE_SIDM_GALCENT_RGILBRAND:   star = ",SgrA*";  offset = 210.0 + 90.0 * 0.3819660113; break;
+        case SweConst.SE_SIDM_GALCENT_MULA_WILHELM:
+          star = ",SgrA*"; offset = 246.6666666667; flags |= SweConst.SEFLG_EQUATORIAL; break;
+        case SweConst.SE_SIDM_GALEQU_IAU1958:      star = ",GP1958"; offset = 150; flags = iflag_galequ; break;
+        case SweConst.SE_SIDM_GALEQU_TRUE:         star = ",GPol";   offset = 150; flags = iflag_galequ; break;
+        default: /* SE_SIDM_GALEQU_MULA */         star = ",GPol";   offset = 150 + 6.6666666667; flags = iflag_galequ; break;
+      }
+      if (swe_fixstar(new StringBuilder(star), tjd_et, flags, x, serr) == SweConst.ERR) {
+        return 0; // as C: ERR leaves *daya = 0
+      }
+      double daya = x[0];
+      if (sid_mode == SweConst.SE_SIDM_GALCENT_MULA_WILHELM) {
+        /* right ascension in polar projection onto the ecliptic */
+        daya = armc_to_mc(x[0], sl.swi_epsiln(tjd_et, ephe) * SwissData.RADTODEG);
+      }
+      return sl.swe_degnorm(daya - offset);
+    }
+    double t0 = sip.t0, eps;
+    if (sip.t0_is_UT) {
+      t0 += swe_deltat_ex(t0, iflag, serr);
+    }
+    if ((sip.sid_mode & SweConst.SE_SIDBIT_ECL_DATE) == 0) {
+      /* the original method of 1999: the vernal point of tjd_et is precessed to t0 and its
+       * longitude on the ecliptic of t0 is subtracted from the initial value */
+      x[0] = 1;
+      x[1] = x[2] = 0;
+      if (tjd_et != SwephData.J2000) {
+        sl.swi_precess(x, tjd_et, 0, SwephData.J_TO_J2000);
+      }
+      sl.swi_precess(x, t0, 0, SwephData.J2000_TO_J);
+      eps = sl.swi_epsiln(t0, 0);
+      sl.swi_coortrf(x, x, eps);
+      sl.swi_cartpol(x, x);
+      x[0] = -x[0] * SwissData.RADTODEG + sip.ayan_t0;
+    } else {
+      /* measured on the ecliptic of date (sweph.c, 15 May 2020) */
+      x[0] = SwissLib.swe_degnorm(sip.ayan_t0) * SwissData.DEGTORAD;
+      x[1] = 0;
+      x[2] = 1;
+      eps = sl.swi_epsiln(t0, 0);
+      sl.swi_polcart(x, x);
+      sl.swi_coortrf(x, x, -eps);
+      if (t0 != SwephData.J2000) {
+        sl.swi_precess(x, t0, 0, SwephData.J_TO_J2000);
+      }
+      sl.swi_precess(x, tjd_et, 0, SwephData.J2000_TO_J);
+      eps = sl.swi_epsiln(tjd_et, 0);
+      sl.swi_coortrf(x, x, eps);
+      sl.swi_cartpol(x, x);
+      x[0] = SwissLib.swe_degnorm(x[0] * SwissData.RADTODEG);
+    }
+    return SwissLib.swe_degnorm(x[0] - get_aya_correction(iflag, serr));
+  }
+
+  /**
+   * sweph.c get_aya_correction(): an ayanamsa defined with another precession model than the
+   * one in use (aya_init.prec_offset - Lahiri: IAU 1976, Fagan/Raman/Krishnamurti: Newcomb)
+   * is corrected so that sidereal positions stay what that model gives, and only the
+   * reported ayanamsa changes with the precession model.
+   */
+  private double get_aya_correction(int iflag, StringBuilder serr) {
+    final SidData sip = swed.sidd;
+    final int prec_model = swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM];
+    final int prec_model_short = swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM];
+    final int sid_mode = sip.sid_mode % SweConst.SE_SIDBITS;
+    if (sip.t0 == SwephData.J2000) return 0;
+    if ((sip.sid_mode & SweConst.SE_SIDBIT_NO_PREC_OFFSET) != 0) return 0;
+    int prec_offset = 0;
+    if (sid_mode < SweConst.SE_NSIDM_PREDEF) prec_offset = SwephData.ayanamsa[sid_mode].prec_offset;
+    if (prec_offset < 0) prec_offset = 0;
+    if (prec_model == prec_offset) return 0;
+    double t0 = sip.t0;
+    if (sip.t0_is_UT) {
+      t0 += swe_deltat_ex(t0, iflag, serr);
+    }
+    /* vernal point (tjd), cartesian */
+    final double[] x = {1, 0, 0, 0, 0, 0};
+    sl.swi_precess(x, t0, 0, SwephData.J_TO_J2000);
+    swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM] = prec_offset;
+    swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM] = prec_offset;
+    try {
+      sl.swi_precess(x, t0, 0, SwephData.J2000_TO_J);
+    } finally {
+      swed.astro_models[SweConst.SE_MODEL_PREC_LONGTERM] = prec_model;
+      swed.astro_models[SweConst.SE_MODEL_PREC_SHORTTERM] = prec_model_short;
+    }
+    sl.swi_coortrf(x, x, sl.swi_epsiln(t0, 0));
+    sl.swi_cartpol(x, x);
+    double corr = x[0] * SwissData.RADTODEG;
+    if (corr > 350) corr -= 360; // a signed value near 0
+    return corr;
+  }
+
+  /** swehouse.c swi_armc_to_mc() */
+  private static double armc_to_mc(double armc, double eps) {
+    final double VERY_SMALL = 1E-10;
+    if (SMath.abs(armc - 90) > VERY_SMALL && SMath.abs(armc - 270) > VERY_SMALL) {
+      double mc = SMath.atan(SMath.tan(armc * SwissData.DEGTORAD)
+          / SMath.cos(eps * SwissData.DEGTORAD)) * SwissData.RADTODEG;
+      if (armc > 90 && armc <= 270) mc = SwissLib.swe_degnorm(mc + 180);
+      return mc;
+    }
+    return SMath.abs(armc - 90) <= VERY_SMALL ? 90 : 270;
   }
 
   @Override

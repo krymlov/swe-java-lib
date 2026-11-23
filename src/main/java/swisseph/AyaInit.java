@@ -111,9 +111,16 @@ package swisseph;
 final class AyaInit {
   final double t0;
   final double ayan_t0;
+  /** t0 is UT (sweph.h aya_init.t0_is_UT) */
+  final boolean t0_is_UT;
+  /** the precession model the ayanamsa was defined with, C numbering (SEMOD_PREC_IAU_1976 = 1,
+   * SEMOD_PREC_NEWCOMB = 11); 0 = the default model, -1 = unknown - see get_aya_correction() */
+  final int prec_offset;
 
-  AyaInit(double t0, double ayan_t0) {
+  AyaInit(double t0, double ayan_t0, boolean t0_is_UT, int prec_offset) {
     this.t0=t0;
     this.ayan_t0=ayan_t0;
+    this.t0_is_UT=t0_is_UT;
+    this.prec_offset=prec_offset;
   }
 }

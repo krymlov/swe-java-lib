@@ -84,9 +84,12 @@ package swisseph;
 final class SidData {
     int sid_mode = 0;
     double ayan_t0 = 0., t0 = 0.;
+    /** t0 is UT, not ET (sweph.h sid_data.t0_is_UT): delta t is added before it is used */
+    boolean t0_is_UT = false;
 
     void clearData() {
         sid_mode = 0;
         ayan_t0 = t0 = 0.;
+        t0_is_UT = false;
     }
 }

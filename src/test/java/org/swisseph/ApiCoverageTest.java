@@ -84,7 +84,7 @@ public class ApiCoverageTest extends AbstractTest {
         missing.removeAll(declared(ISwissEph.class));
 
         assertTrue(missing.isEmpty(), "SwephExp natives with no ISwissEph declaration: " + missing);
-        assertEquals(106, natives().size(), "SwephExp should declare 106 natives");
+        assertEquals(107, natives().size(), "SwephExp should declare 107 natives");
     }
 
     /**

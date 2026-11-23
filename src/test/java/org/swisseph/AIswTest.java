@@ -13,7 +13,7 @@ import swisseph.SweConst;
  * ({@code SwephExp.swe_xxx(...)}); here the exact same calls, with the exact same
  * assertions, go through {@link ISwissEph#swe_calc} and friends via
  * {@link AbstractTest#getSwephExp()} - the native-backed {@link SwephNative} instance - so
- * that the interface delegation layer is exercised by the same 106-method coverage rather
+ * that the interface delegation layer is exercised by the same 107-method coverage rather
  * than trusting it compiles.
  * <p>
  * {@code getSwephExp()}'s constants ({@link SweConst}) are used throughout instead of

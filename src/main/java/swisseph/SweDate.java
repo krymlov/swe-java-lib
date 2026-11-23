@@ -926,7 +926,18 @@ public class SweDate implements Serializable {
   * @see #setGlobalTidalAcc(double, int, int)
   */
   static void swi_set_tid_acc(double tjd_ut, int iflag, int denum) {
-    setGlobalTidalAcc(tjd_ut, iflag, denum);
+    setGlobalTidalAcc(getSwissEph(), tjd_ut, iflag, denum);
+  }
+
+  /**
+  * As {@link #swi_set_tid_acc(double, int, int)}, with the engine that is calculating. In C the
+  * Moon file is looked up in the swed of the calling thread; here it was looked up in the first
+  * SwissEph ever created in the JVM - another thread's, another ephemeris path, possibly
+  * closed ("Ephemeris file is damaged") - whenever the date fell outside the Moon file, which
+  * the Moshier fallback made reachable (2026-11-23).
+  */
+  static void swi_set_tid_acc(SwissEph sw, double tjd_ut, int iflag, int denum) {
+    setGlobalTidalAcc(sw != null ? sw : getSwissEph(), tjd_ut, iflag, denum);
   }
   /**
   * Sets the tidal acceleration used in calculations of delta T.
@@ -948,8 +959,11 @@ public class SweDate implements Serializable {
   * @see swisseph.SweConst#SE_TIDAL_AUTOMATIC
   * @see swisseph.SweConst#SE_TIDAL_DEFAULT
   */
-  static synchronized void setGlobalTidalAcc(double tjd_ut, int iflag, int denum) {
-    final SwissEph sw = getSwissEph();
+  static void setGlobalTidalAcc(double tjd_ut, int iflag, int denum) {
+    setGlobalTidalAcc(getSwissEph(), tjd_ut, iflag, denum);
+  }
+
+  static synchronized void setGlobalTidalAcc(final SwissEph sw, double tjd_ut, int iflag, int denum) {
     double xx[] = new double[6];
     double tjd_et;
     int retval = 0;

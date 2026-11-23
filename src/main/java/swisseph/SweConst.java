@@ -1074,6 +1074,10 @@ public interface SweConst {
     int SEMOD_PREC_SIMON_1994 = 6;
     int SEMOD_PREC_WILLIAMS_1994 = 7;
     int SEMOD_PREC_VONDRAK_2011 = 8;
+    /** Newcomb (Kinoshita 1975). Same number as in swephexp.h, where the models above are
+     * numbered differently (an older port); used by the ayanamsa precession correction, which
+     * needs the precession model an ayanamsa was defined with (sweph.h, aya_init.prec_offset). */
+    int SEMOD_PREC_NEWCOMB = 11;
     int SEMOD_PREC_DEFAULT = SEMOD_PREC_VONDRAK_2011;
     /* former implementations of the used
      * IAU 1976, 2000 and 2006 for a limited time range

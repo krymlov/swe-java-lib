@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Companion to {@link ApiCoverageTest}'s structural checks (every native reachable through
  * {@link ISwissEph}, every native overridden by {@code swisseph.SwissEph}): this instead
- * checks that every one of the 106 native methods is actually <em>called</em> somewhere
+ * checks that every one of the 107 native methods is actually <em>called</em> somewhere
  * under {@code src/test/java} - the {@code SwephXxxTest} family ported from
  * {@code swe-java-api} exists specifically to give each one a call site through
  * {@link ISwissEph}, mirroring {@code swisseph.SwephApiCoverageTest} in the sibling project
@@ -66,7 +66,7 @@ class SwephExpCallCoverageTest {
     @Test
     void everyNativeMethodHasACallSiteSomewhereInTheTestSuite() throws IOException {
         Set<String> declared = declaredNativeMethodNames();
-        assertTrue(declared.size() == 106, "expected 106 native methods, found " + declared.size());
+        assertTrue(declared.size() == 107, "expected 107 native methods, found " + declared.size());
 
         String source = allTestSourceExceptThisFile();
         List<String> uncalled = new ArrayList<>();

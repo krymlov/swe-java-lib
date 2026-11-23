@@ -166,115 +166,57 @@ interface SwephData {
    * t0       epoch of ayanamsa, TDT (ET)
    * ayan_t0  ayanamsa value at epoch
    */
+  // generated from $SWISSEPH_HOME/sweph.h by ai-github-projects/swe-java-lib/tools/gen_ayanamsa_table.py;
+  // the comments with the sources of each ayanamsa are in sweph.h
   static final AyaInit[] ayanamsa = new AyaInit[] {
-    new AyaInit(2433282.42346, 24.042044444),  /* 0: Fagan/Bradley (Default) */
-    new AyaInit(2435553.5, 23.250182778 - 0.004658035),   /* 1: Lahiri (derived from: * Indian Astronomical Ephemeris 1989, p. 556; * the subtracted value is nutation) */
-    new AyaInit(J1900, 360 - 333.58695),   /* 2: De Luce (Robert Hand) */
-    new AyaInit(J1900, 360 - 338.98556),   /* 3: Raman (Robert Hand) */
-    new AyaInit(J1900, 360 - 341.33904),   /* 4: Ushashashi (Robert Hand) */
-    new AyaInit(J1900, 360 - 337.636111),  /* 5: Krishnamurti (Robert Hand) */
-    new AyaInit(J1900, 360 - 333.0369024), /* 6: Djwhal Khool; (Graham Dawson) *    Aquarius entered on 1 July 2117 */
-    new AyaInit(J1900, 360 - 338.917778),  /* 7: Yukteshwar; (David Cochrane) */
-    new AyaInit(J1900, 360 - 338.634444),  /* 8: JN Bhasin; (David Cochrane) */
-    new AyaInit(1684532.5, -5.66667),      /* 9: Babylonian, Kugler 1 */
-    new AyaInit(1684532.5, -4.26667),      /*10: Babylonian, Kugler 2 */
-    new AyaInit(1684532.5, -3.41667),      /*11: Babylonian, Kugler 3 */
-    new AyaInit(1684532.5, -4.46667),      /*12: Babylonian, Huber */
-    new AyaInit(1673941, -5.079167),       /*13: Babylonian, Mercier; *    eta Piscium culminates with zero point */
-    new AyaInit(1684532.5, -4.44138598),   /*14: t0 is defined by Aldebaran at 15 Taurus */
-    new AyaInit(1674484.0, -9.33333),        /*15: Hipparchos */
-    new AyaInit(1927135.8747793, 0),       /*16: Sassanian */ /*{1746443.513, 0},                     *17: Galactic Center at 0 Sagittarius */
-    new AyaInit(1746447.518, 0),           /*17: Galactic Center at 0 Sagittarius */
-    new AyaInit(J2000, 0),                 /*18: J2000 */
-    new AyaInit(J1900, 0),                 /*19: J1900 */
-    new AyaInit(B1950, 0),                 /*20: B1950 */
-    new AyaInit(1903396.8128654, 0),       /*21: Suryasiddhanta, assuming ingress of mean Sun into Aries at point of mean equinox of date on 21.3.499, noon, Ujjain (75.7684565 E) = 7:30:31.57 UT */
-    new AyaInit(1903396.8128654,-0.21463395),/*22: Suryasiddhanta, assuming ingress of mean Sun into Aries at true position of mean Sun at same epoch */
-    new AyaInit(1903396.7895321, 0),       /*23: Aryabhata, same date, but UT 6:56:55.57 analogous 21 */
-    new AyaInit(1903396.7895321,-0.23763238),/*24: Aryabhata, analogous 22 */
-    new AyaInit(1903396.8128654,-0.79167046),/*25: SS, Revati/zePsc at polar long. 359°50'*/
-    new AyaInit(1903396.8128654, 2.11070444),/*26: SS, Citra/Spica at polar long. 180° */
-    new AyaInit(0, 0),	                /*27: True Citra (Spica exactly at 0 Libra) */
-    new AyaInit(0, 0),	                /*28: True Revati (zeta Psc exactly at 0 Aries) */
-    new AyaInit(0, 0),			/*29: True Pushya (delta Cnc exactly a 16 Cancer */
-    new AyaInit(0, 0),           // 30: Gil Brand
-/*************************/
-/* 31: Galactic Equator IAU 1958, i.e. galactic/ecliptic intersection point
-      based on galactic coordinate system */
-          new AyaInit(0, 0),	             // 31: GE IAU 1958
-/*************************/
-/* 32: Galactic Equator True, i.e. galactic/ecliptic intersection point based
-     on the galactic pole as given in: Liu/Zhu/Zhang, „Reconsidering the
-     galactic coordinate system“, A & A No. AA2010, Oct. 2010 */
-          new AyaInit(0, 0),	             // 32: GE true
-/*************************/
-/* 33: Galactic Equator Mula, i.e. galactic/ecliptic intersection point in the
-      middle of lunar mansion Mula */
-        new AyaInit(0, 0),	             // 33: GE Mula
-/*************************/
-/* 34: Skydram/Galactic Alignment (R. Mardyks); autumn equinox aligned with
-      Galactic Equator/Pole */
-        new AyaInit(2451079.734892000, 30),   // 34: Skydram/Mardyks
-/*************************/
-/* 35: Chandra Hari */
-        new AyaInit(0, 0),	             // 35: Chandra Hari
-/*************************/
-/* 36: Dhruva Galactic Centre Middle of Mula (Ernst Wilhelm) */
-        new AyaInit(0, 0),	             // 36: Ernst Wilhelm
-/*************************/
-/* 37: Kali 3623 = 522 CE, Ujjain (75.7684565), based on Kali midnight and
-      year length of Suryasiddhanta */
-        new AyaInit(1911797.740782065, 0),     // 36: 0 ayanamsha in year 522
-/*************************/
-/* 38: Babylonian (Britton 2010)
-      John P. Britton, "Studies in Babylonian lunar theory: part III. The
-      introduction of the uniform zodiac", in Arch. Hist. Exact. Sci.
-      (2010)64:617-663, p. 630. */
-        new AyaInit(1721057.5, -3.2),         // 38: Babylonian (Britton 2010)
-/*************************/
-/* 39: Sunil Sheoran ("Vedic")
-      S. Sheoran, "The Science of Time and Timeline of World History", 2017. */
-        new AyaInit(0, 0),                    // 39: Sunil Sheoran ("Vedic")
-/*************************/
-/* 40: Galactic Center at 0 Capricon (Cochrane) */
-        new AyaInit(0, 0),                    // 40: Cochrane
-/*************************/
-/* 41: "Galactic Equatorial" (N.A. Fiorenza) */
-        new AyaInit(2451544.5, 25.0),          // 41: N.A. Fiorenza */
-/*************************/
-/* 42: Vettius Valens (Moon; derived from Holden 1995 p. 12 for epoch of Valens
-      1 Jan. 150 CE julian) */
-        new AyaInit(1775845.5, -2.9422),      // 42: Vettius Valens
-/*************************/
-/* 43: Lahiri (1940), book "Panchanga darpan":
-      22°26'45".50 + 50".25748T + 0".00011115T^2 */
-        new AyaInit(J1900, 22.44597222), // 43: Lahiri (1940)
-/*************************/
-/* 44: Lahiri (VP285), mean sun at 360° in 285CE; epoch for mean sun at 0 acc.
-      to Simon 1994, corrected for Vondrak precession
-      (Preface to Lahiri's "Indian Ephemeris" 1980) */
-        new AyaInit(1825235.2458513028, 0.0), // 44: Lahiri VP285 (1980)
-/*************************/
-/* 45: Krishnamurti from mean equinox 291, based on Newcomb precession,
-      according to D. Senthilathiban, "Study of KP Ayanamsa with Modern
-      Precession Theories" (2019), but using precession Vondrak 2011 and
-      correction base on Newcomb precession. */
-//{1827424.752255678, 0.0, FALSE, SEMOD_PREC_NEWCOMB), // 45: Krishnamurti VP291
-        new AyaInit(1827424.752255678, 0.0), // 45: Krishnamurti VP291
-/*************************/
-/* 46: Lahiri original: Calendar Reform Committee 1956,
-      before the correction by 0.658" in IAE 1985.
-      The subtracted value is nutation according to Woolard 1953.
-      However, nutation Woolard was used by IENA/IAE only from 1960 on,
-      so this value is not correct. In order to reproduce mean ayanamshas
-      of IENA >=1960, we could choose 23.25 - 0.00464207 + 0.07 / 3600.0
-      as initial value in 1956. However this will not help to reproduce
-      true ayanamshas. A deviation of around 0.1" remains,
-      for unknown reasons. The difference between Lahiri (1) and
-      Lahiri ICRC (45) amounts to 1.1". */
-        new AyaInit(2435553.5, 23.25 - 0.00464207), // 46: SE_SIDM_LAHIRI_ICRC
-/*************************/
-};
+    new AyaInit(2433282.42346, 24.042044444, false, SweConst.SEMOD_PREC_NEWCOMB), // 0: Fagan/Bradley
+    new AyaInit(2435553.5, 23.250182778 - 0.004658035, false, SweConst.SEMOD_PREC_IAU_1976), // 1: Lahiri
+    new AyaInit(1721057.5, 0, true, 0), // 2: DeLuce
+    new AyaInit(J1900, 360 - 338.98556, false, SweConst.SEMOD_PREC_NEWCOMB), // 3: Raman
+    new AyaInit(J1900, 360 - 341.33904, false, -1), // 4: Usha/Shashi
+    new AyaInit(J1900, 360 - 337.636111, false, SweConst.SEMOD_PREC_NEWCOMB), // 5: Krishnamurti
+    new AyaInit(J1900, 360 - 333.0369024, false, 0), // 6: Djwhal Khool
+    new AyaInit(J1900, 360 - 338.917778, false, -1), // 7: Shri Yukteshwar
+    new AyaInit(J1900, 360 - 338.634444, false, -1), // 8: Bhasin
+    new AyaInit(1684532.5, -5.66667, true, -1), // 9: Babylonian, Kugler 1
+    new AyaInit(1684532.5, -4.26667, true, -1), // 10: Babylonian, Kugler 2
+    new AyaInit(1684532.5, -3.41667, true, -1), // 11: Babylonian, Kugler 3
+    new AyaInit(1684532.5, -4.46667, true, -1), // 12: Baylonian, Huber
+    new AyaInit(1673941, -5.079167, true, -1), // 13: Babylonian, Mercier
+    new AyaInit(1684532.5, -4.44138598, true, 0), // 14: Babylonian/Aldebaran = 15 Tau
+    new AyaInit(1674484.0, -9.33333, true, -1), // 15: Hipparchos
+    new AyaInit(1927135.8747793, 0, true, -1), // 16: Sassanian
+    new AyaInit(0, 0, false, 0), // 17: Galactic Center at 0 Sagittarius
+    new AyaInit(J2000, 0, false, 0), // 18: J2000
+    new AyaInit(J1900, 0, false, 0), // 19: J1900
+    new AyaInit(B1950, 0, false, 0), // 20: B1950
+    new AyaInit(1903396.8128654, 0, true, 0), // 21: Suryasiddhanta
+    new AyaInit(1903396.8128654, -0.21463395, true, 0), // 22: Suryasiddhanta, mean Sun
+    new AyaInit(1903396.7895321, 0, true, 0), // 23: Aryabhata
+    new AyaInit(1903396.7895321, -0.23763238, true, 0), // 24: Aryabhata, mean Sun
+    new AyaInit(1903396.8128654, -0.79167046, true, 0), // 25: SS Revati
+    new AyaInit(1903396.8128654, 2.11070444, true, 0), // 26: SS Citra
+    new AyaInit(0, 0, false, 0), // 27: True Citra
+    new AyaInit(0, 0, false, 0), // 28: True Revati
+    new AyaInit(0, 0, false, 0), // 29: True Pushya
+    new AyaInit(0, 0, false, 0), // 30: Gil Brand
+    new AyaInit(0, 0, false, 0), // 31: GE IAU 1958
+    new AyaInit(0, 0, false, 0), // 32: GE true
+    new AyaInit(0, 0, false, 0), // 33: GE Mula
+    new AyaInit(2451079.734892000, 30, false, 0), // 34: Skydram/Mardyks
+    new AyaInit(0, 0, false, 0), // 35: Chandra Hari
+    new AyaInit(0, 0, false, 0), // 36: Ernst Wilhelm
+    new AyaInit(1911797.740782065, 0, true, 0), // 36: 0 ayanamsha in year 522
+    new AyaInit(1721057.5, -3.2, true, -1), // 38: Babylonian (Britton 2010)
+    new AyaInit(0, 0, false, 0), // 39: Sunil Sheoran ("Vedic")
+    new AyaInit(0, 0, false, 0), // 40: Cochrane
+    new AyaInit(2451544.5, 25.0, true, 0), // 41: N.A. Fiorenza
+    new AyaInit(1775845.5, -2.9422, true, -1), // 42: Vettius Valens
+    new AyaInit(J1900, 22.44597222, false, SweConst.SEMOD_PREC_NEWCOMB), // 43: Lahiri (1940)
+    new AyaInit(1825235.2458513028, 0.0, false, 0), // 44: Lahiri VP285 (1980)
+    new AyaInit(1827424.752255678, 0.0, false, 0), // 45: Krishnamurti VP291
+    new AyaInit(2435553.5, 23.25 - 0.00464207, false, SweConst.SEMOD_PREC_NEWCOMB), // 46: SE_SIDM_LAHIRI_ICRC
+  };
 
 /*
  * earlier content
