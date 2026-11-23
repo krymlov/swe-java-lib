@@ -6468,8 +6468,11 @@ fname="";
     double xrot, yrot, zrot;
     double chcfx[];
     double refepx[];
-    double seps2000 = swed.oec2000.seps;
-    double ceps2000 = swed.oec2000.ceps;
+    // sweph.c 2.10.03: epsilon as used in chopt.c, which built the files - not swed.oec2000,
+    // whose IAU 2006 obliquity is 42 mas smaller and tilted the Moon by up to 70 m (1e-5 deg)
+    // double eps2000 = 0.409092804;        // eps 2000 in radians
+    double seps2000 = 0.39777715572793088;  // sin(eps2000)
+    double ceps2000 = 0.91748206215761929;  // cos(eps2000)
     PlanData pdp = swed.pldat[ipli];
     int nco = pdp.ncoe;
 int chcfyOffs;
