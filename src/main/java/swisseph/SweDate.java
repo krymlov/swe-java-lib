@@ -2266,47 +2266,9 @@ public class SweDate implements Serializable {
   * @return null, if the date is valid, otherwise it returns a message in english, describing the error field.
   */
   public static String getInvalidUTCDateError(int iyear, int imonth, int iday, int ihour, int imin, double dsec, boolean gregflag) {
-    double[] dret = new double[2];
-    double tjd_ut1, tjd_et, tjd_et_1972, dhour, d;
-    int iyear2, imonth2, iday2;
-    int i, j, ndat, nleap, tabsiz_nleap;
-    /*
-     * error handling: invalid iyear etc.
-     */
-    tjd_ut1 = swe_julday(iyear, imonth, iday, 0, gregflag);
-    IDate dt = swe_revjul(tjd_ut1, gregflag);
-//   tjd_ut1 = swe_julday(iyear, imonth, iday, 0, gregflag);
-//   swe_revjul(tjd_ut1, gregflag, &iyear2, &imonth2, &iday2, &d);
-    if (iyear != dt.year || imonth != dt.month || iday != dt.day) {
-      return "invalid date: year = " + iyear + ", month = " + imonth + ", day = " + iyear + iday;
-    }
-    if (ihour < 0 || ihour > 23
-     || imin < 0 || imin > 59
-     || dsec < 0 || dsec >= 61
-     || (dsec >= 60 && (imin < 59 || ihour < 23 || tjd_ut1 < J1972))) {
-      return "invalid time: " + ihour + ":" + imin + ":" + dsec;
-    }
-    /*
-     * number of leap seconds since 1972:
-     */
-    tabsiz_nleap = init_leapsec();
-    ndat = iyear * 10000 + imonth * 100 + iday;
-    /*
-     * if input second is 60: is it a valid leap second ?
-     */
-    if (dsec >= 60) {
-      j = 0;
-      for (i = 0; i < tabsiz_nleap; i++) {
-        if (ndat == leap_seconds[i]) {
-          j = 1;
-          break;
-        }
-      }
-      if (j != 1) {
-        return "invalid time (no leap second!): " + ihour + ":" + imin + ":" + dsec;
-      }
-    }
-    return null;
+    final StringBuilder serr = new StringBuilder();
+    return utc_to_jd(getSwissEph().swed, iyear, imonth, iday, ihour, imin, dsec, gregflag, true,
+        new double[2], serr) == SweConst.ERR ? serr.toString() : null;
   }
   /**
   * Calculates the julian day numbers (TT (==ET) and UT1) from a given date.
@@ -2366,20 +2328,52 @@ public class SweDate implements Serializable {
       double dsec,
       boolean gregflag,
       boolean checkValidInput) throws SwissephException {
-    double[] dret = new double[2];
+    final double[] dret = new double[2];
+    final StringBuilder serr = new StringBuilder();
+    if (utc_to_jd(swed, iyear, imonth, iday, ihour, imin, dsec, gregflag, checkValidInput,
+        dret, serr) == SweConst.ERR) {
+      throw new SwissephException(swe_julday(iyear, imonth, iday, ihour + imin / 60. + dsec / 3600., gregflag),
+          SwissephException.INVALID_DATE, serr.toString());
+    }
+    return dret;
+  }
+
+  /**
+  * swe_utc_to_jd() of swedate.c 2.10.03.
+  * @param check false: an impossible date or time is accepted and normalised, which C never does
+  * @param dret [0]: Julian day number TT (ET), [1]: Julian day number UT1; not touched when ERR
+  * @return SweConst.OK, or SweConst.ERR with the reason in serr
+  */
+  static int utc_to_jd(final SwissData swed, int iyear, int imonth, int iday, int ihour, int imin,
+                       double dsec, boolean gregflag, boolean check, double[] dret, StringBuilder serr) {
     double tjd_ut1, tjd_et, tjd_et_1972, dhour, d;
-    int i, j, ndat, nleap, tabsiz_nleap;
+    int i, ndat, nleap, tabsiz_nleap;
     /*
      * error handling: invalid iyear etc.
      */
-    if (checkValidInput) {
-      String err = getInvalidUTCDateError(iyear, imonth, iday, ihour, imin, dsec, gregflag);
-      if (err != null) {
-        tjd_ut1 = swe_julday(iyear, imonth, iday, ihour+imin/60.+dsec/3600., gregflag);
-        throw new SwissephException(tjd_ut1, SwissephException.INVALID_DATE, err);
+    tjd_ut1 = swe_julday(iyear, imonth, iday, 0, gregflag);
+    if (check) {
+      final IDate dt = swe_revjul(tjd_ut1, gregflag);
+      if (iyear != dt.year || imonth != dt.month || iday != dt.day) {
+        if (serr != null) {
+          serr.setLength(0);
+          serr.append("invalid date: year = ").append(iyear).append(", month = ").append(imonth)
+              .append(", day = ").append(iday);
+        }
+        return SweConst.ERR;
+      }
+      if (ihour < 0 || ihour > 23
+       || imin < 0 || imin > 59
+       || dsec < 0 || dsec >= 61
+       || (dsec >= 60 && (imin < 59 || ihour < 23 || tjd_ut1 < J1972))) {
+        if (serr != null) {
+          serr.setLength(0);
+          serr.append("invalid time: ").append(ihour).append(':').append(imin).append(':')
+              .append(Swecl.fixed(dsec, 2));
+        }
+        return SweConst.ERR;
       }
     }
-    tjd_ut1 = swe_julday(iyear, imonth, iday, 0, gregflag);
     dhour = (double) ihour + ((double) imin) / 60.0 + dsec / 3600.0;
     /*
      * before 1972, we treat input date as UT1
@@ -2387,15 +2381,16 @@ public class SweDate implements Serializable {
     if (tjd_ut1 < J1972) {
       dret[1] = swe_julday(iyear, imonth, iday, dhour, gregflag);
       dret[0] = dret[1] + swi_deltat_default(swed, dret[1]);
-      return dret;
+      return SweConst.OK;
     }
     /*
      * if gregflag = Julian calendar, convert to gregorian calendar
      */
     if (gregflag == SE_JUL_CAL) {
-      gregflag = SE_GREG_CAL;
-//      swe_revjul(tjd_ut1, gregflag, &iyear, &imonth, &iday, &d);
-      IDate dt = swe_revjul(tjd_ut1, gregflag);
+      final IDate dt = swe_revjul(tjd_ut1, SE_GREG_CAL);
+      iyear = dt.year;
+      imonth = dt.month;
+      iday = dt.day;
     }
     /*
      * number of leap seconds since 1972:
@@ -2418,7 +2413,24 @@ public class SweDate implements Serializable {
     if (d - (double) nleap - 32.184 >= 1.0) {
       dret[1] = tjd_ut1 + dhour / 24.0;
       dret[0] = dret[1] + swi_deltat_default(swed, dret[1]);
-      return dret;
+      return SweConst.OK;
+    }
+    /*
+     * if input second is 60: is it a valid leap second ?
+     */
+    if (check && dsec >= 60) {
+      boolean valid = false;
+      for (i = 0; i < tabsiz_nleap && !valid; i++) {
+        valid = ndat == leap_seconds[i];
+      }
+      if (!valid) {
+        if (serr != null) {
+          serr.setLength(0);
+          serr.append("invalid time (no leap second!): ").append(ihour).append(':').append(imin)
+              .append(':').append(Swecl.fixed(dsec, 2));
+        }
+        return SweConst.ERR;
+      }
     }
     /*
      * convert UTC to ET and UT1
@@ -2435,7 +2447,7 @@ public class SweDate implements Serializable {
     tjd_ut1 = tjd_et - swi_deltat_default(swed, tjd_ut1);
     dret[0] = tjd_et;
     dret[1] = tjd_ut1;
-    return dret;
+    return SweConst.OK;
   }
 
   /**
@@ -2515,7 +2527,7 @@ public class SweDate implements Serializable {
       iday2 = i % 100;
       tjd = swe_julday(iyear2, imonth2, iday2, 0, SE_GREG_CAL);
 //     swe_revjul(tjd+1, SE_GREG_CAL, &iyear2, &imonth2, &iday2, &d);
-      dt=swe_revjul(tjd_ut+1, SE_GREG_CAL);
+      dt=swe_revjul(tjd+1, SE_GREG_CAL);
       iyear2 = dt.year;
       imonth2 = dt.month;
       iday2 = dt.day;
@@ -2567,8 +2579,8 @@ public class SweDate implements Serializable {
     if (gregflag == SE_JUL_CAL) {
       tjd = swe_julday(iyear, imonth, iday, 0, SE_GREG_CAL);
 //     swe_revjul(tjd, gregflag, iyear, imonth, iday, &d);
-      dt=swe_revjul(tjd, SE_GREG_CAL);
-      return new SDate(dt.year, dt.month, dt.day, dt.hour);
+      dt=swe_revjul(tjd, gregflag);
+      return new SDate(dt.year, dt.month, dt.day, ihour, imin, dsec);
     }
     return new SDate(iyear, imonth, iday, ihour, imin, dsec);
   }

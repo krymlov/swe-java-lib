@@ -2397,37 +2397,28 @@ int pn = 0;
 //    Trace.log("   nmax: " + nmax);
 ////#endif /* TRACE1 */
 ////#endif /* TRACE0 */
-    if (s.indexOf('\n')>=0) { s=s.substring(0,s.indexOf('\n')); }
-    if (s.indexOf('\r')>=0) { s=s.substring(0,s.indexOf('\r')); }
-    StringTokenizer tk=new StringTokenizer(s,cutlist,true);
-    int n=0;
-    while(tk.hasMoreTokens() && n<20) {
-      String g=tk.nextToken();
-      // Characters in cutlist can be valid characters of the String. If
-      // escaped with "\\", join together, what the StringTokenizer separated
-// Well, well: 'while g.endsWith("\\\\")', then obviously not, but
-// while 'g.endsWith("\\\\\\")', then yes, etc. pp.... So I would have to
-// do something about this one "sometime"...
-      while (g.endsWith("\\") && tk.hasMoreTokens()) {
-        g=g.substring(0,g.length()-1)+tk.nextToken();
-        if (tk.hasMoreTokens()) {
-          g+=tk.nextToken();
+    /* as in the C: an empty first field stays, a run of separators counts as one, the last of nmax
+     * fields takes the rest, a nl or cr is like the end of the string, a backslash is nothing special */
+    int n = 1, start = 0, i = 0;
+    final int len = s.length();
+    for (; i < len; i++) {
+      if (cutlist.indexOf(s.charAt(i)) >= 0 && n < nmax) {
+        cpos[n - 1] = s.substring(start, i);
+        while (i + 1 < len && cutlist.indexOf(s.charAt(i + 1)) >= 0) {
+          i++;
         }
+        start = i + 1;
+        n++;
+        continue;
       }
-      cpos[n]=g;
-      n++;
-      if (tk.hasMoreTokens()) { tk.nextToken(); }
+      if (s.charAt(i) == '\n' || s.charAt(i) == '\r') {
+        break;
+      }
     }
-    cpos[19]="";
-    while(tk.hasMoreTokens()) {
-      cpos[19]+=tk.nextToken();
-    }
+    cpos[n - 1] = s.substring(Math.min(start, i), i);
     if (n < nmax) {
       cpos[n] = null;
     }
-////#ifdef TRACE0
-//    Trace.level--;
-////#endif /* TRACE0 */
     return n;
   }       /* cutstr */
 

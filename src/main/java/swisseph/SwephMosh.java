@@ -674,7 +674,6 @@ final class SwephMosh {
     int i, iline, iplan, retc, ncpos;
     FilePtr fp = null;
     String s, sp;
-    int spIdx=0;
     String cpos[]=new String[20], serri="";
     boolean elem_found = false;
     double tt = 0;
@@ -726,36 +725,22 @@ final class SwephMosh {
     iline = 0;
     iplan = -1;
     try {
-//    while (fgets(s, AS_MAXCH, fp) != null)
-      while ((s=fp.readLine()) != null) {
-        s=s.trim();
-//        iline++;
-//        spIdx = 0;
-//        while(s.charAt(spIdx) == ' ' || s.charAt(spIdx) == '\t')
-//          spIdx++;
-//        s=s.substring(spIdx);
-        sp = s;
-        spIdx=0;
-        char ch=s.charAt(spIdx);
-        if (ch == '#' || ch=='\r' || ch=='\n' || ch=='\0') {
+      while ((s = fgets(fp)) != null) {
+        iline++;
+        for (i = 0; i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'); ) {
+          i++;
+        }
+        s = s.substring(i);
+        if (s.isEmpty() || s.charAt(0) == '#' || s.charAt(0) == '\r' || s.charAt(0) == '\n') {
           continue;
         }
-//    if ((sp = strchr(s, '#')) != NULL)
-//      *sp = '\0';
-        sp = null;
-        if ((spIdx = s.indexOf('#')) >= 0) {
-          s = s.substring(0,s.indexOf('#'));
-          sp = "";
+        if ((i = s.indexOf('#')) >= 0) {
+          s = s.substring(0, i);
         }
-        ncpos = sl.swi_cutstr(s, ",", cpos, 20);
-        serri="error in file "+SweConst.SE_FICTFILE+", line "+
-              iline+":";
+        ncpos = SwissLib.swi_cutstr(s, ",", cpos, 20);
+        serri = "error in file " + SweConst.SE_FICTFILE + ", line " + String.format(java.util.Locale.ROOT, "%7d", iline) + ":";
         if (ncpos < 9) {
-          if (serr != null) {
-            serr.setLength(0);
-            serr.append(serri).append(" nine elements required");
-          }
-          return SweConst.ERR;
+          return elements_error(serr, serri, " nine elements required");
         }
         iplan++;
         if (iplan != ipl) {
@@ -764,39 +749,23 @@ final class SwephMosh {
         elem_found = true;
         /* epoch of elements */
         if (tjd0 != null) {
-          sp = cpos[0];
-//          for (i = 0; i < 5; i++)
-//       sp[i] = tolower(sp[i]);
-          sp=sp.length()<=5?sp.toLowerCase():
-                               sp.substring(0,5).toLowerCase()+sp.substring(5);
+          sp = cpos[0].toLowerCase(java.util.Locale.ROOT);
           if (sp.startsWith("j2000")) {
             tjd0.val = SwephData.J2000;
           } else if (sp.startsWith("b1950")) {
             tjd0.val = SwephData.B1950;
           } else if (sp.startsWith("j1900")) {
             tjd0.val = SwephData.J1900;
-          } else if (sp.charAt(0) == 'j' || sp.charAt(0) == 'b') {
-            if (serr != null) {
-              serr.setLength(0);
-              serr.append(serri).append(" invalid epoch");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
-          } else
-            tjd0.val = SwissLib.atof(sp);
+          } else if (sp.startsWith("j") || sp.startsWith("b")) {
+            return elements_error(serr, serri, " invalid epoch");
+          } else {
+            tjd0.val = SwissEph.c_atof(sp);
+          }
           tt = tjd - tjd0.val;
         }
         /* equinox */
         if (tequ != null) {
-          sp = cpos[1];
-          spIdx=0;
-          while(sp.charAt(spIdx) == ' ' || sp.charAt(spIdx) == '\t')
-            spIdx++;
-//          for (i = 0; i < 5; i++)
-//       sp[i] = tolower(sp[i]);
-          sp=sp.substring(spIdx);
-          sp=sp.length()<5?sp.toLowerCase():
-                               sp.substring(0,5).toLowerCase()+sp.substring(5);
+          sp = ltrim(cpos[1]).toLowerCase(java.util.Locale.ROOT);
           if (sp.startsWith("j2000")) {
             tequ.val = SwephData.J2000;
           } else if (sp.startsWith("b1950")) {
@@ -805,16 +774,10 @@ final class SwephMosh {
             tequ.val = SwephData.J1900;
           } else if (sp.startsWith("jdate")) {
             tequ.val = tjd;
-          } else if (sp.charAt(0) == 'j' || sp.charAt(0) == 'b') {
-            if (serr != null) {
-              serr.setLength(0);
-              serr.append(serri).append(" invalid equinox");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+          } else if (sp.startsWith("j") || sp.startsWith("b")) {
+            return elements_error(serr, serri, " invalid equinox");
           } else {
-//        *tequ = atof(sp);
-            tequ.val = SwissLib.atof(sp);
+            tequ.val = SwissEph.c_atof(sp);
           }
         }
         /* mean anomaly t0 */
@@ -822,11 +785,7 @@ final class SwephMosh {
           retc = check_t_terms(tt, cpos[2], mano);
           mano.val = sl.swe_degnorm(mano.val);
           if (retc == SweConst.ERR) {
-            if (serr != null) {
-              serr.append(serri).append(" mean anomaly value invalid");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+            return elements_error(serr, serri, " mean anomaly value invalid");
           }
           /* if mean anomaly has t terms (which happens with fictitious
            * planet Vulcan), we set
@@ -841,23 +800,14 @@ final class SwephMosh {
         if (sema != null) {
           retc = check_t_terms(tt, cpos[3], sema);
           if (sema.val <= 0 || retc == SweConst.ERR) {
-            if (serr != null) {
-              serr.append(serri).append(" semi-axis value invalid");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+            return elements_error(serr, serri, " semi-axis value invalid");
           }
         }
         /* eccentricity */
         if (ecce != null) {
           retc = check_t_terms(tt, cpos[4], ecce);
           if (ecce.val >= 1 || ecce.val < 0 || retc == SweConst.ERR) {
-            if (serr != null) {
-              serr.setLength(0);
-              serr.append(serri).append(" eccentricity invalid (no parabolic or hyperbolic or bits allowed)");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+            return elements_error(serr, serri, " eccentricity invalid (no parabolic or hyperbolic orbits allowed)");
           }
         }
         /* perihelion argument */
@@ -865,12 +815,7 @@ final class SwephMosh {
           retc = check_t_terms(tt, cpos[5], parg);
           parg.val = sl.swe_degnorm(parg.val);
           if (retc == SweConst.ERR) {
-            if (serr != null) {
-              serr.setLength(0);
-              serr.append(serri).append(" perihelion argument value invalid");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+            return elements_error(serr, serri, " perihelion argument value invalid");
           }
           parg.val *= SwissData.DEGTORAD;
         }
@@ -879,12 +824,7 @@ final class SwephMosh {
           retc = check_t_terms(tt, cpos[6], node);
           node.val = sl.swe_degnorm(node.val);
           if (retc == SweConst.ERR) {
-            if (serr != null) {
-              serr.setLength(0);
-              serr.append(serri).append(" node value invalid");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+            return elements_error(serr, serri, " node value invalid");
           }
           node.val *= SwissData.DEGTORAD;
         }
@@ -893,54 +833,71 @@ final class SwephMosh {
           retc = check_t_terms(tt, cpos[7], incl);
           incl.val = sl.swe_degnorm(incl.val);
           if (retc == SweConst.ERR) {
-            if (serr != null) {
-              serr.setLength(0);
-              serr.append(serri).append(" inclination value invalid");
-            }
-//          goto return_err;
-            fp.close(); return SweConst.ERR;
+            return elements_error(serr, serri, " inclination value invalid");
           }
           incl.val *= SwissData.DEGTORAD;
         }
-        /* planet name */
+        /* planet name; the C keeps the bytes, and the file is in UTF-8 */
         if (pname != null) {
-          sp = cpos[8];
-          spIdx=0;
-          while(sp.charAt(spIdx) == ' ' || sp.charAt(spIdx) == '\t')
-            spIdx++;
-          sp=sp.substring(spIdx);
-//      swi_right_trim(sp);
-          sp=sp.trim();
-          pname.setLength(0); pname.append(sp);
+          sp = ltrim(cpos[8]);
+          for (i = sp.length(); i > 0 && (sp.charAt(i - 1) == ' ' || sp.charAt(i - 1) >= '\t' && sp.charAt(i - 1) <= '\r'); ) {
+            i--;
+          }
+          pname.setLength(0);
+          pname.append(new String(sp.substring(0, i).getBytes(java.nio.charset.StandardCharsets.ISO_8859_1),
+              java.nio.charset.StandardCharsets.UTF_8));
         }
         /* geocentric */
         if (fict_ifl != null && ncpos > 9) {
-//          for (sp = cpos[9]; *sp != '\0'; sp++)
-//            *sp = tolower(*sp);
-          sp = sp.substring(0,SMath.min(sp.length(),spIdx+9)) +
-               sp.substring(SMath.min(sp.length(),spIdx+9)).toLowerCase();
-//          if (strstr(cpos[9], "geo") != NULL)
-//            fict_ifl.val |= FICT_GEO;
-          if (cpos[9].indexOf("geo") >= 0) {
+          if (cpos[9].toLowerCase(java.util.Locale.ROOT).contains("geo")) {
             fict_ifl.val |= FICT_GEO;
           }
         }
         break;
       }
-      if (!elem_found) {
-        if (serr != null) {
-          serr.setLength(0);
-          serr.append(serri).append(String.format(java.util.Locale.ROOT, " elements for planet %7d not found", ipl));
-        }
-//      goto return_err;
-        fp.close(); return SweConst.ERR;
-      }
-      fp.close();
-      return SweConst.OK;
-    } catch (java.io.IOException e) {
-      if (fp!=null) { try { fp.close(); } catch (java.io.IOException ie) { } }
+    } finally {
+      try { fp.close(); } catch (java.io.IOException ignored) { }
+    }
+    if (!elem_found) {
+      return elements_error(serr, serri, String.format(java.util.Locale.ROOT, " elements for planet %7d not found", ipl));
+    }
+    return SweConst.OK;
+  }
+
+  private static int elements_error(StringBuilder serr, String where, String what) {
+    if (serr != null) {
+      serr.setLength(0);
+      serr.append(where).append(what);
     }
     return SweConst.ERR;
+  }
+
+  private static String ltrim(String s) {
+    int i = 0;
+    while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t')) {
+      i++;
+    }
+    return s.substring(i);
+  }
+
+  /** C fgets(s, AS_MAXCH, fp): a longer line comes in pieces, and a NUL ends the string; null at the end of file */
+  private static String fgets(FilePtr fp) {
+    final StringBuilder s = new StringBuilder();
+    try {
+      while (s.length() < SwissData.AS_MAXCH - 1) {
+        final char c = (char) fp.readUnsignedByte();
+        s.append(c);
+        if (c == '\n') {
+          break;
+        }
+      }
+    } catch (java.io.IOException e) {
+      if (s.length() == 0) {
+        return null;
+      }
+    }
+    final int nul = s.indexOf("\0");
+    return nul >= 0 ? s.substring(0, nul) : s.toString();
   }
 
   private int check_t_terms(double t, String sinp, DblObj doutp) {
@@ -993,14 +950,18 @@ final class SwephMosh {
           if (spidx<sinp.length() &&
               (sinp.charAt(spidx)=='+' || sinp.charAt(spidx)=='-')) {
             fac *= tt[0];
-          } else if ((i = SwissLib.atoi(sinp.substring(SMath.min(sinp.length(),spidx)))) <= 4 && i >= 0) {
+          } else if ((i = SwissEph.c_atoi(sinp, spidx)) <= 4 && i >= 0) {
             fac *= tt[i];
           }
         } else {
           /* a number */
-          double db=SwissLib.atof(sinp.substring(spidx));
-          if (db!=0 || sinp.charAt(spidx)=='0') {
+          double db=SwissEph.c_atof(sinp.substring(spidx));
+          if (db!=0 || (spidx<sinp.length() && sinp.charAt(spidx)=='0')) {
             fac *= db;
+          }
+          /* JAVA: at a character that belongs to no term the C stays where it is for ever */
+          if (spidx<sinp.length() && " \t+-.0123456789".indexOf(sinp.charAt(spidx)) < 0) {
+            return SweConst.ERR;
           }
         }
         while (spidx<sinp.length() &&

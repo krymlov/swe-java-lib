@@ -75,8 +75,7 @@ public class SwephBridgeFixesTest extends AbstractTest {
         }
     }
 
-    /** relative on purpose: the pure-Java engine splits the path on ':' as well as ';', so an
-     *  absolute Windows path (T:\...) would be cut at the drive letter */
+    /** relative; an absolute Windows path is fine too since 2026-11-24 (it was cut at the drive letter) */
     private static String emptyEpheDir() throws IOException {
         Path empty = Files.createDirectories(Paths.get("target", "empty-ephe"));
         return empty.toString();

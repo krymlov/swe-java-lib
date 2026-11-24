@@ -213,8 +213,8 @@ public class ApiCoverageTest extends AbstractTest {
 
     /**
      * These eight had no override at all, so the pure Java engine threw
-     * {@code UnsatisfiedLinkError} on them. The port finds the crossings with its own transit
-     * search instead of the analytic solver, so it is held to a second rather than to zero.
+     * {@code UnsatisfiedLinkError} on them. Since 2026-11-24 the port has C's own solver;
+     * {@link CrossingParityTest} compares the two engines exactly.
      */
     @Test
     void solcrossAndMooncrossWorkWithoutTheNativeLibrary() {

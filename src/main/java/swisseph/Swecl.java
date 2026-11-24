@@ -881,7 +881,7 @@ final class Swecl {
   }
 
   /** C's "%.{digits}f": rounds the exact binary value, which String.format() does not. */
-  private static String fixed(double x, int digits) {
+  static String fixed(double x, int digits) {
     if (Double.isNaN(x) || Double.isInfinite(x))
       return Double.isNaN(x) ? "nan" : x > 0 ? "inf" : "-inf";
     return new BigDecimal(x).setScale(digits, RoundingMode.HALF_EVEN).toPlainString();
@@ -3618,7 +3618,7 @@ final class Swecl {
     } else {
       if (serr != null) {
         serr.setLength(0);
-        serr.append("no lunar eclipse at tjd = "+tjd);
+        serr.append("no lunar eclipse at tjd = " + fixed(tjd, 6));
       }
     }
     attr[8] = attr[0];
@@ -3632,6 +3632,7 @@ final class Swecl {
     /* saros series and member */
     for (i = 0; i < NSAROS_LUNAR; i++) {
       d = (tjd_ut - saros_data_lunar[i].tstart) / SAROS_CYCLE;
+      if (d < 0 && d * SAROS_CYCLE > -2) d = 0.0000001;
       if (d < 0) continue;
       j = (int) d;
       if ((d - j) * SAROS_CYCLE < 2) {
@@ -3722,6 +3723,17 @@ final class Swecl {
     SweDate.swi_set_tid_acc(sw, tjd_start, ifl, 0);
     iflag = SweConst.SEFLG_EQUATORIAL | ifl;
     iflagcart = iflag | SweConst.SEFLG_XYZ;
+    ifltype &= ~(SweConst.SE_ECL_CENTRAL | SweConst.SE_ECL_NONCENTRAL);
+    if ((ifltype & (SweConst.SE_ECL_ANNULAR | SweConst.SE_ECL_ANNULAR_TOTAL)) != 0) {
+      ifltype &= ~(SweConst.SE_ECL_ANNULAR | SweConst.SE_ECL_ANNULAR_TOTAL);
+      if (ifltype == 0) {
+        if (serr != null) {
+          serr.setLength(0);
+          serr.append("annular lunar eclipses don't exist");
+        }
+        return SweConst.ERR; /* avoids infinite loop */
+      }
+    }
     if (ifltype == 0) {
       ifltype = SweConst.SE_ECL_TOTAL | SweConst.SE_ECL_PENUMBRAL |
                 SweConst.SE_ECL_PARTIAL;
@@ -3799,7 +3811,7 @@ final class Swecl {
        * the function lun_eclipse_how().
        */
       dtstart = 0.1;
-      if (tjd < 2000000 || tjd > 2500000) {
+      if (tjd < 2100000 || tjd > 2500000) { // was tjd < 2000000 until 26-aug-22
         dtstart = 5;
       }
       dtdiv = 4;
@@ -3963,7 +3975,7 @@ final class Swecl {
    */
   int swe_lun_eclipse_when_loc(double tjd_start, int ifl,
        double geopos[], double tret[], double attr[], int backward, StringBuilder serr) {
-    int retflag = 0, retflag2 = 0;
+    int retflag = 0, retflag2 = 0, retc;
     DblObj tjdr = new DblObj(), tjds = new DblObj();
     double tjd_max = 0;
     int i;
@@ -4012,39 +4024,41 @@ final class Swecl {
         continue;
       }
       /* moon rise and moon set */
-      if (swe_rise_trans(tret[6] - 0.001, SweConst.SE_MOON, null, ifl, SweConst.SE_CALC_RISE|SweConst.SE_BIT_DISC_BOTTOM, geopos, 0, 0, tjdr, serr) == SweConst.ERR)
-        return SweConst.ERR;
-      if (swe_rise_trans(tret[6] - 0.001, SweConst.SE_MOON, null, ifl, SweConst.SE_CALC_SET|SweConst.SE_BIT_DISC_BOTTOM, geopos, 0, 0, tjds, serr) == SweConst.ERR)
-        return SweConst.ERR;
-      if (tjds.val < tret[6] || (tjds.val > tjdr.val && tjdr.val > tret[7])) {
-        if (backward != 0)
-          tjd_start = tret[0] - 25;
-        else
-          tjd_start = tret[0] + 25;
-//        goto next_lun_ecl;
-        continue;
-      }
       tjd_max = tret[0];
-      if (tjdr.val > tret[6] && tjdr.val < tret[7]) {
-        tret[6] = 0;
-        for (i = 2; i <= 5; i++) {
-          if (tjdr.val > tret[i])
-            tret[i] = 0;
+      if ((retc = swe_rise_trans(tret[6] - 0.001, SweConst.SE_MOON, null, ifl, SweConst.SE_CALC_RISE|SweConst.SE_BIT_DISC_BOTTOM, geopos, 0, 0, tjdr, serr)) == SweConst.ERR)
+        return SweConst.ERR;
+      if (retc >= 0 && (retc = swe_rise_trans(tret[6] - 0.001, SweConst.SE_MOON, null, ifl, SweConst.SE_CALC_SET|SweConst.SE_BIT_DISC_BOTTOM, geopos, 0, 0, tjds, serr)) == SweConst.ERR)
+        return SweConst.ERR;
+      if (retc >= 0) {
+        if (tjds.val < tret[6] || (tjds.val > tjdr.val && tjdr.val > tret[7])) {
+          if (backward != 0)
+            tjd_start = tret[0] - 25;
+          else
+            tjd_start = tret[0] + 25;
+//          goto next_lun_ecl;
+          continue;
         }
-        tret[8] = tjdr.val;
-        if (tjdr.val > tret[0]) {
-          tjd_max = tjdr.val;
+        if (tjdr.val > tret[6] && tjdr.val < tret[7]) {
+          tret[6] = 0;
+          for (i = 2; i <= 5; i++) {
+            if (tjdr.val > tret[i])
+              tret[i] = 0;
+          }
+          tret[8] = tjdr.val;
+          if (tjdr.val > tret[0]) {
+            tjd_max = tjdr.val;
+          }
         }
-      }
-      if (tjds.val > tret[6] && tjds.val < tret[7]) {
-        tret[7] = 0;
-        for (i = 2; i <= 5; i++) {
-          if (tjds.val < tret[i])
-            tret[i] = 0;
-        }
-        tret[9] = tjds.val;
-        if (tjds.val < tret[0]) {
-          tjd_max = tjds.val;
+        if (tjds.val > tret[6] && tjds.val < tret[7]) {
+          tret[7] = 0;
+          for (i = 2; i <= 5; i++) {
+            if (tjds.val < tret[i])
+              tret[i] = 0;
+          }
+          tret[9] = tjds.val;
+          if (tjds.val < tret[0]) {
+            tjd_max = tjds.val;
+          }
         }
       }
       tret[0] = tjd_max;
@@ -5430,14 +5444,14 @@ final class Swecl {
   /* Ratios of mass of Sun to masses of the planets */
   private static final double plmass[] = new double[] {
       6023600,        /* Mercury */
-       408523.5,      /* Venus */
+       408523.719,    /* Venus */
        328900.5,      /* Earth and Moon */
-      3098710,        /* Mars */
-         1047.350,    /* Jupiter */
-         3498.0,      /* Saturn */
-        22960,        /* Uranus */
-        19314,        /* Neptune */
-    130000000,        /* Pluto */
+      3098703.59,     /* Mars */
+         1047.348644, /* Jupiter */
+         3497.9018,   /* Saturn */
+        22902.98,     /* Uranus */
+        19412.26,     /* Neptune */
+    136566000,        /* Pluto */
   };
   private static final int ipl_to_elem[] = new int[]
                                 {2, 0, 0, 1, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 2,};
@@ -5529,7 +5543,10 @@ final class Swecl {
            /*(ipl >= SE_FICT_OFFSET && ipl - SE_FICT_OFFSET < SE_NFICT_ELEM)) */
       if (serr != null) {
         serr.setLength(0);
-        serr.append("nodes/apsides for planet "+ipl+" are not implemented");
+        serr.append("nodes/apsides for planet "); // %5.0f
+        for (i = String.valueOf(ipl).length(); i < 5; i++)
+          serr.append(' ');
+        serr.append(ipl).append(" are not implemented");
       }
       if (xnasc != null) {
         for (i = 0; i <= 5; i++)
@@ -5718,7 +5735,7 @@ final class Swecl {
                        xposm, serr) == SweConst.ERR) {
             return SweConst.ERR;
           }
-          for (j = 0; j <= 2; j++)
+          for (j = 0; j <= 5; j++) /* the speed too */
             xpos[i][j] += xposm[j] / (SwephData.EARTH_MOON_MRAT + 1.0);
         }
         sw.swi_plan_for_osc_elem(iflg0, t, xpos[i]);
@@ -6056,7 +6073,11 @@ final class Swecl {
         } else {
         /* traditional algorithm */
         sl.swi_cartpol_sp(pldat.xreturn, 6, pldat.xreturn, 0);
-        pldat.xreturn[0] -= sw.swi_get_ayanamsa_nonut(tjd_et, iflag, null) * SwissData.DEGTORAD;
+        final double daya = sw.swi_get_ayanamsa_nonut(tjd_et, iflag, serr);
+        if (daya == 0 && sw.isStarAyanamsa(swed.sidd.sid_mode % SweConst.SE_SIDBITS)) {
+          return SweConst.ERR; /* the star was not found, the text is in serr */
+        }
+        pldat.xreturn[0] -= daya * SwissData.DEGTORAD;
         sl.swi_polcart_sp(pldat.xreturn, 0, pldat.xreturn, 6);
         }
       }

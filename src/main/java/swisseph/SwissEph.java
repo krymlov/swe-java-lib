@@ -1050,7 +1050,7 @@ if(path == null) return;
   }
 
   /** the ayanamsas that are a star's (or a galactic point's) computed position */
-  private static boolean isStarAyanamsa(int sid_mode) {
+  static boolean isStarAyanamsa(int sid_mode) {
     switch (sid_mode) {
       case SweConst.SE_SIDM_TRUE_CITRA:
       case SweConst.SE_SIDM_TRUE_REVATI:
@@ -1631,7 +1631,8 @@ String slast_starname;
       default:
         /* fictitious planets */
         if (ipl >= SweConst.SE_FICT_OFFSET && ipl <= SweConst.SE_FICT_MAX) {
-          return smosh.swi_get_fict_name(ipl - SweConst.SE_FICT_OFFSET, s);
+          s = smosh.swi_get_fict_name(ipl - SweConst.SE_FICT_OFFSET, s);
+          break;
         }
         /* asteroids */
         if (ipl > SweConst.SE_AST_OFFSET) {
@@ -1645,7 +1646,7 @@ String slast_starname;
             if (retc != SweConst.ERR && retc != SwephData.NOT_AVAILABLE) {
               s=swed.fidat[SwephData.SEI_FILE_ANY_AST].astnam;
             } else {
-              s=(ipl - SweConst.SE_AST_OFFSET)+": not found";
+              s=(ipl - SweConst.SE_AST_OFFSET)+": not found (asteroid)";
             }
           }
           /* If there is a provisional designation only in ephemeris file,
@@ -1697,6 +1698,8 @@ String slast_starname;
               }
             }
           }
+        } else if (ipl > SweConst.SE_PLMOON_OFFSET && ipl < SweConst.SE_AST_OFFSET) {
+          s = ipl + ": not found (planetary moon)"; // the engine has no planetary moons
         } else  {
           i = ipl;
           s=""+i;
@@ -1715,7 +1718,8 @@ String slast_starname;
   public String swe_get_ayanamsa_name(int isidmode) {
     isidmode %= SweConst.SE_SIDBITS;
     
-    if (isidmode < SweConst.SE_NSIDM_PREDEF) {
+    // C reads before the table when isidmode is negative
+    if (isidmode >= 0 && isidmode < SweConst.SE_NSIDM_PREDEF) {
       return SwissData.ayanamsa_name[isidmode];
     }
     
@@ -3094,7 +3098,7 @@ String slast_starname;
 // End of public methods /////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
   private int swe_calc_error(double[] xx) {
-    for (int i = 0; i < xx.length; i++) {
+    for (int i = 0; i < 6 && i < xx.length; i++) {
       xx[i] = 0;
     }
     return SweConst.ERR;
@@ -4772,9 +4776,9 @@ fname="";
           serr.setLength(0);
           serr.append("error: file path and name must be shorter than "+
                        SwissData.AS_MAXCH+".");
+        }
         throw new SwissephException(1./0., SwissephException.INVALID_FILE_NAME,
             SweConst.ERR, serr);
-        }
       }
       fnamp = s;
       try {
@@ -8659,8 +8663,11 @@ int refepyOffs;
     public ISweJulianDate swe_utc_to_jd(int year, int month, int day,
                                         int hour, int min, double dsec,
                                         int gregflag, StringBuilder serr) {
-        final double[] dret = SweDate.getJDfromUTC(swed, year, month, 
-            day, hour, min, dsec, gregflag == SE_GREG_CAL, false);
+        final double[] dret = new double[2];
+        if (SweDate.utc_to_jd(swed, year, month, day, hour, min, dsec, gregflag == SE_GREG_CAL,
+                true, dret, serr) == SweConst.ERR) {
+            return null; // as ISwissEph's native form
+        }
 
         // dret[0] = Julian day number TT (ET)
         // dret[1] = Julian day number UT1
@@ -8721,8 +8728,11 @@ int refepyOffs;
   @Override
   public int swe_utc_to_jd(int iyear, int imonth, int iday, int ihour, int imin, double dsec,
                            int gregflag, double[] dret, StringBuilder serr) {
-    final double[] jd = SweDate.getJDfromUTC(swed, iyear, imonth, iday, ihour, imin, dsec,
-        gregflag == SE_GREG_CAL, false);
+    final double[] jd = new double[2];
+    if (SweDate.utc_to_jd(swed, iyear, imonth, iday, ihour, imin, dsec,
+        gregflag == SE_GREG_CAL, true, jd, serr) == SweConst.ERR) {
+      return SweConst.ERR;
+    }
     if (null != dret) {
       // dret[0] = julian day in TT (ET), dret[1] = julian day in UT1
       if (dret.length > 0) dret[0] = jd[0];
@@ -8780,73 +8790,86 @@ int refepyOffs;
 
   // ---------------------------------------------------- the crossing solvers
   //
-  // swe_solcross(), swe_mooncross(), swe_mooncross_node() and swe_helio_cross() are the only
-  // ISwissEph methods that used to have no override here at all, so a swisseph.SwissEph built
-  // without the native library threw UnsatisfiedLinkError the moment one was called.
-  //
-  // Swiss Ephemeris solves them analytically. This port solves them with the transit search
-  // it already carries: a crossing of a longitude IS a longitude transit, so TCPlanet with
-  // SEFLG_TRANSIT_LONGITUDE finds it, and TCPlanetPlanet finds the Moon over its node. That
-  // costs accuracy - measured against the native solvers the search is within 0.011 s for the
-  // Sun and 0.008 s for the Moon - and buys an engine that works without the .dll/.so.
-  //
-  // On failure they return the same thing the native functions do: a value below the
-  // requested date, with the reason in serr.
+  // sweph.c 2.10.03: an estimate with the mean speed, then Newton steps until the body is
+  // within CROSS_PRECISION. Each function of C exists twice, with swe_calc() and with
+  // swe_calc_ut(); here the parameter ut tells them apart. (Until 2026-11-24 this was the
+  // transit search, 0.011 s off, and the node solver found the ascending node only.)
 
-  /** flags TCPlanet accepts: the ephemeris plus the frame, never the transit bits */
-  private static int crossFlags(int flag) {
-    return flag & (SweConst.SEFLG_EPHMASK | SweConst.SEFLG_SIDEREAL | SweConst.SEFLG_TRUEPOS
-        | SweConst.SEFLG_NOABERR | SweConst.SEFLG_NOGDEFL | SweConst.SEFLG_EQUATORIAL
-        | SweConst.SEFLG_HELCTR | SweConst.SEFLG_TOPOCTR);
+  /** sweph.c: one milliarc second */
+  private static final double CROSS_PRECISION = 1 / 3600000.0;
+
+  private int crossCalc(boolean ut, double jd, int ipl, int flag, double[] x, StringBuilder serr) {
+    return ut ? swe_calc_ut(jd, ipl, flag, x, serr) : swe_calc(jd, ipl, flag, x, serr);
   }
 
   /**
-  * Next crossing of {@code x2cross} by {@code planet}, searching forward from {@code jd},
-  * in the same time frame the caller used.
+  * The Newton steps. C has no way out of this loop when the speed is 0 (the heliocentric Sun):
+  * it goes on with an infinite or undefined date for ever. Here that is an error.
   *
-  * @param ut true when jd and the result are UT, false for ET
-  * @return the crossing, or {@code jd - 1} with a message in serr when there is none
+  * @return false, with the reason in serr, when there is no crossing
   */
-  private double crossing(int planet, double x2cross, double jd, int flag, boolean ut,
-                          StringBuilder serr) {
-    try {
-      final TransitCalculator tc = new TCPlanet(this, planet,
-          crossFlags(flag) | SweConst.SEFLG_TRANSIT_LONGITUDE, x2cross);
-      return ut ? TransitCalculator.getTransitUT(tc, jd, false)
-                : TransitCalculator.getTransitET(tc, jd, false);
-    } catch (RuntimeException e) {
-      if (null != serr) {
-        serr.setLength(0);
-        serr.append(null == e.getMessage() ? e.toString() : e.getMessage());
+  private boolean crossIterate(boolean ut, double x2cross, double[] jd, int ipl, int flag, double[] x,
+                               StringBuilder serr) {
+    for (;;) {
+      if (crossCalc(ut, jd[0], ipl, flag, x, serr) < 0) {
+        return false;
       }
-      return jd - 1;
+      final double dist = SwissLib.swe_difdeg2n(x2cross, x[0]);
+      jd[0] += dist / x[3];
+      if (SMath.abs(dist) < CROSS_PRECISION) {
+        return true;
+      }
+      if (!crossIsFinite(jd[0], ipl, serr)) {
+        return false;
+      }
     }
+  }
+
+  private static boolean crossIsFinite(double jd, int ipl, StringBuilder serr) {
+    if (!Double.isNaN(jd) && !Double.isInfinite(jd)) {
+      return true;
+    }
+    if (null != serr) {
+      serr.setLength(0);
+      serr.append("no crossing: object ").append(ipl).append(" has no speed");
+    }
+    return false;
+  }
+
+  private double crossing(int ipl, double meanSpeed, double x2cross, double jd0, int flag, boolean ut,
+                          StringBuilder serr) {
+    final double[] x = new double[6];
+    flag |= SweConst.SEFLG_SPEED;
+    if (crossCalc(ut, jd0, ipl, flag, x, serr) < 0) {
+      return jd0 - 1;
+    }
+    final double[] jd = {jd0 + SwissLib.swe_degnorm(x2cross - x[0]) / meanSpeed};
+    return crossIterate(ut, x2cross, jd, ipl, flag, x, serr) ? jd[0] : jd0 - 1;
   }
 
   @Override
   public double swe_solcross(double x2cross, double jd_et, int flag, StringBuilder serr) {
-    return crossing(SweConst.SE_SUN, x2cross, jd_et, flag, false, serr);
+    return crossing(SweConst.SE_SUN, 360.0 / 365.24, x2cross, jd_et, flag, false, serr);
   }
 
   @Override
   public double swe_solcross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr) {
-    return crossing(SweConst.SE_SUN, x2cross, jd_ut, flag, true, serr);
+    return crossing(SweConst.SE_SUN, 360.0 / 365.24, x2cross, jd_ut, flag, true, serr);
   }
 
   @Override
   public double swe_mooncross(double x2cross, double jd_et, int flag, StringBuilder serr) {
-    return crossing(SweConst.SE_MOON, x2cross, jd_et, flag, false, serr);
+    return crossing(SweConst.SE_MOON, 360.0 / 27.32, x2cross, jd_et, flag, false, serr);
   }
 
   @Override
   public double swe_mooncross_ut(double x2cross, double jd_ut, int flag, StringBuilder serr) {
-    return crossing(SweConst.SE_MOON, x2cross, jd_ut, flag, true, serr);
+    return crossing(SweConst.SE_MOON, 360.0 / 27.32, x2cross, jd_ut, flag, true, serr);
   }
 
   /**
-  * When the Moon next crosses its <b>true</b> node - the moment its ecliptic latitude
-  * changes sign. Found as a conjunction of the Moon with SE_TRUE_NODE, then the Moon's
-  * position there is returned in xlon/xlat.
+  * When the Moon next crosses its node, ascending or descending: the moment its ecliptic
+  * latitude changes sign. Its longitude and (almost zero) latitude go to xlon and xlat.
   */
   @Override
   public double swe_mooncross_node(double jd_et, int flag, double[] xlon, double[] xlat,
@@ -8860,33 +8883,43 @@ int refepyOffs;
     return mooncrossNode(jd_ut, flag, xlon, xlat, true, serr);
   }
 
-  private double mooncrossNode(double jd, int flag, double[] xlon, double[] xlat,
+  private double mooncrossNode(double jd0, int flag, double[] xlon, double[] xlat,
                                boolean ut, StringBuilder serr) {
-    try {
-      final TransitCalculator tc = new TCPlanetPlanet(this, SweConst.SE_MOON,
-          SweConst.SE_TRUE_NODE, crossFlags(flag) | SweConst.SEFLG_TRANSIT_LONGITUDE, 0.);
-      final double cross = ut ? TransitCalculator.getTransitUT(tc, jd, false)
-                              : TransitCalculator.getTransitET(tc, jd, false);
-
-      final double[] xx = new double[6];
-      final double jdET = ut ? cross + swe_deltat(cross) : cross;
-      swe_calc(jdET, SweConst.SE_MOON, crossFlags(flag), xx, serr);
-      if (null != xlon && xlon.length > 0) xlon[0] = xx[0];
-      if (null != xlat && xlat.length > 0) xlat[0] = xx[1];
-      return cross;
-    } catch (RuntimeException e) {
-      if (null != serr) {
-        serr.setLength(0);
-        serr.append(null == e.getMessage() ? e.toString() : e.getMessage());
+    final int ipl = SweConst.SE_MOON;
+    final double[] x = new double[6];
+    flag |= SweConst.SEFLG_SPEED;
+    if (crossCalc(ut, jd0, ipl, flag, x, serr) < 0) {
+      return jd0 - 1;
+    }
+    final double lat0 = x[1];
+    double jd = jd0 + 1;
+    for (;;) { // get to sign change
+      if (crossCalc(ut, jd, ipl, flag, x, serr) < 0) {
+        return jd0 - 1;
       }
-      return jd - 1;
+      if ((x[1] >= 0 && lat0 < 0) || (x[1] < 0 && lat0 > 0)) {
+        break;
+      }
+      jd += 1;
+    }
+    double dist = x[1];
+    for (;;) {
+      jd -= dist / x[4];
+      if (!crossIsFinite(jd, ipl, serr) || crossCalc(ut, jd, ipl, flag, x, serr) < 0) {
+        return jd0 - 1;
+      }
+      dist = x[1];
+      if (SMath.abs(dist) < CROSS_PRECISION) {
+        if (null != xlon && xlon.length > 0) xlon[0] = x[0];
+        if (null != xlat && xlat.length > 0) xlat[0] = x[1];
+        return jd;
+      }
     }
   }
 
   /**
-  * Heliocentric longitude crossing. {@code dir} may be given as 0 for the next crossing in
-  * either direction, positive to search forward and negative backward; the native function
-  * uses the same convention.
+  * Heliocentric longitude crossing: the next one when {@code dir >= 0}, the previous one when
+  * {@code dir < 0}.
   *
   * @return SweConst.OK, or SweConst.ERR with the reason in serr
   */
@@ -8902,30 +8935,31 @@ int refepyOffs;
     return helioCross(ipl, x2cross, jd_ut, iflag, dir, jd_cross, true, serr);
   }
 
-  private int helioCross(int ipl, double x2cross, double jd, int iflag, int dir,
+  private int helioCross(int ipl, double x2cross, double jd0, int iflag, int dir,
                          double[] jd_cross, boolean ut, StringBuilder serr) {
-    if (ipl == SweConst.SE_SUN || ipl == SweConst.SE_MOON) {
+    final double[] x = new double[6];
+    final int flag = iflag | SweConst.SEFLG_SPEED | SweConst.SEFLG_HELCTR;
+    if (ipl == SweConst.SE_SUN || ipl == SweConst.SE_MOON
+        || (ipl >= SweConst.SE_MEAN_NODE && ipl <= SweConst.SE_OSCU_APOG)
+        || (ipl >= SweConst.SE_INTP_APOG && ipl < SweConst.SE_NPLANETS)) {
       if (null != serr) {
         serr.setLength(0);
-        serr.append("heliocentric crossings are not defined for object ").append(ipl);
+        serr.append("swe_helio_cross: not possible for object ").append(ipl).append(" = ")
+            .append(swe_get_planet_name(ipl));
       }
       return SweConst.ERR;
     }
-    try {
-      final TransitCalculator tc = new TCPlanet(this, ipl,
-          crossFlags(iflag) | SweConst.SEFLG_HELCTR | SweConst.SEFLG_TRANSIT_LONGITUDE, x2cross);
-      final boolean backwards = dir < 0;
-      final double cross = ut ? TransitCalculator.getTransitUT(tc, jd, backwards)
-                              : TransitCalculator.getTransitET(tc, jd, backwards);
-      if (null != jd_cross && jd_cross.length > 0) jd_cross[0] = cross;
-      return SweConst.OK;
-    } catch (RuntimeException e) {
-      if (null != serr) {
-        serr.setLength(0);
-        serr.append(null == e.getMessage() ? e.toString() : e.getMessage());
-      }
+    if (crossCalc(ut, jd0, ipl, flag, x, serr) < 0) {
       return SweConst.ERR;
     }
+    final double xlp = ipl == SweConst.SE_CHIRON ? 0.01971 /* mean speed */ : x[3];
+    final double dist = SwissLib.swe_degnorm(x2cross - x[0]);
+    final double[] jd = {dir >= 0 ? jd0 + dist / xlp : jd0 - (360.0 - dist) / xlp};
+    if (!crossIterate(ut, x2cross, jd, ipl, flag, x, serr)) {
+      return SweConst.ERR;
+    }
+    if (null != jd_cross && jd_cross.length > 0) jd_cross[0] = jd[0];
+    return SweConst.OK;
   }
 
   @Override
@@ -8989,7 +9023,7 @@ int refepyOffs;
   private static final String SE_VERSION_OF_MODELS = "2.10.03";
 
   /** C atoi(): leading blanks, a sign, the digits, anything after them ignored */
-  private static int c_atoi(String s, int from) {
+  static int c_atoi(String s, int from) {
     int i = from, n = s.length(), sign = 1, v = 0;
     while (i < n && Character.isWhitespace(s.charAt(i))) i++;
     if (i < n && (s.charAt(i) == '-' || s.charAt(i) == '+')) {
@@ -9005,7 +9039,7 @@ int refepyOffs;
 
   /**
   * C atof() as far as a version number or the element record of an asteroid file needs it:
-  * leading blanks, a sign, the digits with at most one point, anything after them ignored
+  * leading blanks, a sign, the digits with at most one point, an exponent, anything after them ignored
   * ("2.10.03" is 2.10). SwissLib.atof() throws on a second point and takes -1.12 for 0.
   */
   static double c_atof(String s) {
@@ -9019,6 +9053,13 @@ int refepyOffs;
       if (c >= '0' && c <= '9') digit = true;
       else if (c == '.' && !point) point = true;
       else break;
+    }
+    if (digit && i < n && (s.charAt(i) == 'e' || s.charAt(i) == 'E')) {
+      int e = i + 1;
+      if (e < n && (s.charAt(e) == '-' || s.charAt(e) == '+')) e++;
+      final int digits = e;
+      while (e < n && s.charAt(e) >= '0' && s.charAt(e) <= '9') e++;
+      if (e > digits) i = e;
     }
     return digit ? Double.parseDouble(s.substring(start, i)) : 0;
   }

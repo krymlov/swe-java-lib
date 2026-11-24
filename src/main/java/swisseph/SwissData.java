@@ -169,7 +169,8 @@ final class SwissData {
   static final int OPEN_MODE=0666;         // default file creation mode
   // file.separator may be null with JavaME
   public static final String DIR_GLUE = (System.getProperty("file.separator") == null ? "/" : System.getProperty("file.separator"));              // glue string for directory/file
-  public static final String PATH_SEPARATOR=";:"; // semicolon or colon may be used
+  /** sweodef.h: on Windows the semicolon only, because the colon follows the drive letter */
+  public static final String PATH_SEPARATOR = "\\".equals(DIR_GLUE) ? ";" : ";:";
 
 
 //////////////////////////////////////////////////////////////////////////////
