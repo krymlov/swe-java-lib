@@ -1784,6 +1784,12 @@ String slast_starname;
   */
   @Override
   public void swe_set_topo(double geolon, double geolat, double geoalt) {
+    if (swed.geopos_is_set
+      && swed.topd.geolon == geolon
+      && swed.topd.geolat == geolat
+      && swed.topd.geoalt == geoalt) {
+      return;
+    }
     swed.topd.geolon = geolon;
     swed.topd.geolat = geolat;
     swed.topd.geoalt = geoalt;
@@ -6255,7 +6261,7 @@ fname="";
     if ((iflag & SweConst.SEFLG_TOPOCTR)!=0) {
       if (swed.topd.teval != pdp.teval
         || swed.topd.teval == 0) {
-        if (swi_get_observer(pdp.teval, iflag | SweConst.SEFLG_NONUT, SwephData.DO_SAVE, xobs, null) !=
+        if (swi_get_observer(pdp.teval, iflag | SweConst.SEFLG_NONUT, SwephData.DO_SAVE, xobs, serr) !=
                                                                  SweConst.OK) {
           return SweConst.ERR;
         }
@@ -8337,7 +8343,7 @@ int refepyOffs;
     for (i = 0; i < SwephData.SEI_NNODE_ETC; i++) {
       swed.nddat[i].xflgs = -1;
     }
-    for (i = 0; i < SweConst.SE_NPLANETS; i++) {
+    for (i = 0; i <= SweConst.SE_NPLANETS; i++) { // "=" because save area for asteroids > SE_AST_OFFSET is at i == SE_NPLANETS
       swed.savedat[i].tsave = 0;
       swed.savedat[i].iflgsave = -1;
     }
@@ -8752,6 +8758,7 @@ int refepyOffs;
                             double[] geopos, double atpress, double attemp,
                             double[] tret, StringBuilder serr) {
     final DblObj box = new DblObj();
+    if (null != tret && tret.length > 0) box.val = tret[0];
     final int retc = swe_rise_trans(tjd_ut, ipl, starname, epheflag, rsmi, geopos,
         atpress, attemp, box, serr);
     if (null != tret && tret.length > 0) tret[0] = box.val;
@@ -9708,6 +9715,7 @@ int refepyOffs;
   public int swe_rise_trans_true_hor(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi, double[] geopos,
                                      double atpress, double attemp, double horhgt, double[] tret, StringBuilder serr) {
     final DblObj dblObj = new DblObj();
+    dblObj.val = tret[0];
     int retc = getSwecl().swe_rise_trans_true_hor(tjd_ut, ipl, starname, epheflag, rsmi,
             geopos, atpress, attemp, horhgt, dblObj, serr);
     tret[0] = dblObj.val;

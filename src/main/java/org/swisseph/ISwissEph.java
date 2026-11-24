@@ -641,7 +641,7 @@ public interface ISwissEph extends Closeable {
 
     default int swe_rise_trans(double tjd_ut, int ipl, StringBuilder starname, int epheflag, int rsmi,
                                double[] geopos, double atpress, double attemp, DblObj tretObj, StringBuilder serr) {
-        final double[] tret = new double[1];
+        final double[] tret = {tretObj.val};
 
         int res = SwephExp.swe_rise_trans(tjd_ut, ipl, starname, epheflag,
                 rsmi, geopos, atpress, attemp, tret, serr);
