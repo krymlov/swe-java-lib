@@ -761,6 +761,7 @@ if(path == null) return;
     /* try to open lunar ephemeris, in order to get DE number and set
      * tidal acceleration of the Moon */
     iflag = SweConst.SEFLG_SWIEPH|SweConst.SEFLG_J2000|SweConst.SEFLG_TRUEPOS|SweConst.SEFLG_ICRS;
+    swe_calc_epheflag_sv = SweConst.SEFLG_SWIEPH;   /* swed.last_epheflag = 2 */
     swe_calc(SwephData.J2000, SweConst.SE_MOON, iflag, xx, null);
     if (swed.fidat[SwephData.SEI_FILE_MOON].fptr != null) {
       SweDate.swi_set_tid_acc(this, 0, 0, swed.fidat[SwephData.SEI_FILE_MOON].sweph_denum);
@@ -1257,6 +1258,22 @@ if(path == null) return;
       swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
     }
     epheflag = iflag & SweConst.SEFLG_EPHMASK;
+    /* as swe_calc() (sweph.c swi_fixstar_calc_from_record(), fixstar_calc_from_struct()): another
+     * ephemeris than the last call's closes the files. Missing until 2026-11-26: after a Moshier
+     * star the Java engine kept the DE441 Moon file open, and swe_deltat_ex(SEFLG_SWIEPH) took
+     * its tidal acceleration (-25.936) where C takes the default (-25.80): 304 s of delta T at
+     * 3000 BCE, 1.2e-7 deg of ayanamsa_ut (SiderealAccuracyTest, mode 41 after mode 40). */
+    if (swe_calc_epheflag_sv != epheflag) {
+      free_planets();
+      if (swed.jpl_file_is_open) {
+        sj.swi_close_jpl_file();
+        swed.jpl_file_is_open = false;
+      }
+      for (int i = 0; i < SwephData.SEI_NEPHFILES; i++) {
+        swed.fidat[i].clearData();
+      }
+      swe_calc_epheflag_sv = epheflag;
+    }
     /******************************************
      * obliquity of ecliptic 2000 and of date *
      ******************************************/
@@ -9438,6 +9455,9 @@ int refepyOffs;
    * (measured 2026-11-22, etc/difference.txt). Both now go through here. swe_fixstar() itself
    * agrees with the native library to 2e-10 arcsec either way.
    */
+  /** what C's swi_get_ayanamsa_ex() returns for the last swi_get_ayanamsa_nonut() call */
+  private int aya_retflag;
+
   double swi_get_ayanamsa_nonut(double tjd_et, int iflag, StringBuilder serr) {
     // A port of sweph.c 2.10.03 swi_get_ayanamsa_ex(). Until 2026-11-23 the precession-based
     // modes here had neither the precession-model correction (get_aya_correction) nor
@@ -9446,9 +9466,13 @@ int refepyOffs;
     if (!swed.ayana_is_set) {
       swe_set_sid_mode(SweConst.SE_SIDM_FAGAN_BRADLEY, 0, 0);
     }
+    // as C: no ephemeris bit means the default one (swe_houses_ex2() passes SEFLG_SIDEREAL only;
+    // without this the deltat of t0 and the stars of the star-based modes differed, 2.4e-8 deg)
+    iflag = plaus_iflag(iflag, -1, tjd_et, serr);
     final SidData sip = swed.sidd;
     final int sid_mode = sip.sid_mode % SweConst.SE_SIDBITS;
     final int ephe = (iflag & SweConst.SEFLG_EPHMASK) | SweConst.SEFLG_NONUT;
+    aya_retflag = ephe;
     final double[] x = new double[6];
     if (isStarAyanamsa(sid_mode)) {
       /* _TRUE_ ayanamshas take SEFLG_TRUEPOS/NOABERR/NOGDEFL from the caller ("iflag_true");
@@ -9474,9 +9498,12 @@ int refepyOffs;
         case SweConst.SE_SIDM_GALEQU_TRUE:         star = ",GPol";   offset = 150; flags = iflag_galequ; break;
         default: /* SE_SIDM_GALEQU_MULA */         star = ",GPol";   offset = 150 + 6.6666666667; flags = iflag_galequ; break;
       }
-      if (swe_fixstar(new StringBuilder(star), tjd_et, flags, x, serr) == SweConst.ERR) {
+      final int retflag = swe_fixstar(new StringBuilder(star), tjd_et, flags, x, serr);
+      if (retflag == SweConst.ERR) {
+        aya_retflag = SweConst.ERR;
         return 0; // as C: ERR leaves *daya = 0
       }
+      aya_retflag = retflag & SweConst.SEFLG_EPHMASK; // as C: the star's ephemeris, no SEFLG_NONUT
       double daya = x[0];
       if (sid_mode == SweConst.SE_SIDM_GALCENT_MULA_WILHELM) {
         /* right ascension in polar projection onto the ecliptic */
@@ -9598,7 +9625,11 @@ int refepyOffs;
       ay += nutlo[0] * SwissData.RADTODEG;
     }
     daya[0] = SwissLib.swe_degnorm(ay);
-    return iflag & SweConst.SEFLG_EPHMASK;
+    // as sweph.c: swi_get_ayanamsa_ex()'s value - the ephemeris plus the SEFLG_NONUT it adds
+    // for the precession-based modes - and that bit only removed when nutation was added
+    int retval = aya_retflag;
+    if (retval != SweConst.ERR && (iflag & SweConst.SEFLG_NONUT) == 0) retval &= ~SweConst.SEFLG_NONUT;
+    return retval;
   }
 
   @Override

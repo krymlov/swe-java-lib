@@ -46,95 +46,7 @@ import static swisseph.SweConst.*;
  * @version 1.0, 2026-11
  */
 @Isolated
-public class HeliacalParityTest extends AbstractTest {
-
-    /** longitude, latitude, height */
-    static final double[][] PLACES = {{30.52, 50.45, 180}, {12.5, 41.9, 100}, {77.2, 28.6, 200},
-            {-70, -33, 500}, {18, 62.5, 50}, {31.2, 30, 0}};
-    /** pressure, temperature, humidity, meteorological range or extinction coefficient */
-    static final double[][] AIRS = {{1013.25, 15, 40, 0}, {0, 0, 0, 0}, {1000, 25, 70, 20},
-            {900, 5, 100, 0.25}, {1013.25, 15, 0, 0}, {1013.25, 15, 30, 0.02}, {1013.25, 10, 50, 600}};
-    /** age, Snellen ratio, binocular, magnification, aperture, transmission */
-    static final double[][] OBSERVERS = {{36, 1, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {60, 1.4, 1, 10, 50, 0.8},
-            {23, 0.5, 0, 4, 30, 0.7}};
-    static final String[] OBJECTS = {"venus", "moon", "Mercury", "mars", "JUPITER", "saturn", "uranus", "neptune",
-            "sirius", "Aldebaran", ",alTau", "Regulus", "sun", "nosuchstar"};
-    /** -3000 to 2100 */
-    static final double[] DATES = {2451545.0, 2455197.3, 2433282.6, 2415100.1, 2305500.2, 2086400.4, 1757700.7, 626000.3};
-    static final int[] FLAGS = {SEFLG_SWIEPH, SEFLG_MOSEPH, SEFLG_SWIEPH | SE_HELFLAG_HIGH_PRECISION,
-            SEFLG_SWIEPH | SE_HELFLAG_OPTICAL_PARAMS, SEFLG_SWIEPH | SE_HELFLAG_VISLIM_DARK,
-            SEFLG_SWIEPH | SE_HELFLAG_VISLIM_NOMOON, SEFLG_SWIEPH | SE_HELFLAG_VISLIM_PHOTOPIC,
-            SEFLG_SWIEPH | SE_HELFLAG_VISLIM_SCOTOPIC,
-            SEFLG_SWIEPH | SE_HELFLAG_OPTICAL_PARAMS | SE_HELFLAG_VISLIM_PHOTOPIC | SE_HELFLAG_VISLIM_SCOTOPIC};
-    static final int[] AV_KINDS = {SE_HELFLAG_AVKIND_VR, SE_HELFLAG_AVKIND_PTO, SE_HELFLAG_AVKIND_MIN7, SE_HELFLAG_AVKIND_MIN9};
-    static final double TOL = 1e-9, TOL_DATE = 1e-8, TOL_NORTH = 2.5e-7;
-
-    @FunctionalInterface
-    private interface Call {
-        int on(ISwissEph engine, double[] air, double[] observer, StringBuilder name, double[] ret, StringBuilder serr);
-    }
-
-    private static String text(Object o) {
-        return String.valueOf(o);
-    }
-
-    /** one call on both engines; returns what the native one wrote, with its return value as the last element */
-    private double[] compare(String what, double[] air, double[] observer, String name, boolean withSerr, double tol, Call call) {
-        final ISwissEph[] engines = {getSwephExp(), getSwissEph()};
-        final double[][] ret = new double[2][51], airs = new double[2][], observers = new double[2][];
-        final StringBuilder[] names = new StringBuilder[2], errors = new StringBuilder[2];
-        final int[] retval = new int[2];
-        for (int i = 0; i < 2; i++) {
-            airs[i] = air.clone();
-            observers[i] = observer.clone();
-            names[i] = new StringBuilder(name);
-            errors[i] = withSerr ? new StringBuilder() : null;
-            Arrays.fill(ret[i], 7);
-            retval[i] = call.on(engines[i], airs[i], observers[i], names[i], ret[i], errors[i]);
-        }
-        final String ctx = what + " " + name;
-        assertEquals(retval[0], retval[1], () -> ctx + " return; native '" + errors[0] + "' Java '" + errors[1] + "'");
-        if (retval[0] >= 0 && name.toLowerCase(Locale.ROOT).startsWith("moon") && what.startsWith("heliacal_ut")) {
-            // swe_heliacal_ut() of C hands over its uninitialised serr when the Moon's event is found
-            assertEquals(withSerr ? "" : "null", text(errors[1]), ctx + " serr");
-        } else {
-            assertEquals(text(errors[0]), text(errors[1]), ctx + " serr");
-        }
-        assertEquals(names[0].toString(), names[1].toString(), ctx + " object name");
-        for (int i = 0; i < 50; i++) {
-            final int n = i;
-            assertEquals(ret[0][i], ret[1][i], tol, () -> ctx + " [" + n + "]");
-        }
-        for (int i = 0; i < air.length; i++) assertEquals(airs[0][i], airs[1][i], 1e-12, ctx + " datm[" + i + "]");
-        for (int i = 0; i < observer.length; i++) assertEquals(observers[0][i], observers[1][i], 1e-12, ctx + " dobs[" + i + "]");
-        ret[0][50] = retval[0];
-        return ret[0];
-    }
-
-    /** the last values kept in C are of a date, of a solar altitude and of a star which no test has */
-    private void prime() {
-        visLimit(2447000.123, PLACES[0], AIRS[0], OBSERVERS[0], "Vega", SEFLG_SWIEPH, true);
-        visLimit(2447000.623, PLACES[0], AIRS[0], OBSERVERS[0], "Vega", SEFLG_SWIEPH, true);
-    }
-
-    private double[] visLimit(double t, double[] geo, double[] air, double[] obs, String name, int fl, boolean withSerr) {
-        return compare("vis_limit_mag fl " + fl + " jd " + t + " geo " + Arrays.toString(geo) + " air " + Arrays.toString(air)
-                        + " obs " + Arrays.toString(obs), air, obs, name, withSerr, TOL,
-                (e, a, o, n, r, s) -> e.swe_vis_limit_mag(t, geo.clone(), a, o, n, fl, r, s));
-    }
-
-    private double[] event(double t, double[] geo, double[] air, double[] obs, String name, int type, int fl, boolean withSerr) {
-        return compare("heliacal_ut type " + type + " fl " + fl + " jd " + t + " geo " + Arrays.toString(geo) + " air "
-                        + Arrays.toString(air) + " obs " + Arrays.toString(obs), air, obs, name, withSerr, TOL_DATE,
-                (e, a, o, n, r, s) -> e.swe_heliacal_ut(t, geo.clone(), a, o, name, type, fl, r, s));
-    }
-
-    private double[] details(double t, double[] geo, double[] air, double[] obs, String name, int type, int fl, boolean withSerr) {
-        return compare("heliacal_pheno_ut type " + type + " fl " + fl + " jd " + t + " geo " + Arrays.toString(geo) + " air "
-                        + Arrays.toString(air) + " obs " + Arrays.toString(obs), air, obs, name, withSerr, TOL_DATE,
-                (e, a, o, n, r, s) -> e.swe_heliacal_pheno_ut(t, geo.clone(), a, o, name, type, fl, r, s));
-    }
-
+public class HeliacalParityTest extends HeliacalParityTestBase {
     /** every SE_HELFLAG_*, SE_HELIACAL_* and event number is that of swephexp.h */
     @Test
     void constants_areThoseOfSwephexp() throws Exception {
@@ -164,30 +76,6 @@ public class HeliacalParityTest extends AbstractTest {
         assertTrue(flags >= 14 && n >= 22, flags + " flags of " + n + " constants found");
         assertEquals(SE_HELFLAG_AVKIND, SE_HELIACAL_AVKIND);
         assertEquals(0xF << 16, SE_HELFLAG_AVKIND);
-    }
-
-    @Test
-    void limitingMagnitude_everyObjectAndFlag_matchesNative() {
-        prime();
-        int visible = 0, scotopic = 0, mixed = 0, below = 0;
-        for (int fl : FLAGS) {
-            for (int d = 0; d < DATES.length; d++) {
-                for (int g = 0; g < PLACES.length; g++) {
-                    for (int k = 0; k < 4; k++) {
-                        for (int o = 0; o < OBJECTS.length; o++) {
-                            final double[] r = visLimit(DATES[d] + k * 7.137 + g * 0.011, PLACES[g], AIRS[(k + g + d) % AIRS.length],
-                                    OBSERVERS[(k + o) % OBSERVERS.length], OBJECTS[o], fl, 0 != (d + o + k) % 5);
-                            if (r[50] >= 0) visible++;
-                            if (r[50] > 0 && 0 != ((int) r[50] & SE_SCOTOPIC_FLAG)) scotopic++;
-                            if (r[50] > 0 && 0 != ((int) r[50] & SE_MIXEDOPIC_FLAG)) mixed++;
-                            if (-2 == r[50]) below++;
-                        }
-                    }
-                }
-            }
-        }
-        final String seen = visible + " visible, " + scotopic + " scotopic, " + mixed + " mixed, " + below + " below";
-        assertTrue(visible > 1000 && scotopic > 200 && below > 1000 && visible - scotopic > 200, seen);
     }
 
     /** a Snellen ratio of nothing is 1e-8 for C; 0 is the default of 1 */
@@ -234,31 +122,6 @@ public class HeliacalParityTest extends AbstractTest {
         assertTrue(near > 100, near + " dates near the Moon");
     }
 
-    @Test
-    void angles_matchNative() {
-        prime();
-        for (int fl : FLAGS) {
-            for (double t0 : DATES) {
-                for (int g = 0; g < PLACES.length; g++) {
-                    final double[] geo = PLACES[g];
-                    final double altMoon = 0 == g % 2 ? -10 : 35, altObj = 5 + g * 3;
-                    for (double mag : new double[]{-4, 1, 6}) {
-                        for (int az = 0; az < 360; az += 110) {
-                            final double t = t0 + az / 100., azi = az;
-                            final double[] air = AIRS[(g + az / 110) % AIRS.length], obs = OBSERVERS[(g + az / 110) % OBSERVERS.length];
-                            final String what = " fl " + fl + " jd " + t + " geo " + g + " mag " + mag + " az " + az;
-                            compare("heliacal_angle" + what, air, obs, "", true, TOL, (e, a, o, n, r, s) ->
-                                    e.swe_heliacal_angle(t, geo, a, o, fl, mag, azi, azi + 10, 120, altMoon, r, s));
-                            // a null serr is dereferenced by SunRA() in C; the bridge has one of its own
-                            compare("topo_arcus_visionis" + what, air, obs, "", 110 != az, TOL, (e, a, o, n, r, s) ->
-                                    e.swe_topo_arcus_visionis(t, geo, a, o, fl, mag, azi, altObj, azi + 10, 120, altMoon, r, s));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     /** the object on the Moon, within 0.0044 degrees (the radius which C takes) of its centre, and beside that */
     @Test
     void angles_behindTheMoon_matchNative() {
@@ -274,67 +137,6 @@ public class HeliacalParityTest extends AbstractTest {
                 }
             }
         }
-    }
-
-    @Test
-    void details_matchNative() {
-        prime();
-        int i = 0, pairs = 0;
-        for (int fl : new int[]{SEFLG_SWIEPH, SEFLG_MOSEPH, SEFLG_SWIEPH | SE_HELFLAG_HIGH_PRECISION,
-                SEFLG_SWIEPH | SE_HELFLAG_OPTICAL_PARAMS, SEFLG_SWIEPH | SE_HELFLAG_VISLIM_SCOTOPIC,
-                SEFLG_SWIEPH | SE_HELFLAG_AVKIND_VR}) {
-            for (int type = 1; type <= 4; type++) {
-                for (int o = 0; o < OBJECTS.length; o++) {
-                    i++;
-                    final double[] r = details(DATES[i % DATES.length] + o * 3.7, PLACES[(i / 3) % PLACES.length], AIRS[(i / 2) % AIRS.length],
-                            OBSERVERS[i % OBSERVERS.length], OBJECTS[o], type, fl, 0 != i % 5);
-                    if (0 == r[50] && 7 != r[0]) pairs++;
-                }
-            }
-        }
-        assertTrue(pairs > 200, pairs + " with a result");
-    }
-
-    /** the object does not rise: the C writes what it has and returns */
-    @Test
-    void details_whenTheObjectDoesNotRise_matchNative() {
-        prime();
-        final double[] north = {18, 68, 50};
-        int invalid = 0;
-        for (String name : new String[]{"venus", "mars", "sirius", "fomalhaut", "capella", "moon"}) {
-            for (int type = 1; type <= 4; type++) {
-                for (double t = 2451545; t < 2451545 + 365; t += 73) {
-                    final double[] r = details(t, north, AIRS[0], OBSERVERS[0], name, type, SEFLG_SWIEPH, true);
-                    if (TJD_INVALID == r[14]) invalid++;
-                }
-            }
-        }
-        assertTrue(invalid > 10, invalid + " without a rising");
-    }
-
-    private void events(String[] objects, int[] types, int[] flags, int step) {
-        prime();
-        int i = 0, found = 0;
-        for (int fl : flags) {
-            for (int type : types) {
-                for (String name : objects) {
-                    if (0 != i++ % step) continue;
-                    final double[] r = event(DATES[i % (DATES.length - 1)], PLACES[(i / 2) % PLACES.length], AIRS[(i / 3) % 3],
-                            OBSERVERS[(i / 5) % OBSERVERS.length], name, type, fl, 3 != i % 7);
-                    if (0 == r[50]) found++;
-                }
-            }
-        }
-        assertTrue(found > 3, found + " events of " + i / step);
-    }
-
-    @Test
-    void events_ofPlanets_matchNative() {
-        events(new String[]{"venus", "Mercury", "mars", "JUPITER", "saturn"}, new int[]{1, 2, 3, 4},
-                new int[]{SEFLG_SWIEPH, SEFLG_MOSEPH, SEFLG_SWIEPH | SE_HELFLAG_NO_DETAILS, SEFLG_SWIEPH | SE_HELFLAG_SEARCH_1_PERIOD,
-                        SEFLG_SWIEPH | SE_HELFLAG_HIGH_PRECISION, SEFLG_SWIEPH | SE_HELFLAG_OPTICAL_PARAMS,
-                        SEFLG_SWIEPH | SE_HELFLAG_VISLIM_NOMOON, SEFLG_SWIEPH | SE_HELFLAG_VISLIM_PHOTOPIC,
-                        SEFLG_SWIEPH | SE_HELFLAG_VISLIM_SCOTOPIC}, 1);
     }
 
     @Test
@@ -362,24 +164,6 @@ public class HeliacalParityTest extends AbstractTest {
     }
 
     /**
-     * North of 65 degrees, where the search for rising and setting is the slow one in C, too. It is the same bit
-     * for bit, but its bisection starts at a culmination: the native engine itself moves by 1.6e-7 day when the
-     * date it is given moves by one ulp, and the dates given here come from a search of their own.
-     */
-    @Test
-    void events_inTheNorth_matchNative() {
-        prime();
-        final double[] north = {18, 66, 50};
-        for (String name : new String[]{"venus", "mercury", "sirius"}) {
-            for (int type = 1; type <= 2; type++) {
-                final int kind = type;
-                compare("heliacal_ut type " + type, AIRS[0], OBSERVERS[0], name, true, TOL_NORTH, (e, a, o, n, r, s) ->
-                        e.swe_heliacal_ut(DATES[kind], north.clone(), a, o, name, kind, SEFLG_SWIEPH, r, s));
-            }
-        }
-    }
-
-    /**
      * Between 63 and 65 degrees the Sun's rising is one of {@code rise_set_fast()} of {@code swe_rise_trans()},
      * which the Java engine did not have until 2026-11-24 (it was off by 4 s), and the planet's a slow one.
      */
@@ -401,13 +185,6 @@ public class HeliacalParityTest extends AbstractTest {
         events(new String[]{"moon", "Moon"}, new int[]{1, 2, 3, 4},
                 new int[]{SEFLG_SWIEPH, SEFLG_MOSEPH, SEFLG_SWIEPH | SE_HELFLAG_HIGH_PRECISION,
                         SEFLG_SWIEPH | SE_HELFLAG_VISLIM_NOMOON, SEFLG_SWIEPH | SE_HELFLAG_AVKIND_VR}, 1);
-    }
-
-    @Test
-    void events_ofTheArcusVisionisKinds_matchNative() {
-        final int[] flags = new int[AV_KINDS.length];
-        for (int i = 0; i < flags.length; i++) flags[i] = SEFLG_SWIEPH | AV_KINDS[i];
-        events(new String[]{"venus", "mercury", "mars", "jupiter", "sirius", "regulus"}, new int[]{1, 2, 3, 4, 5, 6}, flags, 5);
     }
 
     /** what is refused, and how: the Sun, a star which does not exist, types which an object does not have */

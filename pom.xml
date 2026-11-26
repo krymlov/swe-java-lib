@@ -11,6 +11,7 @@
     <version>2.10.03j6f</version>
 
     <properties>
+        <surefire.forks>8</surefire.forks>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit-jupiter.version>6.0.3</junit-jupiter.version>
         <maven.compiler.release>8</maven.compiler.release>
@@ -79,7 +80,14 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.6</version>
                 <configuration>
-                    <argLine>-Djava.library.path="${basedir}/libs;${java.library.path}"</argLine>
+                    <!-- 8 JVMs, each runs whole test classes one after another: the native state is
+                         per thread, but parts of the Java engine's (tidal acceleration, sidereal
+                         mode) are JVM-global, so classes never share a JVM at the same time.
+                         Longest classes first (statistics of the last run in .surefire-*). -->
+                    <forkCount>${surefire.forks}</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <runOrder>balanced</runOrder>
+                    <argLine>-Xmx1g -Djava.library.path="${basedir}/libs;${java.library.path}"</argLine>
                     <additionalClasspathElements>
                         <additionalClasspathElement>ephe</additionalClasspathElement>
                     </additionalClasspathElements>

@@ -38,133 +38,7 @@ import static swisseph.SweConst.*;
  * @version 1.0, 2026-11
  */
 @Isolated
-public class EclipseParityTest extends AbstractTest {
-
-    static final int[] EPHEMERIDES = {SEFLG_SWIEPH, SEFLG_MOSEPH};
-    /** -3000 to 2100 */
-    static final double[] DATES = {2451545.3, 2455197.3, 2433282.6, 2415100.1, 2305500.2, 2086400.4, 1757700.7, 626000.3, 2488000.5};
-    /** the last one is in the polar night, or day, half of the time */
-    static final double[][] PLACES = {{30.5, 50.45, 100}, {0, 0, 0}, {-70, -33, 2400}, {140, 68, 0}, {-60, -85, 3000},
-            {-75, 40.7, -100}, {77.2, 28.6, 200}, {20, 85, 10}};
-    static final int ANY = 0;
-    static final int[] TYPES = {ANY, SE_ECL_TOTAL, SE_ECL_ANNULAR, SE_ECL_PARTIAL, SE_ECL_ANNULAR_TOTAL,
-            SE_ECL_TOTAL | SE_ECL_CENTRAL, SE_ECL_ANNULAR | SE_ECL_CENTRAL, SE_ECL_ANNULAR_TOTAL | SE_ECL_CENTRAL,
-            SE_ECL_PARTIAL | SE_ECL_NONCENTRAL, SE_ECL_PARTIAL | SE_ECL_CENTRAL, SE_ECL_ANNULAR_TOTAL | SE_ECL_NONCENTRAL,
-            SE_ECL_TOTAL | SE_ECL_ANNULAR | SE_ECL_CENTRAL, SE_ECL_TOTAL | SE_ECL_PARTIAL | SE_ECL_CENTRAL | SE_ECL_NONCENTRAL};
-    static final int[] DIRECTIONS = {0, 1};
-    static final int[] ONE_TRY = {SE_ECL_ONE_TRY, SE_ECL_ONE_TRY | 1};
-    /** metres; SEI_ECL_GEOALT_MIN and SEI_ECL_GEOALT_MAX of sweph.h */
-    static final double LOWEST = -500, HIGHEST = 25000;
-    static final double UNTOUCHED = 7;
-    /** days; measured 1.4e-8 and 4e-7; native itself moves by as much */
-    static final double TOL_T = 5e-8, TOL_T_MOSHIER = 1e-6;
-    /** of the value or of 1; measured 6.7e-7; kilometres of shadow, azimuth and altitude are those of the time */
-    static final double TOL_ATTR = 2e-6, TOL_AZALT_MOSHIER = 3e-4;
-    static final int CORE_SHADOW = 3, APP_ALTITUDE = 6;
-    static final double TOL_GEO = 1e-8;
-
-    @BeforeEach
-    void theDefaultLapseRate() {
-        getSwephExp().swe_set_lapse_rate(0.0065);
-        getSwissEph().swe_set_lapse_rate(0.0065);
-    }
-
-    @FunctionalInterface
-    private interface Call {
-        int on(ISwissEph engine, StringBuilder star, double[] geo, double[] tret, double[] attr, StringBuilder serr);
-    }
-
-    private static final class Result {
-        int ret;
-        double[] geo, tret, attr;
-        String serr, star;
-
-        boolean is(int flag) {
-            return ret > 0 && 0 != (ret & flag);
-        }
-    }
-
-    /** one call on both engines; returns what native gives */
-    private Result compare(String what, int eph, String star, double[] geo, boolean withSerr, Call call) {
-        final ISwissEph[] engines = {getSwephExp(), getSwissEph()};
-        final Result[] r = {new Result(), new Result()};
-        for (int i = 0; i < 2; i++) {
-            final StringBuilder name = null == star ? null : new StringBuilder(star), err = withSerr ? new StringBuilder() : null;
-            r[i].geo = geo.clone();
-            r[i].tret = new double[10];
-            r[i].attr = new double[20];
-            Arrays.fill(r[i].tret, UNTOUCHED);
-            Arrays.fill(r[i].attr, UNTOUCHED);
-            r[i].ret = call.on(engines[i], name, r[i].geo, r[i].tret, r[i].attr, err);
-            r[i].serr = String.valueOf(err);
-            r[i].star = String.valueOf(name);
-        }
-        final String ctx = what + " eph " + eph + " geo " + Arrays.toString(geo) + " star " + star;
-        assertEquals(r[0].ret, r[1].ret, () -> ctx + " return; native '" + r[0].serr + "' Java '" + r[1].serr + "'");
-        assertEquals(r[0].serr, r[1].serr, ctx + " serr");
-        assertEquals(r[0].star, r[1].star, ctx + " star name");
-        // the files here begin after -3000, and C takes Moshier's ephemeris without a word
-        final boolean moshier = SEFLG_MOSEPH == eph || UNTOUCHED != r[0].tret[0]
-                && 0 != (SEFLG_MOSEPH & getSwephExp().swe_calc_ut(r[0].tret[0], SE_MOON, eph, new double[6], null));
-        for (int i = 0; i < geo.length; i++) {
-            assertEquals(r[0].geo[i], r[1].geo[i], TOL_GEO, ctx + " geopos " + i);
-        }
-        for (int i = 0; i < 10; i++) {
-            if (isWild(r[0].tret, i) && isWild(r[1].tret, i)) continue;
-            assertEquals(r[0].tret[i], r[1].tret[i], moshier ? TOL_T_MOSHIER : TOL_T, ctx + " tret " + i);
-        }
-        for (int i = 0; i < 20; i++) {
-            final boolean azalt = moshier && CORE_SHADOW <= i && i <= APP_ALTITUDE;
-            final double big = Math.max(1, Math.abs(r[0].attr[i]));
-            assertEquals(r[0].attr[i], r[1].attr[i], big * (azalt ? TOL_AZALT_MOSHIER : TOL_ATTR), ctx + " attr " + i);
-        }
-        return r[0];
-    }
-
-    /**
-     * C's search for a contact of a grazing occultation may run away for weeks, to where a place moved by
-     * 1e-9 of a degree moves native by half an hour
-     */
-    private static boolean isWild(double[] tret, int i) {
-        return 1 <= i && i <= 4 && tret[i] > 100000 && Math.abs(tret[i] - tret[0]) > 1;
-    }
-
-    private Result solGlob(double t, int eph, int type, int backward) {
-        return compare("sol when_glob " + t + " type " + type + " back " + backward, eph, null, new double[0], true,
-                (e, n, g, r, a, s) -> e.swe_sol_eclipse_when_glob(t, eph, type, r, backward, s));
-    }
-
-    private Result solWhere(double t, int eph) {
-        return compare("sol where " + t, eph, null, new double[]{UNTOUCHED, UNTOUCHED}, true,
-                (e, n, g, r, a, s) -> e.swe_sol_eclipse_where(t, eph, g, a, s));
-    }
-
-    private Result solHow(double t, int eph, double[] place) {
-        return compare("sol how " + t, eph, null, place, true, (e, n, g, r, a, s) -> e.swe_sol_eclipse_how(t, eph, g, a, s));
-    }
-
-    private Result solLoc(double t, int eph, double[] place, int backward) {
-        return compare("sol when_loc " + t + " back " + backward, eph, null, place, true,
-                (e, n, g, r, a, s) -> e.swe_sol_eclipse_when_loc(t, eph, g, r, a, backward, s));
-    }
-
-    private Result occGlob(double t, int ipl, String star, int eph, int type, int backward) {
-        return compare("occ when_glob " + t + " ipl " + ipl + " type " + type + " back " + backward, eph, star, new double[0], true,
-                (e, n, g, r, a, s) -> e.swe_lun_occult_when_glob(t, ipl, n, eph, type, r, backward, s));
-    }
-
-    private Result occWhere(double t, int ipl, String star, int eph) {
-        return compare("occ where " + t + " ipl " + ipl, eph, star, new double[]{UNTOUCHED, UNTOUCHED}, true,
-                (e, n, g, r, a, s) -> e.swe_lun_occult_where(t, ipl, n, eph, g, a, s));
-    }
-
-    private Result occLoc(double t, int ipl, String star, int eph, double[] place, int backward) {
-        return compare("occ when_loc " + t + " ipl " + ipl + " back " + backward, eph, star, place, true,
-                (e, n, g, r, a, s) -> e.swe_lun_occult_when_loc(t, ipl, n, eph, g, r, a, backward, s));
-    }
-
-    // solar eclipses
-
+public class EclipseParityTest extends EclipseParityTestBase {
     /** every type which C knows, then where it is, and how it is there and elsewhere */
     @Test
     void theGlobalSearch_itsPlace_andItsLook_matchNative() {
@@ -233,31 +107,6 @@ public class EclipseParityTest extends AbstractTest {
         assertEquals(ERR, solGlob(2451545, SEFLG_SWIEPH, SE_ECL_PARTIAL | SE_ECL_CENTRAL, 0).ret);
     }
 
-    @Test
-    void theLocalSearch_matchesNative() {
-        int rise = 0, partlyVisible = 0, all = 0, central = 0;
-        final Set<Integer> kinds = new TreeSet<>();
-        for (double d : DATES) {
-            for (int eph : EPHEMERIDES) {
-                for (double[] p : PLACES) {
-                    for (int k = 0; k < 2; k++) {
-                        for (int back : DIRECTIONS) {
-                            if (d < 700000 && 1 == back) continue;
-                            final Result r = solLoc(d + k * 397.1, eph, p, back);
-                            all++;
-                            if (r.tret[5] > 100 || r.tret[6] > 100) rise++;
-                            if (r.ret > 0 && !r.is(SE_ECL_1ST_VISIBLE) || !r.is(SE_ECL_4TH_VISIBLE)) partlyVisible++;
-                            if (r.is(SE_ECL_TOTAL | SE_ECL_ANNULAR)) central++;
-                            kinds.add(r.ret);
-                        }
-                    }
-                }
-            }
-        }
-        assertTrue(all > 500 && rise > 30 && partlyVisible > 30 && central > 0 && kinds.size() > 8,
-                all + " " + rise + " " + partlyVisible + " " + central + " " + kinds);
-    }
-
     /** total, annular and hybrid ones, seen from where they are greatest and from near the limits */
     @Test
     void theLocalSearch_onTheCentralLine_matchesNative() {
@@ -300,113 +149,6 @@ public class EclipseParityTest extends AbstractTest {
             if (solHow(g.tret[0], SEFLG_MOSEPH, new double[]{w[0], w[1], 0}).attr[9] > 0) early++;
         }
         assertTrue(n > 290 && early > 5, n + " eclipses, " + early + " before the table");
-    }
-
-    private Result theSarosOfTheNext(double t) {
-        final Result g = solGlob(t, SEFLG_MOSEPH, ANY, 0);
-        final double[] w = solWhere(g.tret[0], SEFLG_MOSEPH).geo;
-        solHow(g.tret[0], SEFLG_MOSEPH, new double[]{w[0], w[1], 0});
-        return g;
-    }
-
-    // occultations
-
-    /** Moon over planet, Sun and star; where the occultation is greatest; and how it begins there */
-    @Test
-    void theOccultations_ofPlanetsAndStars_matchNative() {
-        final Set<Integer> kinds = new TreeSet<>();
-        final Object[][] bodies = {{SE_VENUS, null}, {SE_MERCURY, null}, {SE_MARS, null}, {SE_JUPITER, null}, {SE_SATURN, ""},
-                {SE_URANUS, null}, {SE_NEPTUNE, null}, {SE_SUN, null}, {SE_SUN, "Aldebaran"}, {SE_SUN, ",alTau"},
-                {SE_VENUS, "Regulus"}, {SE_SUN, "Spica"}, {SE_SUN, "antares"}};
-        int n = 0;
-        for (Object[] b : bodies) {
-            final int ipl = (int) b[0];
-            final String star = (String) b[1];
-            for (double d : new double[]{2451545.3, 2086400.4}) {
-                for (int eph : EPHEMERIDES) {
-                    for (int back : DIRECTIONS) {
-                        for (int type : SEFLG_MOSEPH == eph ? new int[]{ANY} : new int[]{ANY, SE_ECL_TOTAL, SE_ECL_TOTAL | SE_ECL_CENTRAL}) {
-                            final Result g = occGlob(d, ipl, star, eph, type, back);
-                            if (g.ret <= 0) continue;
-                            kinds.add(g.ret);
-                            n++;
-                            for (double off : new double[]{0, 0.02, -0.05, 2}) {
-                                final Result w = occWhere(g.tret[0] + off, ipl, star, eph);
-                                if (0 != off || w.ret <= 0) continue;
-                                for (int one : ONE_TRY) {
-                                    occLoc(g.tret[0] + (SE_ECL_ONE_TRY == one ? -0.3 : 0.3), ipl, star, eph, new double[]{w.geo[0], w.geo[1], 0}, one);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        assertTrue(n > 100 && kinds.contains(SE_ECL_TOTAL | SE_ECL_CENTRAL) && kinds.contains(SE_ECL_TOTAL | SE_ECL_NONCENTRAL), n + " " + kinds);
-    }
-
-    /** one conjunction, tried or not, from everywhere; when it fails, the date for the next try */
-    @Test
-    void oneTry_matchesNative() {
-        int hit = 0, missed = 0, day = 0;
-        final Object[][] bodies = {{SE_VENUS, null}, {SE_MARS, null}, {SE_JUPITER, null}, {SE_PLUTO, null}, {SE_AST_OFFSET + 134340, null},
-                {SE_MEAN_NODE, null}, {SE_SUN, null}, {SE_SUN, "Aldebaran"}, {SE_SUN, "Regulus"}, {SE_SUN, "Spica"}, {SE_SUN, ",alSco"},
-                {SE_MARS, "Pollux"}};
-        for (Object[] b : bodies) {
-            final int ipl = (int) b[0];
-            final String star = (String) b[1];
-            for (double d : new double[]{2451545.3, 2457100.7, 2457800.2, 2086400.4}) {
-                for (int eph : EPHEMERIDES) {
-                    for (int one : ONE_TRY) {
-                        for (int type : new int[]{ANY, SE_ECL_TOTAL, SE_ECL_PARTIAL}) {
-                            if (occGlob(d, ipl, star, eph, type, one).ret > 0) hit++;
-                            else missed++;
-                        }
-                        for (double[] p : PLACES) {
-                            for (int k = 0; k < 2; k++) {
-                                final Result r = occLoc(d + 27.3 * k, ipl, star, eph, p, one);
-                                if (r.ret > 0) hit++;
-                                else missed++;
-                                if (r.is(SE_ECL_OCC_BEG_DAYLIGHT) || r.is(SE_ECL_OCC_END_DAYLIGHT)) day++;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        assertTrue(hit > 80 && missed > 2500 && day > 20, hit + " " + missed + " " + day);
-    }
-
-    /** the whole series of 2015-2018 of Aldebaran and of 2017 of Regulus, and Venus and Mars, seen from everywhere */
-    @Test
-    void theOccultations_ofASeries_fromEverywhere_matchNative() {
-        int hit = 0, beg = 0, end = 0, rise = 0, all = 0, grazing = 0;
-        final Object[][] bodies = {{SE_SUN, "Aldebaran", 2457050.5}, {SE_SUN, "Regulus", 2457800.5}, {SE_VENUS, null, 2451545.3},
-                {SE_MARS, null, 2451545.3}, {SE_JUPITER, null, 2457550.5}, {SE_SATURN, null, 2458500.5}};
-        for (Object[] b : bodies) {
-            final int ipl = (int) b[0];
-            final String star = (String) b[1];
-            double t = (double) b[2];
-            for (int k = 0; k < 3; k++) {
-                t = occGlob(t, ipl, star, SEFLG_SWIEPH, ANY, 0).tret[0];
-                final double[] w = occWhere(t, ipl, star, SEFLG_SWIEPH).geo;
-                for (int lat = -84; lat <= 84; lat += 12) {
-                    for (int lon = -120; lon <= 120; lon += 60) {
-                        final Result r = occLoc(t - 0.4, ipl, star, 0 == (lat / 12 + k) % 2 ? SEFLG_SWIEPH : SEFLG_MOSEPH,
-                                new double[]{w[0] + lon, lat, 50}, SE_ECL_ONE_TRY);
-                        all++;
-                        if (r.ret <= 0) continue;
-                        hit++;
-                        if (r.is(SE_ECL_OCC_BEG_DAYLIGHT)) beg++;
-                        if (r.is(SE_ECL_OCC_END_DAYLIGHT)) end++;
-                        if (r.tret[5] > 100 || r.tret[6] > 100) rise++;
-                        if (r.is(SE_ECL_PARTIAL)) grazing++;
-                    }
-                }
-                t++;
-            }
-        }
-        assertTrue(all > 1000 && hit > 150 && beg > 60 && end > 60 && rise > 15 && grazing >= 0, all + " " + hit + " " + beg + " " + end + " " + rise + " " + grazing);
     }
 
     /** the last days of a polar day or night, when the Sun rises but does not set any more, or the reverse */
@@ -512,8 +254,6 @@ public class EclipseParityTest extends AbstractTest {
             occWhere(2451545.3, ipl, null, SEFLG_SWIEPH);
         }
     }
-
-    // both
 
     /** a height out of the range of C's refraction */
     @Test

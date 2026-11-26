@@ -43,124 +43,7 @@ import static swisseph.SweConst.*;
  * @version 1.0, 2026-11
  */
 @Isolated
-public class RiseSetParityTest extends AbstractTest {
-
-    /** the borders of the fast method are 60 and, for the Sun, 65 degrees */
-    static final double[] LATITUDES = {0, 28.6, -33, 50.45, 59.9, 60, 60.1, -60, -60.1, 62, 64.5, 65, 65.1, -65, -65.1, 68, 85, -85};
-    static final int[] FAST_FLAGS = {0, SE_BIT_DISC_CENTER, SE_BIT_DISC_BOTTOM, SE_BIT_NO_REFRACTION,
-            SE_BIT_DISC_CENTER | SE_BIT_NO_REFRACTION, SE_BIT_FIXED_DISC_SIZE, SE_BIT_FIXED_DISC_SIZE | SE_BIT_DISC_BOTTOM,
-            SE_BIT_GEOCTR_NO_ECL_LAT, SE_BIT_HINDU_RISING};
-    static final int[] TWILIGHTS = {SE_BIT_CIVIL_TWILIGHT, SE_BIT_NAUTIC_TWILIGHT, SE_BIT_ASTRO_TWILIGHT};
-    static final int[] EPHEMERIDES = {SEFLG_SWIEPH, SEFLG_MOSEPH};
-    /** -3000 to 2100 */
-    static final double[] DATES = {2451545.0, 2455197.3, 2433282.6, 2415100.1, 2305500.2, 2086400.4, 1757700.7, 626000.3};
-    static final String[] STARS = {"Aldebaran", ",alTau", "sirius", "Polaris", "Canopus", "Regulus"};
-    static final int CIRCUMPOLAR = -2;
-    /** days; the measured differences are 0, 4e-9, 1.1e-7 and 3.8e-5 */
-    static final double TOL = 1e-10, TOL_STAR = 1e-8, TOL_TRUE_NODE = 2.5e-7, TOL_OSCU_APOG = 1e-4;
-    static final double UNTOUCHED = 7;
-
-    /** the lapse rate is per thread and stays set (another test leaves 0.01 in native) */
-    @BeforeEach
-    void theDefaultLapseRate() {
-        getSwephExp().swe_set_lapse_rate(0.0065);
-        getSwissEph().swe_set_lapse_rate(0.0065);
-    }
-
-    @FunctionalInterface
-    private interface Call {
-        int on(ISwissEph engine, StringBuilder star, double[] geo, double[] tret, StringBuilder serr);
-    }
-
-    /** one call on both engines; returns the native return value and time */
-    private double[] compare(String what, String star, double[] geo, boolean withSerr, double tol, Call call) {
-        final ISwissEph[] engines = {getSwephExp(), getSwissEph()};
-        final double[][] tret = new double[2][];
-        final StringBuilder[] stars = new StringBuilder[2], errors = new StringBuilder[2];
-        final int[] retval = new int[2];
-        for (int i = 0; i < 2; i++) {
-            stars[i] = null == star ? null : new StringBuilder(star);
-            errors[i] = withSerr ? new StringBuilder() : null;
-            tret[i] = new double[]{UNTOUCHED};
-            final double[] g = geo.clone();
-            retval[i] = call.on(engines[i], stars[i], g, tret[i], errors[i]);
-            assertEquals(Arrays.toString(geo), Arrays.toString(g), what + ": the place is not changed");
-        }
-        final String ctx = what + " geo " + Arrays.toString(geo) + " star " + star;
-        assertEquals(retval[0], retval[1], () -> ctx + " return; native '" + errors[0] + "' Java '" + errors[1] + "'");
-        assertEquals(String.valueOf(errors[0]), String.valueOf(errors[1]), ctx + " serr");
-        assertEquals(String.valueOf(stars[0]), String.valueOf(stars[1]), ctx + " star name");
-        assertEquals(tret[0][0], tret[1][0], tol, ctx + " time");
-        return new double[]{retval[0], tret[0][0]};
-    }
-
-    private static double tolerance(int ipl, String star) {
-        if (null != star && !star.isEmpty()) return TOL_STAR;
-        return SE_TRUE_NODE == ipl ? TOL_TRUE_NODE : SE_OSCU_APOG == ipl ? TOL_OSCU_APOG : TOL;
-    }
-
-    private double[] rise(double t, int ipl, String star, int eph, int rsmi, double[] geo, double press, double temp, boolean withSerr) {
-        return compare("rise_trans jd " + t + " ipl " + ipl + " eph " + eph + " rsmi " + rsmi + " air " + press + " " + temp, star, geo,
-                withSerr, tolerance(ipl, star),
-                (e, n, g, r, s) -> e.swe_rise_trans(t, ipl, n, eph, rsmi, g, press, temp, r, s));
-    }
-
-    private double[] horizon(double t, int ipl, String star, int eph, int rsmi, double[] geo, double press, double temp, double height) {
-        return compare("rise_trans_true_hor " + height + " jd " + t + " ipl " + ipl + " eph " + eph + " rsmi " + rsmi + " air "
-                + press + " " + temp, star, geo, true, tolerance(ipl, star),
-                (e, n, g, r, s) -> e.swe_rise_trans_true_hor(t, ipl, n, eph, rsmi, g, press, temp, height, r, s));
-    }
-
-    private static double[] place(int i, double lat) {
-        return new double[]{-170 + 61.7 * i % 340, lat, 0 == i % 3 ? 0 : 1 == i % 3 ? 180 : 2500};
-    }
-
-    /** every event, the flags which the fast method knows, both sides of its borders */
-    @Test
-    void theFastMethod_matchesNative() {
-        int i = 0, never = 0, found = 0;
-        for (double lat : LATITUDES) {
-            for (int ipl = SE_SUN; ipl <= SE_TRUE_NODE; ipl++) {
-                for (int flag : FAST_FLAGS) {
-                    for (int ev : new int[]{SE_CALC_RISE, SE_CALC_SET}) {
-                        for (int eph : EPHEMERIDES) {
-                            i++;
-                            final double t = DATES[i % DATES.length] + (i / 7) % 400 * 0.913;
-                            final double[] r = rise(t, ipl, null, eph, ev | flag, place(i, lat), 0 == i % 4 ? 0 : 1013.25 - i % 4 * 60,
-                                    15 - i % 5 * 8, 0 != i % 6);
-                            if (CIRCUMPOLAR == r[0]) never++;
-                            if (0 == r[0]) found++;
-                        }
-                    }
-                }
-            }
-        }
-        assertTrue(found > 5000 && never > 300, found + " events, " + never + " circumpolar");
-    }
-
-    /** the hours around an event, where the first run finds one of before and a second one is made */
-    @Test
-    void theSecondRun_matchesNative() {
-        int before = 0, after = 0;
-        for (int ipl : new int[]{SE_SUN, SE_MOON, SE_VENUS, SE_PLUTO, SE_MEAN_NODE}) {
-            for (int flag : new int[]{0, SE_BIT_HINDU_RISING, SE_BIT_GEOCTR_NO_ECL_LAT, SE_BIT_DISC_BOTTOM}) {
-                for (int ev : new int[]{SE_CALC_RISE, SE_CALC_SET}) {
-                    for (double lat : new double[]{10, -45, 59.5, 64.9}) {
-                        final double[] geo = {12.5, lat, 100};
-                        final double tr = rise(2457500.1 + ipl * 11, ipl, null, SEFLG_SWIEPH, ev | flag, geo, 1013.25, 10, true)[1];
-                        if (tr <= 0) continue;
-                        for (int m = -20; m <= 20; m++) {
-                            final double t = tr + m * Math.abs(m) / 14400.0 + 1e-6;
-                            if (tr + 0.5 < rise(t, ipl, null, SEFLG_SWIEPH, ev | flag, geo, 1013.25, 10, true)[1]) after++;
-                            else before++;
-                        }
-                    }
-                }
-            }
-        }
-        assertTrue(before > 1000 && after > 1000, before + " of the day, " + after + " of the next one");
-    }
-
+public class RiseSetParityTest extends RiseSetParityTestBase {
     /** the two methods differ: sunrise by up to 0.5 s at 60 degrees, by up to 20 s at 65 */
     @Test
     void theFastMethod_isNotTheSlowOne() {
@@ -175,30 +58,6 @@ public class RiseSetParityTest extends AbstractTest {
             }
         }
         assertTrue(other > 20, other + " of " + all);
-    }
-
-    /** beyond 60 and 65 degrees, or when it is asked for; the bodies after the nodes always */
-    @Test
-    void theSlowMethod_matchesNative() {
-        int i = 0, never = 0, found = 0;
-        for (double lat : LATITUDES) {
-            for (int ipl : new int[]{SE_SUN, SE_MOON, SE_MERCURY, SE_JUPITER, SE_PLUTO, SE_MEAN_NODE, SE_TRUE_NODE, SE_MEAN_APOG, SE_CHIRON,
-                    SE_AST_OFFSET + 134340, SE_CERES, SE_CUPIDO, SE_WALDEMATH}) {
-                for (int flag : FAST_FLAGS) {
-                    for (int ev : new int[]{SE_CALC_RISE, SE_CALC_SET}) {
-                        i++;
-                        // Chiron and Ceres are not in Moshier's ephemeris, and no file of theirs may be here
-                        final boolean moshier = 0 == i % 2 && SE_CHIRON != ipl && SE_CERES != ipl;
-                        final double t = DATES[i % 4] + (i / 7) % 400 * 0.913;
-                        final double[] r = rise(t, ipl, null, moshier ? SEFLG_MOSEPH : SEFLG_SWIEPH,
-                                ev | flag | SE_BIT_FORCE_SLOW_METHOD, place(i, lat), 0 == i % 4 ? 0 : 1013.25, 15 - i % 5 * 8, 0 != i % 6);
-                        if (CIRCUMPOLAR == r[0]) never++;
-                        if (0 == r[0]) found++;
-                    }
-                }
-            }
-        }
-        assertTrue(found > 1500 && never > 200, found + " events, " + never + " circumpolar");
     }
 
     /** the bodies after the nodes are slow ones at every latitude, without being asked for */
@@ -245,29 +104,6 @@ public class RiseSetParityTest extends AbstractTest {
         assertTrue(never > 20 && always > 10, never + " below the horizon, " + always + " above it");
     }
 
-    /** a twilight is one of the Sun's; for another body its bit only means the slow method */
-    @Test
-    void twilights_matchNative() {
-        int i = 0, never = 0, found = 0;
-        for (double lat : LATITUDES) {
-            for (int bit : TWILIGHTS) {
-                for (int ev : new int[]{SE_CALC_RISE, SE_CALC_SET}) {
-                    for (int ipl : new int[]{SE_SUN, SE_MOON, SE_MARS}) {
-                        for (int k = 0; k < 8; k++) {
-                            i++;
-                            final double[] r = rise(DATES[k] + i * 1.37, ipl, null, EPHEMERIDES[i % 2], ev | bit, place(i, lat), 1013.25, 10, true);
-                            if (CIRCUMPOLAR == r[0]) never++;
-                            if (0 == r[0]) found++;
-                        }
-                    }
-                }
-            }
-        }
-        // all three at once
-        rise(2451545.3, SE_SUN, null, SEFLG_SWIEPH, SE_CALC_RISE | TWILIGHTS[0] | TWILIGHTS[1] | TWILIGHTS[2], place(1, 40), 1013.25, 10, true);
-        assertTrue(found > 1000 && never > 100, found + " twilights, " + never + " nights without");
-    }
-
     @Test
     void transits_matchNative() {
         int i = 0;
@@ -308,28 +144,6 @@ public class RiseSetParityTest extends AbstractTest {
         for (int ev : new int[]{SE_CALC_RISE, SE_CALC_MTRANSIT}) {
             assertEquals(ERR, rise(2451545.3, SE_VENUS, "nosuchstar", SEFLG_SWIEPH, ev, place(1, 50), 1013.25, 10, true)[0]);
         }
-    }
-
-    /** a horizon of its own height; -100 is the sea at the dip of a high place */
-    @Test
-    void theHeightOfTheHorizon_matchesNative() {
-        int i = 0, dip = 0;
-        for (double lat : new double[]{0, 28.6, -50, 62, 66, -70, 85}) {
-            for (double height : new double[]{0, -100, -99.9, 2.5, -1.5, 10, 50}) {
-                for (int ipl : new int[]{SE_SUN, SE_MOON, SE_VENUS, SE_MEAN_NODE}) {
-                    for (int flag : new int[]{0, SE_BIT_HINDU_RISING, SE_BIT_DISC_BOTTOM, SE_BIT_NO_REFRACTION, SE_BIT_CIVIL_TWILIGHT}) {
-                        for (int ev : new int[]{SE_CALC_RISE, SE_CALC_SET}) {
-                            i++;
-                            final double[] r = horizon(DATES[i % DATES.length] + i * 0.913, ipl, null, EPHEMERIDES[i % 2], ev | flag,
-                                    place(i, lat), 0 == i % 3 ? 0 : 1013.25, 10 - i % 4 * 10, height);
-                            if (-100 == height && 0 == r[0]) dip++;
-                        }
-                    }
-                }
-            }
-            horizon(2451545.3, SE_SUN, "sirius", SEFLG_SWIEPH, SE_CALC_SET, place(2, lat), 1013.25, 10, -100);
-        }
-        assertTrue(dip > 100, dip + " on a sea horizon");
     }
 
     /** without an event it is the rising, in the slow way; both of them at once; both transits; unknown bits */
